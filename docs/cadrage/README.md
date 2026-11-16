@@ -1,6 +1,6 @@
 # Alternative à Tricount : La Pince
 
-**Conclusion (16/11/2026)** : aucune app existante ne convient ; le groupe développe la sienne, **La Pince**, une PWA open source sans compte, hébergée gratuitement sur Cloudflare (Workers et D1). Cadrage terminé : besoin, périmètre de la première version, stack, hébergement et nom tranchés. Repo `~/Perso/la-pince` créé le 16/11 ; prochaine étape : architecture et stratégie de tests, et tri des premiers retours du groupe (`retours-du-groupe.md`).
+**Conclusion (16/11/2026)** : aucune app existante ne convient ; le groupe développe la sienne, **La Pince**, une PWA open source sans compte, hébergée gratuitement sur Cloudflare (Workers et D1). Besoin, stack, hébergement et nom tranchés ; périmètre de la première version à redécouper en versions plus petites (décision ouverte 3). Repo `~/Perso/la-pince` créé le 16/11 ; prochaine étape : découpage en versions, architecture et stratégie de tests.
 
 Contexte : l'utilisateur utilise Tricount depuis longtemps avec un groupe d'amis, frustré par « des fonctionnalités basiques que nous trouvons manquantes, des lenteurs, une app qui ne fonctionne pas super bien » (dit par l'utilisateur). Déclencheur : un bug Tricount, en cours le 16/11 (date de début non précisée), empêche les apps du groupe de se synchroniser (dit par l'utilisateur).
 
@@ -52,12 +52,12 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 6. **Périmètre** (16/11) : section Périmètre ; hors ligne en première version, catégories en « plus tard », commande groupée au lot 2 (dit par l'utilisateur).
 7. **Hébergement et stack** (16/11, dit par l'utilisateur) : Cloudflare Workers et D1 en juridiction UE, offre gratuite ; perte de la gratuité ou dépassement jugés peu probables, « on cherchera autre chose » ; pas de matériel à la maison, serveur loué « beaucoup trop cher ». Stack : TypeScript, PWA React avec Vite, IndexedDB et file d'envoi côté téléphone (identifiant unique créé sur le téléphone, envoi rejouable sans doublon), Hono et Drizzle côté serveur, SQLite (D1), Vitest et Playwright. Code portable vers un serveur Node si besoin.
 8. **Nom** (16/11, dit par l'utilisateur) : « La Pince », surnom du groupe pour les radins ; slogan possible « Qui sera la plus grosse pince ? ».
-9. **Saisie par montants en première version** (16/11, dit par l'utilisateur, retour du groupe) : saisir le montant de chacun sans total, le total se calcule ; total saisi qui ne correspond pas à la somme : enregistrement refusé. Les autres retours ne vont pas en première version (« pas tout en 1ere version non »).
+9. **Saisie par montants en première version** (16/11, dit par l'utilisateur, retour du groupe) : saisir le montant de chacun sans total, le total se calcule ; total saisi qui ne correspond pas à la somme : enregistrement refusé. Les trois autres ajouts proposés (bascule « ma part / total », barre de répartition, emoji automatique) n'y entrent pas (« pas tout en 1ere version non ») ; ce que le périmètre prévoyait déjà (ma part sur chaque ligne, soldes) reste à redécouper (décision ouverte 3).
 
 ### Ouvertes
 1. **Sauvegarde au-delà de 7 jours** (16/11, présentée le 16/11) : « on trouvera une solution » (dit par l'utilisateur) ; piste : export hebdomadaire automatique vers un repo GitHub privé (déduit, non vérifié).
 2. **Manques de Sesterce** (16/11, présentée le 16/11) : ce qui manque à Sesterce pour le groupe, demandé à l'utilisateur, sans réponse ; non bloquant.
-3. **Découpage en versions** (16/11, présentée le 16/11) : « la 1ere version aura probablement beaucoup moins de choses (on sera à beaucoup plus que 3 ou 4 versions) » (dit par l'utilisateur) ; le périmètre « Première version » ci-dessus est à redécouper en versions successives plus petites à l'étape 3 ; les retours du groupe (`retours-du-groupe.md`) s'y répartissent, hors saisie par montants (décision 9).
+3. **Découpage en versions** (16/11, présentée le 16/11) : « la 1ere version aura probablement beaucoup moins de choses (on sera à beaucoup plus que 3 ou 4 versions) » (dit par l'utilisateur) ; le périmètre « Première version » ci-dessus est à redécouper en versions successives plus petites, à l'étape 3 (moment déduit) ; les retours du groupe (`retours-du-groupe.md`) s'y répartissent, hors saisie par montants (décision 9).
 
 ## Plan (validé le 16/11)
 
@@ -65,13 +65,13 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 2. **Hébergement et stack** : Fait (`hebergement.md`).
 3. **Repo du projet** : `~/Perso/la-pince` créé, cadrage migré dans `docs/cadrage/` (16/11) ; reste l'architecture et la stratégie de tests (unitaires, intégration, bout en bout), cœur de calcul repris de Spliit avec ses cas de test. En cours.
 4. **Import Tricount** : membres, dépenses, répartitions et remboursements depuis l'export JSON ; tests, puis contrôle sur les vraies données (total 9 609,80 € et soldes identiques à Tricount). À faire.
-5. **Première version** : section Périmètre. À faire.
+5. **Première version** : périmètre redécoupé à l'étape 3 (décision ouverte 3). À faire.
 6. **Mise en ligne** sur Cloudflare avec sauvegarde et export. À faire.
 7. **Vérification de bout en bout** : critère de fin de la section Besoin. À faire.
 
 ## Par où reprendre
 
-Étape 3, dans une session ouverte depuis `~/Perso/la-pince` : trancher le tri des retours du groupe (décision ouverte 3), puis proposer l'architecture et la stratégie de tests avant le premier code. Le repo GitHub `lou-theo/la-pince` reste à créer par l'utilisateur (le `gh` de la machine n'est connecté qu'au compte pro) ; remote déjà posé : `git@github.com-perso:lou-theo/la-pince.git`. Export brut, clés et APK décompilée : `temp/tricount/` du repo (ignoré). Pour l'étape 4, demander à l'utilisateur le lien du tricount (son jeton donne l'accès en écriture au groupe : jamais dans un fichier versionné) et générer `pub.pem` selon l'en-tête de `export/lire_tricount.py`.
+Étape 3, dans une session ouverte depuis `~/Perso/la-pince` : trancher le découpage en versions (décision ouverte 3) en y répartissant les retours du groupe (`retours-du-groupe.md`), puis proposer l'architecture et la stratégie de tests avant le premier code. Le repo GitHub `lou-theo/la-pince` reste à créer par l'utilisateur (le `gh` de la machine n'est connecté qu'au compte pro) ; remote déjà posé : `git@github.com-perso:lou-theo/la-pince.git`. Export brut, clés et APK décompilée : `temp/tricount/` du repo (ignoré). Pour l'étape 4, demander à l'utilisateur le lien du tricount (son jeton donne l'accès en écriture au groupe : jamais dans un fichier versionné) et générer `pub.pem` selon l'en-tête de `export/lire_tricount.py`.
 
 ## Carte du dossier
 
