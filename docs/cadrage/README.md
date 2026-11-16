@@ -71,7 +71,7 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 
 ## Par où reprendre
 
-Étape 3, dans une session ouverte depuis `~/Perso/la-pince` : trancher le découpage en versions (décision ouverte 3) en y répartissant les retours du groupe (`retours-du-groupe.md`), puis proposer l'architecture et la stratégie de tests avant le premier code. Le repo GitHub `lou-theo/la-pince` reste à créer par l'utilisateur (le `gh` de la machine n'est connecté qu'au compte pro) ; remote déjà posé : `git@github.com-perso:lou-theo/la-pince.git`. Export brut, clés et APK décompilée : `temp/tricount/` du repo (ignoré). Pour l'étape 4, demander à l'utilisateur le lien du tricount (son jeton donne l'accès en écriture au groupe : jamais dans un fichier versionné) et générer `pub.pem` selon l'en-tête de `export/lire_tricount.py`.
+Étape 3, dans une session ouverte depuis `~/Perso/la-pince` : trancher le découpage en versions (décision ouverte 3) en y répartissant les retours du groupe (`retours-du-groupe.md`), puis proposer l'architecture et la stratégie de tests avant le premier code. Repo GitHub public `lou-theo/la-pince` (remote `git@github.com-perso:lou-theo/la-pince.git`, poussé le 16/11) : aucune donnée identifiable du groupe n'y entre (dit par l'utilisateur). Export brut, clés et APK décompilée : `temp/tricount/` du repo (ignoré). Pour l'étape 4, demander à l'utilisateur le lien du tricount (son jeton donne l'accès en écriture au groupe : jamais dans un fichier versionné) et générer `pub.pem` selon l'en-tête de `export/lire_tricount.py`.
 
 ## Carte du dossier
 
