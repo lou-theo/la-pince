@@ -1,0 +1,8 @@
+.DS_Store
+.claude/worktrees/
+.claude/settings.local.json
+temp/
+node_modules/
+.wrangler/
+.dev.vars
+vapid.json

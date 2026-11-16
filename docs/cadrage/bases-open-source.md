@@ -1,0 +1,57 @@
+# Spliit et SplitPro comme base de développement (16/11/2026)
+
+Statut : lecture du code par des sous-agents le 16/11/2026, sans rien exécuter, non contre-vérifiée. « lu » = chemin:ligne ou URL lus par le sous-agent, « déduit » = son inférence.
+
+Décision du 16/11/2026 (README, décision 5) : page blanche, pas de fork. Ce fichier sert de référence (calcul, modèle de données, cas de test) ; la colonne Effort chiffre ce qu'aurait coûté un fork.
+
+## Spliit
+
+[Code source](https://github.com/spliit-app/spliit), MIT, clone lu au commit `f293974` du 13/11/2026.
+
+**En bref** : base saine et active (Next.js 16, React 19, tRPC 11, Prisma 7, Postgres, TypeScript strict, tests Jest et Playwright, CI), mais sans comptes : « qui je suis » est un choix stocké dans le navigateur, et le groupe est public par son lien. Les bloquants identité, « ce qui me concerne » et notifications ciblées demandent un changement de modèle (jeton par membre ou comptes, abonnements push), pas un simple filtre.
+
+| Point | Existe ? | Preuve | Effort |
+|---|---|---|---|
+| Identité | Partiel, fragile | Pas de modèle User dans `prisma/schema.prisma` ; membre actif en `localStorage['<groupId>-activeUser']` (`src/app/groups/[groupId]/expenses/active-user-modal.tsx:39-114`, lu) ; quiconque a le lien peut agir au nom d'un autre (déduit) | Moyen à gros : jeton secret par membre et lien d'invitation personnel, vérifiés dans tRPC ; issues #336 et #177 ouvertes |
+| Ce qui me concerne | Partiel | Solde perso ou « non impliqué » sur chaque carte (`active-user-balance.tsx:15-47`, lu) ; pas de filtre « mes dépenses » | Petit à moyen : filtre dans `getGroupExpenses` (`src/lib/api.ts:412-446`) |
+| Push ciblé | Non | `public/sw.js` ne fait que du cache ; pas de `web-push` (lu) ; issue #149 ouverte depuis 05/2024 | Gros : table d'abonnements, clés VAPID, gestionnaire push, envoi aux seuls concernés à la création ou modification |
+| Recherche | Oui, limitée | Titre et notes seulement (`src/lib/api.ts:441-444`, lu) | Petit : champs et filtres en plus, sans migration |
+| Perf et fiabilité | Correct | Pagination, banc de perf en CI ; hors ligne limité à l'app shell (lu) ; PR #689 d'ajout hors ligne ouverte | Charge négligeable à 13 personnes (déduit) |
+| Sous-groupes de membres | Non | Issue #481 « Hide people » ouverte | Champ ou table sur Participant |
+| Historique des modifications | Partiel | Modèle `Activity`, page activité, sans diff avant/après (lu) | Moyen |
+| Stats et graphiques | Oui | Page `stats/` : par mois, catégorie, participant (lu) | Aucun |
+| Prix enregistrés | Non | | Moyen : modèles de dépense |
+| Lien vers une dépense | Partiel | Route d'édition par id, protégée par le seul lien du groupe (déduit) | Petit |
+| Dépense groupée à compléter | Non | | Gros : touche le calcul des parts |
+| OCR de ticket | Oui | Envoi à OpenAI (`src/lib/openai.ts`, lu), clé payante | Aucun |
+| Import | Non | Export CSV et JSON seulement ; import Splitwise « à venir » | Script ponctuel d'insertion depuis l'export Tricount (déduit) |
+
+**Activité** : 3 069 étoiles, dernier push le 14/11/2026, mainteneur principal scastiel ; PR externes fusionnées en 1 à 13 jours, d'autres ouvertes depuis plus d'un mois (lu). Un fork, [spliit-cloud](https://github.com/antonio-ivanovski/spliit-cloud), a comptes, passkeys et push, mais a divergé de 471 commits, avec une API séparée : non fusionnable avec l'amont, code non lu.
+
+**Hébergement** : `compose.yaml` (app et Postgres), Docker ; domaine en HTTPS requis pour le service worker et le push (déduit).
+
+## SplitPro
+
+[Code source](https://github.com/oss-apps/split-pro), MIT, clone lu au commit `7f48b66` du 15/11/2026.
+
+**En bref** : couvre déjà les bloquants identité et notifications ciblées ; manquent la recherche (PR externe ouverte), un filtre « me concerne » dans la vue d'un groupe, la saisie hors ligne et l'OCR. Point de vigilance : issue #710, sessions croisées non résolues.
+
+| Point | Existe ? | Preuve | Effort |
+|---|---|---|---|
+| Identité | Oui | Comptes NextAuth : e-mail (lien magique et code à 5 caractères), Google, OIDC (`src/server/auth.ts:5-8`, lu) ; invitation par lien de groupe ; mode sur invitation seulement (`INVITE_ONLY`) | Configuration seulement ; un serveur SMTP est requis pour l'e-mail (déduit) |
+| Ce qui me concerne | Partiel | Vue « Activité » filtrée sur mes dépenses (`src/server/api/routers/expense.ts:468-475`, lu) ; la vue d'un groupe montre tout (`expense.ts:327-340`) ; soldes perso par ami et par groupe ; PR #819 ouverte pour afficher sa part | Petit : un filtre et un bouton, sans changement de schéma |
+| Push ciblé | Oui | À l'ajout, notification aux seuls participants à part non nulle, auteur exclu (`src/server/api/services/notificationService.ts:126-132`, vérifié le 16/11 par lecture directe) ; à l'édition, participants actuels et anciens, éditeur exclu (PR #813 fusionnée le 14/11) ; Web Push désactivé sans clés VAPID | Aucun ; pas de réglage de notification par personne (déduit) |
+| Recherche | Non | Aucune recherche serveur dans les dépenses ; PR #746 ouverte depuis le 30/08 (nom, catégorie, groupe, payeur) | Petit : reprendre #746 |
+| Perf et fiabilité | Partiel | Next.js 16 (Pages Router), tRPC 11, Prisma 7, Postgres, pagination par curseur ; hors ligne limité au cache, issue #105 ouverte ; issue #710 (24/07/2026, ouverte, vérifiée le 16/11) : deux utilisateurs retrouvés connectés sous le compte d'un autre, connexion par e-mail derrière un proxy nginx, non reproduite par le mainteneur, cause non établie | Risque à surveiller |
+| Sous-groupes de membres | Non | `GroupUser` = simple paire groupe et utilisateur (`prisma/schema.prisma:143-151`) | Moyen |
+| Historique des modifications | Non | Seulement `updatedBy` et `updatedAt` ; commentaires sur une dépense existants | Moyen : table d'historique |
+| Stats et graphiques | Partiel | Totaux par membre (`src/lib/groupStatistics.ts`), pas de graphiques | Moyen |
+| Prix enregistrés | Non | Seulement des répartitions par défaut | Petit à moyen |
+| Lien vers une dépense | Partiel | Page `/expenses/[expenseId]`, connexion exigée (déduit) | Petit |
+| Dépense groupée à compléter | Non | Montants fixés à la création | Moyen à élevé |
+| OCR de ticket | Non | Pièce jointe stockée seulement ; issue #228 ouverte | Moyen |
+| Import | Partiel | Import Splitwise en JSON (`src/utils/splitwiseImport.ts`) ; ni Tricount ni CSV | Moyen : parseur calqué sur l'import Splitwise |
+
+**Activité** : 1 494 étoiles, dernier push le 15/11/2026, 23 issues ouvertes ; PR externes fusionnées en 1 à 14 jours le plus souvent, certaines en 1 à 2 mois (lu).
+
+**Hébergement** : app et Postgres 17 avec l'extension pg_cron (dépenses récurrentes) en Docker compose, SMTP pour la connexion par e-mail, stockage S3 optionnel pour les pièces jointes (non lu en détail) ; coût non chiffré.
