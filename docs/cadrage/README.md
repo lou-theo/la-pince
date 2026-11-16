@@ -39,7 +39,7 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 - **Bases open source** (`bases-open-source.md`) : Spliit (MIT, sans compte, sans notifications) et SplitPro (MIT, comptes, notifications ciblées) évalués ; page blanche retenue, Spliit sert de référence pour le calcul.
 - **Notifications** (vérifié le 16/11) : reçues dans Chrome sur un émulateur Android 15 avec Google Play, pas encore sur un vrai téléphone (`essais/android-notification-recue.png`, `essais/push-demo-server.mjs`) ; ciblage par « qui je suis » validé avec un Worker Cloudflare local et D1 (`essais/cloudflare/`), 0,56 ms de CPU par chiffrement de notification sous Node, hors envoi et D1, soit environ 5 ms pour les 9 destinataires au plus d'une dépense contre une limite de 10 ms par requête (calcul : 9 × 0,56), à mesurer sur Workers. Simulateur iOS : abonnement refusé, non concluant pour les vrais iPhone ; la doc Apple annonce le Web Push pour les apps web de l'écran d'accueil depuis iOS 16.4.
 - **Hébergement** (`hebergement.md`, chiffres clés relus le 16/11) : Cloudflare D1 en juridiction UE garde ses réplicas dans l'UE ; Time Travel gratuit 7 jours ; offre gratuite : 100 000 requêtes par jour, 10 ms de CPU par requête, base de 500 Mo, 5 tâches planifiées, 50 requêtes SQL par invocation ; pas de gel des quotas garanti.
-- **Nom** : repo `lou-theo/la-pince` libre sur GitHub (16/11) ; domaines lapince et la-pince en .fr, .com, .app, .eu pris ; adresse gratuite en sous-domaine workers.dev.
+- **Nom** : repo GitHub `lou-theo/la-pince` créé et public (16/11) ; domaines lapince et la-pince en .fr, .com, .app, .eu pris ; adresse gratuite en sous-domaine workers.dev.
 
 ## Décisions
 
@@ -71,7 +71,7 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 
 ## Par où reprendre
 
-Étape 3, dans une session ouverte depuis `~/Perso/la-pince` : trancher le découpage en versions (décision ouverte 3) en y répartissant les retours du groupe (`retours-du-groupe.md`), puis proposer l'architecture et la stratégie de tests avant le premier code. Repo GitHub public `lou-theo/la-pince` (remote `git@github.com-perso:lou-theo/la-pince.git`, poussé le 16/11) : aucune donnée identifiable du groupe n'y entre (dit par l'utilisateur). Export brut, clés et APK décompilée : `temp/tricount/` du repo (ignoré). Pour l'étape 4, demander à l'utilisateur le lien du tricount (son jeton donne l'accès en écriture au groupe : jamais dans un fichier versionné) et générer `pub.pem` selon l'en-tête de `export/lire_tricount.py`.
+Étape 3, dans une session ouverte depuis `~/Perso/la-pince` : trancher le découpage en versions (décision ouverte 3) en y répartissant les retours du groupe (`retours-du-groupe.md`), puis proposer l'architecture et la stratégie de tests avant le premier code. Repo GitHub public `lou-theo/la-pince` (remote `git@github.com-perso:lou-theo/la-pince.git`, poussé le 16/11) : aucune donnée identifiable n'y entre (dit par l'utilisateur). Export brut, clés et APK décompilée : `temp/tricount/` du repo (ignoré). Pour l'étape 4, demander à l'utilisateur le lien du tricount (son jeton donne l'accès en écriture au groupe : jamais dans un fichier versionné) et générer `pub.pem` selon l'en-tête de `export/lire_tricount.py`.
 
 ## Carte du dossier
 

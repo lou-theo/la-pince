@@ -1,6 +1,6 @@
 # Retours du groupe (16/11/2026)
 
-Premiers retours des amis sur la discussion du groupe, le 16/11/2026 au soir, lus sur deux captures transmises par l'utilisateur. Ce sont des hypothèses : chacune est rapprochée de l'usage mesuré (`referentiel-fonctionnel.md`, export Tricount du 25/11/2025 au 16/11/2026) avant toute entrée au périmètre. Les auteurs ne sont pas nommés (repo public à terme). Tri proposé par l'assistant ; tranché par l'utilisateur le 16/11 : la saisie par montants entre en première version, la bascule « ma part / total », la barre de répartition et l'emoji automatique n'y entrent pas ; la version de chaque retour se fixe au découpage en versions.
+Premiers retours des amis sur la discussion du groupe, le 16/11/2026 au soir, lus sur deux captures transmises par l'utilisateur. Ce sont des hypothèses : chacune est rapprochée de l'usage mesuré (`referentiel-fonctionnel.md`, export Tricount du 25/11/2025 au 16/11/2026) avant toute entrée au périmètre. Les auteurs ne sont pas nommés (repo public). Tri proposé par l'assistant ; tranché par l'utilisateur le 16/11 : la saisie par montants entre en première version, la bascule « ma part / total », la barre de répartition et l'emoji automatique n'y entrent pas ; la version de chaque retour se fixe au découpage en versions.
 
 ## En bref
 
