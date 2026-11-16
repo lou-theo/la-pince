@@ -52,11 +52,12 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 6. **Périmètre** (16/11) : section Périmètre ; hors ligne en première version, catégories en « plus tard », commande groupée au lot 2 (dit par l'utilisateur).
 7. **Hébergement et stack** (16/11, dit par l'utilisateur) : Cloudflare Workers et D1 en juridiction UE, offre gratuite ; perte de la gratuité ou dépassement jugés peu probables, « on cherchera autre chose » ; pas de matériel à la maison, serveur loué « beaucoup trop cher ». Stack : TypeScript, PWA React avec Vite, IndexedDB et file d'envoi côté téléphone (identifiant unique créé sur le téléphone, envoi rejouable sans doublon), Hono et Drizzle côté serveur, SQLite (D1), Vitest et Playwright. Code portable vers un serveur Node si besoin.
 8. **Nom** (16/11, dit par l'utilisateur) : « La Pince », surnom du groupe pour les radins ; slogan possible « Qui sera la plus grosse pince ? ».
+9. **Saisie par montants en première version** (16/11, dit par l'utilisateur, retour du groupe) : saisir le montant de chacun sans total, le total se calcule ; total saisi qui ne correspond pas à la somme : enregistrement refusé. Les autres retours ne vont pas en première version (« pas tout en 1ere version non »).
 
 ### Ouvertes
 1. **Sauvegarde au-delà de 7 jours** (16/11, présentée le 16/11) : « on trouvera une solution » (dit par l'utilisateur) ; piste : export hebdomadaire automatique vers un repo GitHub privé (déduit, non vérifié).
 2. **Manques de Sesterce** (16/11, présentée le 16/11) : ce qui manque à Sesterce pour le groupe, demandé à l'utilisateur, sans réponse ; non bloquant.
-3. **Retours du groupe** (16/11, présentée le 16/11) : tri proposé dans `retours-du-groupe.md` ; reco : saisie par montants avec total calculé, bascule « ma part / total », barre de répartition et emoji automatique en première version, le reste au lot 2 ou plus tard.
+3. **Découpage en versions** (16/11, présentée le 16/11) : « la 1ere version aura probablement beaucoup moins de choses (on sera à beaucoup plus que 3 ou 4 versions) » (dit par l'utilisateur) ; le périmètre « Première version » ci-dessus est à redécouper en versions successives plus petites à l'étape 3 ; les retours du groupe (`retours-du-groupe.md`) s'y répartissent, hors saisie par montants (décision 9).
 
 ## Plan (validé le 16/11)
 

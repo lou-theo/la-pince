@@ -1,10 +1,10 @@
 # Retours du groupe (16/11/2026)
 
-Premiers retours des amis sur la discussion du groupe, le 16/11/2026 au soir, lus sur deux captures transmises par l'utilisateur. Ce sont des hypothèses : chacune est rapprochée de l'usage mesuré (`referentiel-fonctionnel.md`, export Tricount du 25/11/2025 au 16/11/2026) avant toute entrée au périmètre. Les auteurs ne sont pas nommés (repo public à terme). Tri proposé par l'assistant, non tranché par l'utilisateur.
+Premiers retours des amis sur la discussion du groupe, le 16/11/2026 au soir, lus sur deux captures transmises par l'utilisateur. Ce sont des hypothèses : chacune est rapprochée de l'usage mesuré (`referentiel-fonctionnel.md`, export Tricount du 25/11/2025 au 16/11/2026) avant toute entrée au périmètre. Les auteurs ne sont pas nommés (repo public à terme). Tri proposé par l'assistant ; tranché par l'utilisateur le 16/11 pour la seule saisie par montants (première version), le reste se répartit dans les versions suivantes.
 
 ## En bref
 
-- Deux retours entrent naturellement en première version : la saisie par montants individuels avec total calculé, et l'affichage de « ma part » à la place du total ; le second y était déjà.
+- Seule la saisie par montants individuels avec total calculé entre en première version (décision de l'utilisateur, 16/11) ; les autres propositions « première version » de la table sont à replacer dans les versions suivantes.
 - L'emoji automatique est la seule piste trouvée pour que les catégories servent un jour : il rend la catégorie implicite, sans effort de saisie.
 - Les blagues (remboursement obligatoire, wizz) cachent un vrai besoin, la relance des remboursements, peu coûteux une fois les notifications en place.
 
@@ -12,7 +12,7 @@ Premiers retours des amis sur la discussion du groupe, le 16/11/2026 au soir, lu
 
 | Retour | Besoin dessous | Ce que dit l'usage mesuré | Proposition |
 |---|---|---|---|
-| Saisir les montants de chacun sans total : le total se calcule ; total saisi et somme différente : refuser l'enregistrement | saisie d'une addition détaillée sans calcul de tête | 83 dépenses sur 236 portent au moins un montant fixé (55 mêlées à des parts, 28 entièrement en montants) | première version, dans la saisie rapide |
+| Saisir les montants de chacun sans total : le total se calcule ; total saisi et somme différente : refuser l'enregistrement | saisie d'une addition détaillée sans calcul de tête | 83 dépenses sur 236 portent au moins un montant fixé (55 mêlées à des parts, 28 entièrement en montants) | première version, dans la saisie rapide (retenu le 16/11) |
 | Afficher seulement sa part, « combien elle vaut pour toi » | lecture personnelle de la liste | déjà prévu (ma part sur chaque ligne) | première version : bascule « ma part / total » |
 | Graphique de répartition sur chaque dépense, comprendre pourquoi les totaux diffèrent entre personnes | expliquer une répartition inégale | 90 dépenses sur 236 hors parts égales (calcul : 7 + 55 + 28) | première version en simple barre par personne dans le détail ; graphique riche plus tard |
 | Emoji choisi automatiquement (« Bières » donne 🍺) ; Tricount le fait, mieux sur iPhone que sur Android (rapporté) | repérer une dépense d'un coup d'œil | l'export n'a aucun champ emoji par dépense (vérifié : seul le groupe en porte un) : chez Tricount il se déduit à l'affichage | première version possible : dictionnaire de mots-clés local, gratuit, corrigeable à la main ; la correction alimente le dictionnaire |
