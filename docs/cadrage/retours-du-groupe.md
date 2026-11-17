@@ -36,11 +36,34 @@ Non tranchés. Mesures du 17/11 par un script de la session sur le même export,
 | Membres les plus « courants » en tête quand on coche un par un, pour ne pas faire défiler une dizaine de membres annexes ; objection d'un autre membre : l'ordre changerait au fur et à mesure ; réponse : préférence entre ordre alphabétique et ordre par fréquence | retrouver vite les concernés habituels | « toujours les 4 mêmes » ne tient pas : les 4 membres les plus fréquents couvrent tous les concernés de 57 dépenses sur 236, les 7 plus fréquents de 156 sur 236. L'objection tient : après la 50e dépense, les 4 premiers d'un ordre par fréquence changent 10 fois en 186 dépenses. Les sélections se répètent : 92 sélections distinctes ; une dépense reprend la sélection d'une des 5 précédentes 70 fois sur 235 et une sélection déjà vue 144 fois sur 235 ; la plus courante (un trio) revient 22 fois | première version, en remplacement de « membres fréquents en tête » : liste en ordre alphabétique stable, et au-dessus les 5 dernières sélections distinctes, chacune en un geste (au moins 70 dépenses sur 235 servies) ; ordre par fréquence en préférence plus tard si le besoin reste ; sélections nommées avec les sous-groupes du lot 2 |
 | Trier les soldes par montant | voir d'un coup d'œil qui doit le plus | soldes déjà en première version | première version : soldes triés par montant, coût faible (au jugé) |
 | Classement de ceux qui paient ou dépensent le plus | vue d'ensemble, jeu | rejoint l'idée « qui sera la plus grosse pince ? » et les statistiques du lot 2 | lot 2, avec les statistiques |
-| Commande groupée complétée par chacun, avec rappel et dépense « incomplète » bien visible ; objection : une livraison a des frais fixes à répartir ensuite ; réponse : frais répartis automatiquement en plus du montant de chacun (aujourd'hui chacun ajoute quelques dizaines de centimes à la main, rapporté) | saisir une commande où chacun a son montant, plus des frais communs | rien ne mesure les frais ajoutés à la main ; les 55 dépenses mêlant montants fixés et parts ne ressemblent pas à des frais communs : le reste en parts va à une seule personne 33 fois, il fait 10 € ou moins 12 fois | frais à répartir : un champ de la saisie par montants, réparti à parts égales entre ceux qui ont un montant, arrondi au centime testé ; version à fixer (pas tout en première version, décision du 16/11). Commande complétée par chacun et rappel : lot 2, inchangé |
+| Commande groupée complétée par chacun, avec rappel et dépense « incomplète » bien visible ; objection : une livraison a des frais fixes à répartir ensuite ; réponse : frais répartis automatiquement en plus du montant de chacun (aujourd'hui chacun ajoute quelques dizaines de centimes à la main, rapporté) | saisir une commande où chacun a son montant, plus des frais communs | rien ne mesure les frais ajoutés à la main ; les 55 dépenses mêlant montants fixés et parts ne ressemblent pas à des frais communs : le reste en parts va à une seule personne 33 fois, il fait 10 € ou moins 12 fois | frais à répartir : un champ de la saisie par montants, réparti au prorata du montant de chacun (pratique relevée, section Cas réels de commandes groupées), arrondi au centime testé ; version à fixer (pas tout en première version, décision du 16/11). Commande complétée par chacun et rappel : lot 2, inchangé |
 | Wizz pour réclamer un remboursement, son choisi par l'envoyeur | relancer les remboursements | rejoint la relance du lot 2 (14 remboursements en un an) | lot 2, relance par notification ; son personnalisé non garanti par les notifications web (supposé, à vérifier) |
 | Widget iPhone avec son solde sur l'écran d'accueil | voir son solde sans ouvrir l'app | une PWA ne fournit pas de widget iPhone (supposé, à vérifier) ; un widget demande une app native, hors périmètre | hors périmètre ; piste à vérifier : pastille sur l'icône (un nombre, par exemple les dépenses non vues, pas un montant) |
 | Photo de profil, en gif, qui change selon le solde (avatar « clochard » en négatif, filtre IA) | jeu | aucun avatar dans l'export | plus tard ; avatar choisi parmi quelques images selon le signe du solde, sans IA ni envoi de photo, si le groupe y tient |
 | Mandat de prélèvement sur le compte des mauvais payeurs (blague) | relancer les remboursements | demande un prestataire de paiement et un identifiant de créancier SEPA (supposé) | hors périmètre ; besoin couvert par la relance du lot 2 |
+
+## Cas réels de commandes groupées
+
+Cinq échanges de la discussion du groupe (août à octobre 2026) transmis par l'utilisateur le 17/11, rapprochés de l'export le même jour par un script de la session, non contre-vérifiés. Déroulé commun : celui qui a payé poste la capture du reçu de l'app de livraison, chacun répond ce qu'il a pris, puis le payeur saisit la dépense en montants, calculés de tête ou à la calculatrice.
+
+| Cas | Ce qui se passe | Ce que montre l'export |
+|---|---|---|
+| Menus burgers, 85,92 € | chacun réclame un menu ; deux lignes identiques (même menu, même prix), un menu partagé à deux, un accompagnement réclamé en plus | saisie en 5 montants quelques minutes après la dernière réponse ; reconstitué au centime : chaque part vaut le prix de ses lignes multiplié par 85,92 / 79,10, les 6,82 € d'écart avec la somme des lignes étant répartis au prorata (calcul : 17,90 × 1,0862 = 19,44, saisi deux fois) |
+| Tacos, 76,04 € | réclamation par le prix (« 13,90 XL », deux fois) ou par le nom du produit | 6 montants dont deux à 13,90 € ; le reste non reconstitué (reçu coupé sur la capture) |
+| Tacos | réclamation par la position dans le reçu (« le 2e », « le 3 ») | dépense non retrouvée à cette date |
+| Pizzas, 103,69 € | lignes avec quantité (4 pizzas identiques sur une ligne), frais de service 2,49 €, livraison offerte, 39,60 € payés par un crédit ou un bon et 64,09 € par carte | seule la part carte saisie (64,09 € en 5 montants) ; répartition non reconstituée |
+| Kebabs | commandes passées en texte avant l'achat, prix inconnus à ce moment | saisie mêlant montants et parts (39,00 €) une dizaine de minutes après |
+
+Sur l'année : 27 dépenses entièrement en montants à 2 concernés ou plus (1 555,95 € au total), dont 10 avec au moins un montant au centime non rond, signe probable d'une règle de trois (déduit).
+
+Besoins qui en sortent, à confronter au découpage en versions :
+
+- réclamer une ligne du reçu, entière, partagée entre plusieurs, ou une unité d'une ligne à quantité ;
+- distinguer deux lignes identiques (même nom, même prix) ;
+- répartir l'écart entre la somme des lignes et le total payé (frais, pourboire, remise, bon) au prorata, arrondi au centime sans perte ;
+- voir la dépense incomplète tant que des lignes restent sans preneur, et relancer.
+
+La saisie des lignes reste le coût : à la main par le payeur, ou lecture de la capture (« plus tard », gratuit difficile, dit par l'utilisateur).
 
 ## Réponses déjà faites dans la discussion
 
