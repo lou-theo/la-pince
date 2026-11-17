@@ -58,6 +58,7 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 1. **Sauvegarde au-delà de 7 jours** (16/11, présentée le 16/11) : « on trouvera une solution » (dit par l'utilisateur) ; piste : export hebdomadaire automatique vers un repo GitHub privé (déduit, non vérifié).
 2. **Manques de Sesterce** (16/11, présentée le 16/11) : ce qui manque à Sesterce pour le groupe, demandé à l'utilisateur, sans réponse ; non bloquant.
 3. **Découpage en versions** (16/11, présentée le 16/11) : « la 1ere version aura probablement beaucoup moins de choses (on sera à beaucoup plus que 3 ou 4 versions) » (dit par l'utilisateur) ; le périmètre « Première version » ci-dessus est à redécouper en versions successives plus petites, à l'étape 3 (moment déduit) ; les retours du groupe (`retours-du-groupe.md`) s'y répartissent, hors saisie par montants (décision 9).
+4. **Ordre des membres à la sélection** (17/11, présentée le 17/11) : retour du groupe contesté dans la discussion même ; proposé : remplacer « membres fréquents en tête » par un ordre alphabétique stable surmonté des 5 dernières sélections distinctes (mesure dans `retours-du-groupe.md`, section Retours du 17/11).
 
 ## Plan (validé le 16/11)
 
@@ -83,5 +84,5 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 - `sources/cloudflare-doc-codex-2026-11-16.md` : recherche documentaire Cloudflare de Codex.
 - `export/lire_tricount.py` : export d'un tricount par son jeton.
 - `essais/push-demo-server.mjs`, `essais/android-notification-recue.png` : essai Web Push sur Android.
-- `retours-du-groupe.md` : premiers retours des amis, triés contre l'usage mesuré (16/11).
+- `retours-du-groupe.md` : retours des amis, triés contre l'usage mesuré (16 et 17/11).
 - `essais/cloudflare/` : essai Worker Hono et D1 avec notifications ciblées, et mesure CPU ; traces non rejouables telles quelles (ni `package.json`, ni schéma de la table, ni clés VAPID ; `wrangler.jsonc` attend `src/index.ts`).
