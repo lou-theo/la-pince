@@ -18,7 +18,7 @@ Le même cœur de calcul tourne sur le téléphone et sur le serveur : le télé
 
 ## Modèle de données
 
-- **Montants en centimes entiers** : aucun nombre à virgule dans le calcul ; un montant saisi est converti à l'entrée (`montantSaisiSchema`) et refusé s'il est ambigu, jamais arrondi. ESLint interdit `parseFloat` et `toFixed` dans le cœur.
+- **Montants en centimes entiers** : aucun nombre à virgule dans le calcul ; un montant saisi est converti à l'entrée (`enteredAmountSchema`) et refusé s'il est ambigu, jamais arrondi. ESLint interdit `parseFloat` et `toFixed` dans le cœur.
 - **Un seul type d'opération** : dépense et remboursement ont la même forme ; la nature sert à l'affichage et aux statistiques, et ne se déduit pas de la forme (une avance pour un ami a la forme d'un remboursement).
 - **Saisie séparée de son effet** : la saisie garde ce que la personne a entré, forme libre et versionnée (aujourd'hui une ligne par concerné ; demain lignes de reçu, frais communs) ; l'effet, calculé depuis la saisie, donne le payeur et la part de chaque membre en centimes. Soldes, filtre « me concerne », notifications et statistiques ne lisent que l'effet : une nouvelle forme de saisie ne les touche pas.
 - **Soldes recalculés à la volée** depuis les effets, sans total stocké qui pourrait diverger ; la performance est un critère du projet et se mesure par des budgets en échec s'ils sont dépassés.

@@ -1,4 +1,4 @@
-# Filet local avant push : la CI ne fait que rejouer cette vérification.
+# Local net before push: CI only replays this check.
 pre-push:
   commands:
     verifier:

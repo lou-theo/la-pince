@@ -1,1 +1,1 @@
-export { type Centimes, centimesSchema, montantSaisiSchema } from './montant.ts';
+export { type Cents, centsSchema, enteredAmountSchema } from './amount.ts';

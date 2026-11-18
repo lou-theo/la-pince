@@ -1,4 +1,4 @@
-# Filet de sécurité : rejoue la vérification que lefthook lance avant chaque push. Le job `verifier` est requis par la règle de branche de main.
+# Safety net: replays the check lefthook runs before every push. The `verifier` job is required by the branch rule on main.
 name: Vérifier
 
 on:
