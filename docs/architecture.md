@@ -18,11 +18,22 @@ Le même cœur de calcul tourne sur le téléphone et sur le serveur : le télé
 
 ## Modèle de données
 
-- **Montants en centimes entiers** : aucun nombre à virgule dans le calcul ; un montant saisi est converti à l'entrée (`montantSaisiSchema`) et refusé s'il est ambigu, jamais arrondi. ESLint interdit `parseFloat` et `toFixed` dans le cœur.
-- **Un seul type d'opération** : dépense et remboursement ont la même forme ; la nature sert à l'affichage et aux statistiques, et ne se déduit pas de la forme (une avance pour un ami a la forme d'un remboursement).
-- **Saisie séparée de son effet** : la saisie garde ce que la personne a entré, forme libre et versionnée (aujourd'hui une ligne par concerné ; demain lignes de reçu, frais communs) ; l'effet, calculé depuis la saisie, donne le payeur et la part de chaque membre en centimes. Soldes, filtre « me concerne », notifications et statistiques ne lisent que l'effet : une nouvelle forme de saisie ne les touche pas.
+- **Montants en centimes entiers** : aucun nombre à virgule dans le calcul ; un montant saisi est converti à l'entrée (`enteredAmountSchema`) et refusé s'il est ambigu, jamais arrondi. ESLint interdit `parseFloat` et `toFixed` dans le cœur.
+- **Un seul type d'opération** : dépense et remboursement ont la même forme ; la nature sert à l'affichage et, par l'effet, à dire si l'opération compte dans le total dépensé ; elle ne se déduit pas de la forme (une avance pour un ami a la forme d'un remboursement).
+- **Saisie séparée de son effet** : la saisie garde ce que la personne a entré, forme libre et versionnée (aujourd'hui une ligne par membre de la répartition ; demain lignes de reçu, frais communs) ; l'effet, calculé depuis la saisie, donne le payeur, la part de chaque membre en centimes et s'il compte dans le total dépensé. Soldes, filtre « me concerne », notifications et statistiques ne lisent que l'effet : une nouvelle forme de saisie ne les touche pas.
 - **Soldes recalculés à la volée** depuis les effets, sans total stocké qui pourrait diverger ; la performance est un critère du projet et se mesure par des budgets en échec s'ils sont dépassés.
 - **Parts inégales et opérations mêlant parts et montants** portées par le modèle dès la première version (courantes dans l'historique du groupe), même si leur saisie vient plus tard.
+
+## Calcul
+
+Modules purs de `packages/core`, appelés à l'identique par le téléphone et par le serveur :
+
+1. **Saisie** (`entrySchema`) : version 1, un payeur et une ligne par membre de la répartition, chacune à montant fixe ou à poids ; avec des poids, le total est obligatoire et doit laisser quelque chose à répartir ; sans poids, le total est la somme des lignes. Seule une saisie validée par le schéma se calcule (type marqué).
+2. **Effet** (`computeEffect`) : les montants fixes sont repris tels quels, le reste du total se répartit au prorata des poids par la méthode du plus grand reste ; à reste égal, le centime restant suit une rotation tirée de l'identifiant de l'opération, pour ne pas toujours tomber sur le même membre tout en restant identique d'un calcul à l'autre (algorithme de Spliit). Les membres sont ordonnés par unités de code (`compareIds`), jamais par `localeCompare`, dont l'ordre varie selon le moteur et la langue : le centime irait à un autre membre sur le serveur que sur le téléphone. Une part nulle ne fait pas d'un membre un concerné. L'effet dit aussi si l'opération compte dans le total dépensé (`countsAsSpending`), décidé par la version de saisie (version 1 : une dépense compte, un remboursement non), pour que les statistiques ne lisent jamais la saisie.
+3. **Soldes** (`computeBalances`) : payé moins parts, depuis les seuls effets ; leur somme vaut toujours 0.
+4. **Remboursements suggérés** (`suggestTransfers`) : algorithme glouton de Spliit, créanciers puis débiteurs dans un ordre fixe ; un virement suggéré une fois fait laisse les suivants inchangés.
+
+La règle du centime restant fait partie du contrat de la saisie version 1 : chaque téléphone recalcule les effets depuis les saisies, donc la changer changerait les parts des opérations passées ; une autre règle viendrait avec une nouvelle version de saisie. Les dépenses importées de Tricount entrent en montants fixes égaux aux parts calculées par Tricount, dont la règle du centime restant diffère de la nôtre, une part nulle étant omise (le schéma refuse un montant fixe nul). Plafonds : 99 999 999,99 € par montant et poids de 1 000 au plus gardent le produit d'un montant par un poids en nombre entier exact ; 100 lignes au plus, loin au-delà de la taille d'un groupe.
 
 ## Synchronisation hors ligne
 

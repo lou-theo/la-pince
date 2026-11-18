@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 
-// Tests à côté du code qu'ils couvrent ; chaque paquet fixe ses seuils de couverture.
+// Tests sit next to the code they cover; each package sets its own coverage thresholds.
 export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],

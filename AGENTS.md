@@ -1,6 +1,6 @@
 # La Pince
 
-PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cloudflare Workers et D1. État, décisions et plan : `docs/cadrage/README.md`, seule source de statut, à tenir à jour à chaque avancée. Architecture et raisons : `docs/architecture.md`. Vocabulaire du domaine : `CONTEXT.md`, à suivre dans le code comme dans les docs.
+PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cloudflare Workers et D1. État, décisions et plan : `docs/cadrage/README.md`, seule source de statut, à tenir à jour à chaque avancée. Architecture et raisons : `docs/architecture.md`. Vocabulaire du domaine : `CONTEXT.md`, avec le nom anglais de chaque terme dans le code.
 
 ## Règles
 
@@ -30,8 +30,8 @@ Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint
 ## Code
 
 - TypeScript strict avec `noUncheckedIndexedAccess` et `exactOptionalPropertyTypes` ; aucun `any`, aucune désactivation de règle ESLint sans commentaire qui dit pourquoi.
-- Une condition ne teste jamais un nombre ou une chaîne par sa valeur de vérité (`if (montant)` confond 0 centime et absence) : comparaison explicite.
+- Une condition ne teste jamais un nombre ou une chaîne par sa valeur de vérité (`if (amount)` confond 0 centime et absence) : comparaison explicite.
 - Tests à côté du code (`src/**/*.test.ts`), par l'interface publique ; simulations seulement hors de notre code. Le cœur est couvert à 100 % ; cas tirés d'une autre app sous licence compatible cités avec leur source.
-- Nommage en français pour le domaine (`CONTEXT.md`), en anglais pour ce qui vient des outils.
+- Code en anglais (noms, commentaires, intitulés de tests), termes du domaine sous le nom donné par `CONTEXT.md` ; docs, messages de commit et descriptions de PR en français, un identifiant du code cité entre accents graves.
 - Commentaires : seulement le « pourquoi » non évident, jamais une paraphrase du code.
 - Versions des dépendances dans le catalogue de `pnpm-workspace.yaml`, référencées par `catalog:`.

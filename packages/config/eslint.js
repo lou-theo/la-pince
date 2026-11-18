@@ -19,7 +19,7 @@ export default defineConfig(
     plugins: { 'import-x': importX, 'simple-import-sort': simpleImportSort },
     rules: {
       eqeqeq: ['error', 'always'],
-      // Frontière entre paquets : un import doit être déclaré dans le package.json le plus proche, sinon Node le trouverait dans les dépendances d'outillage de la racine ; les dépendances de dev sont réservées aux tests et aux configs.
+      // Package boundary: an import must be declared in the nearest package.json, otherwise Node would find it among the root's tooling dependencies; dev dependencies are for tests and configs only.
       'import-x/no-extraneous-dependencies': ['error', { devDependencies: ['**/*.test.ts', '**/vitest.config.ts', 'eslint.config.js'] }],
       'no-console': 'error',
       'no-param-reassign': 'error',
@@ -31,7 +31,7 @@ export default defineConfig(
       '@typescript-eslint/no-import-type-side-effects': 'error',
       '@typescript-eslint/no-shadow': 'error',
       '@typescript-eslint/prefer-readonly': 'error',
-      // Un montant nul (0 centime) est falsy : `if (montant)` le confondrait avec une absence.
+      // A zero amount (0 cents) is falsy: `if (amount)` would mistake it for a missing value.
       '@typescript-eslint/strict-boolean-expressions': ['error', { allowNumber: false, allowString: false }],
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
     },
@@ -39,11 +39,11 @@ export default defineConfig(
   {
     files: ['packages/core/src/**/*.ts'],
     rules: {
-      'no-restricted-globals': ['error', { name: 'parseFloat', message: 'Les montants sont des centimes entiers.' }],
+      'no-restricted-globals': ['error', { name: 'parseFloat', message: 'Amounts are whole cents.' }],
       'no-restricted-properties': [
         'error',
-        { object: 'Number', property: 'parseFloat', message: 'Les montants sont des centimes entiers.' },
-        { property: 'toFixed', message: 'Les montants sont des centimes entiers.' },
+        { object: 'Number', property: 'parseFloat', message: 'Amounts are whole cents.' },
+        { property: 'toFixed', message: 'Amounts are whole cents.' },
       ],
     },
   },
@@ -62,6 +62,6 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   prettier,
-  // Après eslint-config-prettier, qui l'éteint alors qu'elle est compatible avec Prettier sous la forme « all ».
+  // After eslint-config-prettier, which turns it off although its “all” form is compatible with Prettier.
   { rules: { curly: ['error', 'all'] } },
 );
