@@ -33,7 +33,7 @@ Modules purs de `packages/core`, appelés à l'identique par le téléphone et p
 3. **Soldes** (`computeBalances`) : payé moins parts, depuis les seuls effets ; leur somme vaut toujours 0.
 4. **Remboursements suggérés** (`suggestTransfers`) : algorithme glouton de Spliit, créanciers puis débiteurs dans un ordre fixe ; un virement suggéré une fois fait laisse les suivants inchangés.
 
-Les dépenses importées de Tricount entrent en montants fixes égaux aux parts calculées par Tricount, dont la règle du centime restant diffère de la nôtre. Plafonds (99 999 999,99 € par montant, poids de 1 000 au plus, 100 lignes au plus) : ils gardent tout produit intermédiaire du calcul en nombre entier exact.
+La règle du centime restant fait partie du contrat de la saisie version 1 : chaque téléphone recalcule les effets depuis les saisies, donc la changer changerait les parts des opérations passées ; une autre règle viendrait avec une nouvelle version de saisie. Les dépenses importées de Tricount entrent en montants fixes égaux aux parts calculées par Tricount, dont la règle du centime restant diffère de la nôtre, une part nulle étant omise (le schéma refuse un montant fixe nul). Plafonds : 99 999 999,99 € par montant et poids de 1 000 au plus gardent le produit d'un montant par un poids en nombre entier exact ; 100 lignes au plus, loin au-delà de la taille d'un groupe.
 
 ## Synchronisation hors ligne
 
