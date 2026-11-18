@@ -1,0 +1,5 @@
+# Filet local avant push : la CI ne fait que rejouer cette vérification.
+pre-push:
+  commands:
+    verifier:
+      run: pnpm verifier
