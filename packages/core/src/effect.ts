@@ -57,7 +57,7 @@ export function computeEffect(operationId: OperationId, entry: Entry): Effect {
   const fixedTotal = fixed.reduce((sum, share) => sum + share.amount, 0);
   const total = entry.total ?? fixedTotal;
   const apportioned = weighted.length > 0 ? apportion(operationId, total - fixedTotal, weighted) : [];
-  const shares = [...fixed, ...apportioned].filter((share) => share.amount > 0).sort((a, b) => compareIds(a.member, b.member));
+  const shares = [...fixed, ...apportioned].filter((share) => share.amount > 0).toSorted((a, b) => compareIds(a.member, b.member));
   // Amounts come out of a validated entry and of the apportionment above, which preserves their sum: they are whole, non-negative and capped.
   return { payer: entry.payer, total: total as Cents, shares: shares as Share[] };
 }

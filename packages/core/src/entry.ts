@@ -3,14 +3,15 @@ import { z } from 'zod';
 import { centsSchema, MAX_CENTS } from './amount.ts';
 import { memberIdSchema } from './ids.ts';
 
-// Bounds that keep `remainder × weight` (at most MAX_CENTS × MAX_WEIGHT_TOTAL) an exact integer while sharing out the remainder.
+// Keeps `amount × weight` (at most MAX_CENTS × MAX_WEIGHT, about 1e13) an exact integer while sharing out what the fixed amounts leave.
 const MAX_WEIGHT = 1_000;
+// Far above a group's size; keeps the sum of fixed amounts and of weights exact.
 const MAX_LINES = 100;
 
 const fixedLineSchema = z.strictObject({ member: memberIdSchema, amount: centsSchema.refine((amount) => amount > 0, 'zero_amount') });
 const weightedLineSchema = z.strictObject({ member: memberIdSchema, weight: z.int().positive().max(MAX_WEIGHT) });
 
-/** Line of one involved member: a fixed amount, or a weight in the sharing of what the fixed amounts leave of the total. */
+/** Line of one member of the split: a fixed amount, or a weight in the sharing of what the fixed amounts leave of the total. */
 export const entryLineSchema = z.union([fixedLineSchema, weightedLineSchema]);
 export type EntryLine = z.infer<typeof entryLineSchema>;
 
@@ -18,7 +19,7 @@ export const kindSchema = z.enum(['expense', 'reimbursement']);
 export type Kind = z.infer<typeof kindSchema>;
 
 /**
- * What a person entered for an operation, version 1: one payer and one line per involved member. Equal split: same weight on every line;
+ * What a person entered for an operation, version 1: one payer and one line per member of the split. Equal split: same weight on every line;
  * exact amounts: fixed amounts only, the total being their sum; both can be mixed. Only an entry parsed by this schema can be computed.
  */
 export const entrySchema = z

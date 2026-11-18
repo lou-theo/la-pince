@@ -1,4 +1,3 @@
-import type { Cents } from './amount.ts';
 import type { Balance } from './balances.ts';
 import { compareIds, type MemberId } from './ids.ts';
 
@@ -6,7 +5,8 @@ import { compareIds, type MemberId } from './ids.ts';
 export interface SuggestedTransfer {
   readonly from: MemberId;
   readonly to: MemberId;
-  readonly amount: Cents;
+  /** Whole, positive number of cents; not `Cents`, a balance being able to exceed the cap of one entered amount. */
+  readonly amount: number;
 }
 
 /**
@@ -32,8 +32,7 @@ export function suggestTransfers(balances: ReadonlyMap<MemberId, Balance>): Sugg
     const [to, credit] = creditor.value;
     const [from, debt] = debtor.value;
     const amount = Math.min(credit, -debt);
-    // Balances are sums of capped cents, so a settled amount is a whole, positive number of cents.
-    transfers.push({ from, to, amount: amount as Cents });
+    transfers.push({ from, to, amount });
     creditor = credit === amount ? creditors.next() : { done: false, value: [to, credit - amount] };
     debtor = -debt === amount ? debtors.next() : { done: false, value: [from, debt + amount] };
   }
