@@ -1,14 +1,17 @@
 import { z } from 'zod';
 
+// Cap: 99 999 999,99 €, far above any use, and low enough that sums and weighted products of amounts stay exact integers.
+export const MAX_CENTS = 9_999_999_999;
+
 /** Amount in whole cents: the only unit of computation in the project, never a floating-point number. */
-export const centsSchema = z.int().nonnegative().brand('Cents');
+export const centsSchema = z.int().nonnegative().max(MAX_CENTS).brand('Cents');
 export type Cents = z.infer<typeof centsSchema>;
 
 // Accepted thousands separators: space, no-break space and narrow no-break space (the one Intl produces in French).
 const SPACES = /[ \u00A0\u202F]/g;
 // Integer part in groups of three (“1 234”) or as one block, then at most two decimals after a comma or a dot.
 const ENTERED_AMOUNT = /^(\d{1,3}(?: \d{3})+|\d+)(?:[.,](\d{1,2}))?$/;
-// Cap: 99 999 999,99 €, far above any use and below Number.MAX_SAFE_INTEGER once in cents.
+// Digits of MAX_CENTS in euros, checked before parsing so that a long string never becomes an inexact number.
 const MAX_INTEGER_DIGITS = 8;
 const INVALID_AMOUNT = 'invalid_amount';
 
