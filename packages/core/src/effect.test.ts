@@ -49,6 +49,7 @@ describe('computeEffect', () => {
     );
     expect(effect).toStrictEqual({
       payer: 'alice',
+      countsAsSpending: true,
       total: 1000,
       shares: [
         { member: 'alice', amount: 333 },
@@ -125,9 +126,14 @@ describe('computeEffect', () => {
     expect(effect.shares.reduce((sum, share) => sum + share.amount, 0)).toBe(101);
   });
 
-  it('gives a reimbursement its whole amount to the member reimbursed', () => {
+  it('gives a reimbursement its whole amount to the member reimbursed, outside the total spent', () => {
     const reimbursement = entrySchema.parse({ version: 1, kind: 'reimbursement', payer: 'bob', lines: [{ member: 'alice', amount: 1500 }] });
-    expect(computeEffect(id('r1'), reimbursement)).toStrictEqual({ payer: 'bob', total: 1500, shares: [{ member: 'alice', amount: 1500 }] });
+    expect(computeEffect(id('r1'), reimbursement)).toStrictEqual({
+      payer: 'bob',
+      countsAsSpending: false,
+      total: 1500,
+      shares: [{ member: 'alice', amount: 1500 }],
+    });
   });
 
   const members = ['alice', 'bob', 'carol', 'dave', 'eve', 'frank', 'grace', 'heidi', 'ivan', 'judy', 'mallory', 'oscar', 'peggy'];

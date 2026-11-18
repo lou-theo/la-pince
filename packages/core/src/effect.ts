@@ -10,6 +10,8 @@ export interface Share {
 /** What an operation changes to the accounts: its payer and the non-zero share of each involved member, ordered by member, summing to the total. */
 export interface Effect {
   readonly payer: MemberId;
+  /** Whether the operation counts in the total spent; each entry version decides, so that statistics never read the entry. */
+  readonly countsAsSpending: boolean;
   readonly total: Cents;
   readonly shares: readonly Share[];
 }
@@ -59,5 +61,5 @@ export function computeEffect(operationId: OperationId, entry: Entry): Effect {
   const apportioned = weighted.length > 0 ? apportion(operationId, total - fixedTotal, weighted) : [];
   const shares = [...fixed, ...apportioned].filter((share) => share.amount > 0).toSorted((a, b) => compareIds(a.member, b.member));
   // Amounts come out of a validated entry and of the apportionment above, which preserves their sum: they are whole, non-negative and capped.
-  return { payer: entry.payer, total: total as Cents, shares: shares as Share[] };
+  return { payer: entry.payer, countsAsSpending: entry.kind === 'expense', total: total as Cents, shares: shares as Share[] };
 }
