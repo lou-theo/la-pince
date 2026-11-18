@@ -14,7 +14,7 @@ La Pince est une PWA installable (iPhone, Android, ordinateur), sans compte, uti
 | `apps/server` (à venir)           | Worker Hono, accès D1 par Drizzle, Web Push                                                                                     | core         |
 | `tools/import-tricount` (à venir) | script local : lit un export Tricount et l'envoie par l'API de synchronisation, le jeton du tricount ne quittant pas la machine | core         |
 
-Le même cœur de calcul tourne sur le téléphone et sur le serveur : le téléphone calcule tout pour afficher hors ligne, le serveur recalcule pour refuser une saisie incohérente. Les frontières tiennent par les dépendances déclarées : pnpm empêche d'importer un paquet absent du `package.json`. Un paquet n'est créé qu'avec son premier code.
+Le même cœur de calcul tourne sur le téléphone et sur le serveur : le téléphone calcule tout pour afficher hors ligne, le serveur recalcule pour refuser une saisie incohérente. Les frontières tiennent par les dépendances déclarées : ESLint refuse l'import d'un paquet absent du `package.json` le plus proche (pnpm ne suffit pas, Node trouvant les outils installés à la racine). Un paquet n'est créé qu'avec son premier code.
 
 ## Modèle de données
 
