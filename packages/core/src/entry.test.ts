@@ -47,6 +47,7 @@ describe('entrySchema', () => {
       },
     ],
     ['a payer who is not involved', { lines: [{ member: 'bob', amount: 1500 }] }],
+    ['a total at the cap', { lines: [{ member: 'alice', amount: MAX_CENTS }] }],
   ])('accepts %s', (_, fields) => {
     expect(entrySchema.safeParse({ ...base, ...fields }).success).toBe(true);
   });
@@ -97,6 +98,7 @@ describe('entrySchema', () => {
       },
     ],
     ['total_mismatch', { lines: [{ member: 'alice', amount: 1000 }], total: 999 }],
+    ['total_mismatch', { lines: [{ member: 'alice', amount: 1000 }], total: 1001 }],
     ['zero_amount', { lines: [{ member: 'alice', amount: 0 }] }],
   ])('rejects with %s', (message, fields) => {
     const result = entrySchema.safeParse({ ...base, ...fields });

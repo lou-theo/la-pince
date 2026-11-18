@@ -10,8 +10,7 @@ import { type OperationId, operationIdSchema } from './ids.ts';
 type Line = { member: string; amount: number } | { member: string; weight: number };
 
 const id = (value: string): OperationId => operationIdSchema.parse(value);
-const entry = (lines: Line[], total?: number): Entry =>
-  entrySchema.parse({ version: 1, kind: 'expense', payer: 'alice', lines, ...(total === undefined ? {} : { total }) });
+const entry = (lines: Line[], total?: number): Entry => entrySchema.parse({ version: 1, kind: 'expense', payer: 'alice', lines, total });
 const evenly = (total: number, members: string[]): Entry =>
   entry(
     members.map((member) => ({ member, weight: 1 })),
@@ -63,6 +62,23 @@ describe('computeEffect', () => {
     expect(computeEffect(id('e1'), evenly(100, ['carol', 'bob', 'alice']))).toStrictEqual(
       computeEffect(id('e1'), evenly(100, ['alice', 'bob', 'carol'])),
     );
+  });
+
+  // Expected shares computed by Spliit's own hashString and apportion (src/lib/shares.ts at f293974): they pin the hash, the rotation and the tie-break.
+  it.each([
+    ['e1', 100, [1, 1, 1], { alice: 33, bob: 33, carol: 34 }],
+    ['e2', 100, [1, 1, 1], { alice: 33, bob: 34, carol: 33 }],
+    ['e3', 100, [1, 1, 1], { alice: 34, bob: 33, carol: 33 }],
+    ['expense-7', 100, [1, 1, 1], { alice: 33, bob: 33, carol: 34 }],
+    ['e1', 101, [1, 2, 2], { alice: 20, bob: 40, carol: 41 }],
+    ['e2', 101, [1, 2, 2], { alice: 20, bob: 41, carol: 40 }],
+  ])('gives the leftover cent of operation %s to the same member as Spliit', (operationId, total, [a = 0, b = 0, c = 0], expected) => {
+    const lines = [
+      { member: 'alice', weight: a },
+      { member: 'bob', weight: b },
+      { member: 'carol', weight: c },
+    ];
+    expect(sharesOf(computeEffect(id(operationId), entry(lines, total)))).toStrictEqual(expected);
   });
 
   it('does not always give the leftover cent to the same member (Spliit)', () => {
