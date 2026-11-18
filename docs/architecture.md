@@ -24,6 +24,17 @@ Le même cœur de calcul tourne sur le téléphone et sur le serveur : le télé
 - **Soldes recalculés à la volée** depuis les effets, sans total stocké qui pourrait diverger ; la performance est un critère du projet et se mesure par des budgets en échec s'ils sont dépassés.
 - **Parts inégales et opérations mêlant parts et montants** portées par le modèle dès la première version (courantes dans l'historique du groupe), même si leur saisie vient plus tard.
 
+## Calcul
+
+Modules purs de `packages/core`, appelés à l'identique par le téléphone et par le serveur :
+
+1. **Saisie** (`entrySchema`) : version 1, un payeur et une ligne par concerné, chacune à montant fixe ou à poids ; avec des poids, le total est obligatoire et doit laisser quelque chose à répartir ; sans poids, le total est la somme des lignes. Seule une saisie validée par le schéma se calcule (type marqué).
+2. **Effet** (`computeEffect`) : les montants fixes sont repris tels quels, le reste du total se répartit au prorata des poids par la méthode du plus grand reste ; à reste égal, le centime restant suit une rotation tirée de l'identifiant de l'opération, pour ne pas toujours tomber sur le même membre tout en restant identique d'un calcul à l'autre (algorithme de Spliit). Les membres sont ordonnés par unités de code (`compareIds`), jamais par `localeCompare`, dont l'ordre varie selon le moteur et la langue : le centime irait à un autre membre sur le serveur que sur le téléphone. Une part nulle ne fait pas d'un membre un concerné.
+3. **Soldes** (`computeBalances`) : payé moins parts, depuis les seuls effets ; leur somme vaut toujours 0.
+4. **Remboursements suggérés** (`suggestTransfers`) : algorithme glouton de Spliit, créanciers puis débiteurs dans un ordre fixe ; un virement suggéré une fois fait laisse les suivants inchangés.
+
+Les dépenses importées de Tricount entrent en montants fixes égaux aux parts calculées par Tricount, dont la règle du centime restant diffère de la nôtre. Plafonds (99 999 999,99 € par montant, poids de 1 000 au plus, 100 lignes au plus) : ils gardent tout produit intermédiaire du calcul en nombre entier exact.
+
 ## Synchronisation hors ligne
 
 Chronologie d'une dépense saisie dans le métro, sans réseau :
