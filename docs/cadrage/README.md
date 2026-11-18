@@ -1,6 +1,6 @@
 # Alternative à Tricount : La Pince
 
-**Conclusion (18/11/2026)** : aucune app existante ne convient ; le groupe développe la sienne, **La Pince**, une PWA open source sans compte, hébergée gratuitement sur Cloudflare (Workers et D1). Besoin, stack, hébergement et nom tranchés ; version 1 fixée (décision 10), démo sans usage réel ; modèle de données, synchronisation, organisation du repo, outillage, tests, environnements et livraison tranchés (décisions 11 à 17). Squelette du monorepo, outillage et cœur de calcul livrés (décisions 18 à 21) ; prochaine étape : import Tricount et corpus anonymisé.
+**Conclusion (18/11/2026)** : aucune app existante ne convient ; le groupe développe la sienne, **La Pince**, une PWA open source sans compte, hébergée gratuitement sur Cloudflare (Workers et D1). Besoin, stack, hébergement et nom tranchés ; version 1 fixée (décision 10), démo sans usage réel ; modèle de données, synchronisation, organisation du repo, outillage, tests, environnements et livraison tranchés (décisions 11 à 17). Squelette du monorepo, outillage et cœur de calcul livrés (décisions 18 à 22) ; prochaine étape : import Tricount et corpus anonymisé.
 
 Contexte : l'utilisateur utilise Tricount depuis longtemps avec un groupe d'amis, frustré par « des fonctionnalités basiques que nous trouvons manquantes, des lenteurs, une app qui ne fonctionne pas super bien » (dit par l'utilisateur). Déclencheur : un bug Tricount, en cours le 16/11 (date de début non précisée), empêche les apps du groupe de se synchroniser (dit par l'utilisateur).
 
@@ -80,7 +80,7 @@ Critère de fin du chantier : le groupe importé depuis Tricount tourne en ligne
 
 1. **Référentiel fonctionnel** : Fait (`referentiel-fonctionnel.md`).
 2. **Hébergement et stack** : Fait (`hebergement.md`).
-3. **Repo du projet** : `~/Perso/la-pince` créé, cadrage migré dans `docs/cadrage/` (16/11) ; version 1, modèle, synchro, organisation, outillage, tests, environnements et livraison tranchés (décisions 10 à 17, 18/11) ; squelette du monorepo et outillage, `AGENTS.md`, `CONTEXT.md` et `docs/architecture.md` (décision 18, 18/11) ; cœur de calcul (saisie, effet, soldes, remboursements suggérés) avec cas de Spliit cités, tests de propriétés et couverture 100 %, code passé en anglais (décisions 19 à 21, 18/11). Fait.
+3. **Repo du projet** : `~/Perso/la-pince` créé, cadrage migré dans `docs/cadrage/` (16/11) ; version 1, modèle, synchro, organisation, outillage, tests, environnements et livraison tranchés (décisions 10 à 17, 18/11) ; squelette du monorepo et outillage, `AGENTS.md`, `CONTEXT.md` et `docs/architecture.md` (décision 18, 18/11) ; cœur de calcul (saisie, effet, soldes, remboursements suggérés) avec cas de Spliit cités, tests de propriétés et couverture 100 %, code passé en anglais (décisions 19 à 22, 18/11). Fait.
 4. **Import Tricount** : membres, dépenses, répartitions et remboursements depuis l'export JSON, parts de Tricount reprises en montants fixes (décision 19) ; corpus anonymisé commité (décision 15) ; tests, puis contrôle sur les vraies données (total 9 609,80 € et soldes identiques à Tricount). À faire.
 5. **Version 1** : contenu fixé par la décision 10. À faire.
 6. **Mise en ligne** sur Cloudflare avec sauvegarde et export. À faire.
