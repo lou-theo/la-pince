@@ -20,7 +20,7 @@ Le même cœur de calcul tourne sur le téléphone et sur le serveur : le télé
 
 - **Montants en centimes entiers** : aucun nombre à virgule dans le calcul ; un montant saisi est converti à l'entrée (`enteredAmountSchema`) et refusé s'il est ambigu, jamais arrondi. ESLint interdit `parseFloat` et `toFixed` dans le cœur.
 - **Un seul type d'opération** : dépense et remboursement ont la même forme ; la nature sert à l'affichage et aux statistiques, et ne se déduit pas de la forme (une avance pour un ami a la forme d'un remboursement).
-- **Saisie séparée de son effet** : la saisie garde ce que la personne a entré, forme libre et versionnée (aujourd'hui une ligne par concerné ; demain lignes de reçu, frais communs) ; l'effet, calculé depuis la saisie, donne le payeur et la part de chaque membre en centimes. Soldes, filtre « me concerne », notifications et statistiques ne lisent que l'effet : une nouvelle forme de saisie ne les touche pas.
+- **Saisie séparée de son effet** : la saisie garde ce que la personne a entré, forme libre et versionnée (aujourd'hui une ligne par membre de la répartition ; demain lignes de reçu, frais communs) ; l'effet, calculé depuis la saisie, donne le payeur et la part de chaque membre en centimes. Soldes, filtre « me concerne », notifications et statistiques ne lisent que l'effet : une nouvelle forme de saisie ne les touche pas.
 - **Soldes recalculés à la volée** depuis les effets, sans total stocké qui pourrait diverger ; la performance est un critère du projet et se mesure par des budgets en échec s'ils sont dépassés.
 - **Parts inégales et opérations mêlant parts et montants** portées par le modèle dès la première version (courantes dans l'historique du groupe), même si leur saisie vient plus tard.
 
@@ -28,7 +28,7 @@ Le même cœur de calcul tourne sur le téléphone et sur le serveur : le télé
 
 Modules purs de `packages/core`, appelés à l'identique par le téléphone et par le serveur :
 
-1. **Saisie** (`entrySchema`) : version 1, un payeur et une ligne par concerné, chacune à montant fixe ou à poids ; avec des poids, le total est obligatoire et doit laisser quelque chose à répartir ; sans poids, le total est la somme des lignes. Seule une saisie validée par le schéma se calcule (type marqué).
+1. **Saisie** (`entrySchema`) : version 1, un payeur et une ligne par membre de la répartition, chacune à montant fixe ou à poids ; avec des poids, le total est obligatoire et doit laisser quelque chose à répartir ; sans poids, le total est la somme des lignes. Seule une saisie validée par le schéma se calcule (type marqué).
 2. **Effet** (`computeEffect`) : les montants fixes sont repris tels quels, le reste du total se répartit au prorata des poids par la méthode du plus grand reste ; à reste égal, le centime restant suit une rotation tirée de l'identifiant de l'opération, pour ne pas toujours tomber sur le même membre tout en restant identique d'un calcul à l'autre (algorithme de Spliit). Les membres sont ordonnés par unités de code (`compareIds`), jamais par `localeCompare`, dont l'ordre varie selon le moteur et la langue : le centime irait à un autre membre sur le serveur que sur le téléphone. Une part nulle ne fait pas d'un membre un concerné.
 3. **Soldes** (`computeBalances`) : payé moins parts, depuis les seuls effets ; leur somme vaut toujours 0.
 4. **Remboursements suggérés** (`suggestTransfers`) : algorithme glouton de Spliit, créanciers puis débiteurs dans un ordre fixe ; un virement suggéré une fois fait laisse les suivants inchangés.
