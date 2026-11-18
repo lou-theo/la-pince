@@ -22,7 +22,7 @@ Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint
 
 ## Commandes
 
-- `pnpm install` : installe et pose le hook git avant push (lefthook) ; à lancer dans chaque copie de travail, worktree compris, sans quoi le hook ne vérifie rien.
+- `pnpm install` : installe et pose le hook git avant push (lefthook) ; à lancer dans chaque copie de travail, worktree compris, sans quoi le hook peut laisser passer le push sans rien vérifier.
 - `pnpm verifier` : format, lint, typecheck et tests de tous les paquets ; lancé avant chaque push et rejoué par la CI.
 - `pnpm format` : reformate tout le repo (Prettier, largeur 150).
 - `pnpm --filter @la-pince/core test` : tests d'un seul paquet, avec couverture.

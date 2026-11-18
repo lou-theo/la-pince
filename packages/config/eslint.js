@@ -19,8 +19,8 @@ export default defineConfig(
     plugins: { 'import-x': importX, 'simple-import-sort': simpleImportSort },
     rules: {
       eqeqeq: ['error', 'always'],
-      // Frontière entre paquets : un import doit être déclaré dans le package.json le plus proche, sinon Node le trouverait dans les dépendances d'outillage de la racine.
-      'import-x/no-extraneous-dependencies': 'error',
+      // Frontière entre paquets : un import doit être déclaré dans le package.json le plus proche, sinon Node le trouverait dans les dépendances d'outillage de la racine ; les dépendances de dev sont réservées aux tests et aux configs.
+      'import-x/no-extraneous-dependencies': ['error', { devDependencies: ['**/*.test.ts', '**/vitest.config.ts', 'eslint.config.js'] }],
       'no-console': 'error',
       'no-param-reassign': 'error',
       'object-shorthand': 'error',
