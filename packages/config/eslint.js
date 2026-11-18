@@ -2,12 +2,13 @@ import js from '@eslint/js';
 import vitest from '@vitest/eslint-plugin';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import prettier from 'eslint-config-prettier';
+import importX from 'eslint-plugin-import-x';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['**/coverage/', '**/dist/', 'docs/cadrage/essais/']),
+  globalIgnores(['**/coverage/', '**/dist/', '.claude/', 'docs/cadrage/essais/', 'temp/']),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
@@ -15,10 +16,11 @@ export default defineConfig(
     languageOptions: {
       parserOptions: { projectService: true },
     },
-    plugins: { 'simple-import-sort': simpleImportSort },
+    plugins: { 'import-x': importX, 'simple-import-sort': simpleImportSort },
     rules: {
-      curly: ['error', 'all'],
       eqeqeq: ['error', 'always'],
+      // Frontière entre paquets : un import doit être déclaré dans le package.json le plus proche, sinon Node le trouverait dans les dépendances d'outillage de la racine.
+      'import-x/no-extraneous-dependencies': 'error',
       'no-console': 'error',
       'no-param-reassign': 'error',
       'object-shorthand': 'error',
@@ -60,4 +62,6 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   prettier,
+  // Après eslint-config-prettier, qui l'éteint alors qu'elle est compatible avec Prettier sous la forme « all ».
+  { rules: { curly: ['error', 'all'] } },
 );
