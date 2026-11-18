@@ -1,3 +1,5 @@
+<!-- Repo public : ni nom, ni pseudo, ni lien ou jeton de tricount, ni export, dans le diff comme dans les commits de la branche ; captures sur un groupe de démo. -->
+
 ## Pourquoi
 
 <!-- Le besoin ou le problème, pour qui ; lien vers l'issue ou la décision du cadrage. -->
@@ -18,10 +20,3 @@
 ## Vérification
 
 <!-- Tests ajoutés, parcours rejoué à la main ; captures avant / après en format téléphone et ordinateur pour un changement visible. -->
-
-## Checklist
-
-- [ ] `pnpm verifier` passe
-- [ ] Aucune donnée identifiable, ni dans le diff ni dans les commits de la branche (noms, pseudos, lien ou jeton de tricount, export) ; captures sur un groupe de démo
-- [ ] Montants en centimes entiers, testés au centime si le calcul change
-- [ ] `CONTEXT.md`, `docs/architecture.md` et `docs/cadrage/README.md` à jour si le changement les touche
