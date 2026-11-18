@@ -4,7 +4,7 @@ Retours des amis sur la discussion du groupe, le 16/11/2026 au soir (deux captur
 
 ## En bref
 
-- 17/11 : « les membres fréquents en tête » se heurte à une objection (l'ordre bouge) que la mesure confirme ; l'utilisateur juge bonne l'idée des sélections rapides, l'ordre de la liste reste à voir (section Retours du 17/11).
+- 17/11 : « les membres fréquents en tête » se heurte à une objection (l'ordre bouge) que la mesure confirme ; l'utilisateur juge bonne l'idée des sélections rapides ; ordre de la liste en version 1 : fréquence sur 90 jours, objection acceptée (décision 24 du README).
 - 17/11 : les commandes groupées se règlent aujourd'hui le plus souvent par une capture du reçu et un calcul à la main des frais (au prorata dans un des deux cas reconstitués, à parts égales dans l'autre) ; frais à répartir pas en première version a priori (section Cas réels de commandes groupées).
 - Seule la saisie par montants est ajoutée à la première version (décision de l'utilisateur, 16/11) ; les autres ajouts proposés n'y entrent pas, leur version reste à fixer.
 - L'emoji automatique est la seule piste trouvée pour que les catégories servent un jour : il rend la catégorie implicite, sans effort de saisie.
