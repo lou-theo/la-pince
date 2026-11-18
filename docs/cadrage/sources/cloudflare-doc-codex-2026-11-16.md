@@ -40,12 +40,12 @@ La réimportation dans D1 passe par `wrangler d1 execute BASE --remote --file=./
 
 **Lu dans les sources.** Les limites à distinguer sont :
 
-| Objet | Limite documentée | Source |
-|---|---|---|
-| Base D1 gratuite | 500 MB par base, 5 GB par compte | [Limites D1, 30/10/2026](https://developers.cloudflare.com/d1/platform/limits/) |
-| Fichier d'import | 5 GiB selon le guide d'import | [Import et export, 21/04/2026](https://developers.cloudflare.com/d1/best-practices/import-export-data/) |
-| Résultat d'une requête SQL | 50 MB depuis le 04/11/2026 ; import et export REST exemptés | [Annonce du 30/10/2026](https://developers.cloudflare.com/changelog/post/2026-10-30-query-result-size-limit/) |
-| Plafond propre au fichier d'export | ? ; aucun chiffre distinct retrouvé | [API d'export, sans date affichée](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/export/) |
+| Objet                              | Limite documentée                                           | Source                                                                                                                       |
+| ---------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Base D1 gratuite                   | 500 MB par base, 5 GB par compte                            | [Limites D1, 30/10/2026](https://developers.cloudflare.com/d1/platform/limits/)                                              |
+| Fichier d'import                   | 5 GiB selon le guide d'import                               | [Import et export, 21/04/2026](https://developers.cloudflare.com/d1/best-practices/import-export-data/)                      |
+| Résultat d'une requête SQL         | 50 MB depuis le 04/11/2026 ; import et export REST exemptés | [Annonce du 30/10/2026](https://developers.cloudflare.com/changelog/post/2026-10-30-query-result-size-limit/)                |
+| Plafond propre au fichier d'export | ? ; aucun chiffre distinct retrouvé                         | [API d'export, sans date affichée](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/export/) |
 
 **Lu dans la source.** Depuis le **12/11/2026**, les bases comportant des tables virtuelles peuvent être exportées avec `compatibility: "sqlite3_cli_only"`, également disponible dans Wrangler. Ce format vise SQLite et ne peut pas être réimporté dans D1. Cette annonce récente complète le guide d'avril qui indique encore une incompatibilité des exports avec les tables virtuelles. [Annonce du 12/11/2026](https://developers.cloudflare.com/changelog/post/2026-11-12-d1-export-virtual-tables/).
 
@@ -61,16 +61,16 @@ La réimportation dans D1 passe par `wrangler d1 execute BASE --remote --file=./
 
 **Lu dans les sources.**
 
-| Ressource | Offre gratuite | Source et date |
-|---|---|---|
-| Requêtes dynamiques | 100 000 par jour et par compte ; remise à zéro à minuit UTC | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) |
-| CPU HTTP | 10 ms par invocation | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) |
-| CPU Cron | 10 ms par déclenchement | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) |
-| Cron Triggers | 5 par compte | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) |
-| Sous-requêtes externes | 50 par invocation ; redirections comptées | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) |
-| Connexions sortantes | 6 simultanément en attente des en-têtes | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) |
-| Script | 64 MiB non compressés ; ancien plafond compressé supprimé | [Annonce du 04/09/2026](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/) |
-| Assets | 20 000 fichiers par version ; 25 MiB par fichier | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) |
+| Ressource              | Offre gratuite                                              | Source et date                                                                                                    |
+| ---------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Requêtes dynamiques    | 100 000 par jour et par compte ; remise à zéro à minuit UTC | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/)                                 |
+| CPU HTTP               | 10 ms par invocation                                        | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/)                                 |
+| CPU Cron               | 10 ms par déclenchement                                     | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/)                                 |
+| Cron Triggers          | 5 par compte                                                | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/)                                 |
+| Sous-requêtes externes | 50 par invocation ; redirections comptées                   | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/)                                 |
+| Connexions sortantes   | 6 simultanément en attente des en-têtes                     | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/)                                 |
+| Script                 | 64 MiB non compressés ; ancien plafond compressé supprimé   | [Annonce du 04/09/2026](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/) |
+| Assets                 | 20 000 fichiers par version ; 25 MiB par fichier            | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/)                                 |
 
 **Lu dans la source.** L'attente réseau ne consomme pas le budget CPU. Un dépassement CPU entraîne l'erreur **1102** ; le dépassement quotidien des requêtes entraîne **1027**, avec un comportement dépendant du mode de route. [Limites Workers, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/).
 
@@ -92,12 +92,12 @@ La recherche ouverte a porté sur l'annuaire npm, les comparatifs de bibliothèq
 
 **Lu dans les sources des projets, sans date de page affichée.**
 
-| Bibliothèque absente de la liste initiale | Élément documentaire |
-|---|---|
-| `@pushforge/builder` | Le mainteneur annonce WebCrypto, aucune dépendance et la prise en charge de Workers. [Dépôt](https://github.com/draphy/pushforge) |
-| `webpush-webcrypto` | Utilise WebCrypto ; l'auteur précise que l'exécution sur Workers est théorique et n'a pas été essayée par lui. [Dépôt](https://github.com/alastaircoote/webpush-webcrypto) |
-| `@mmmike/web-push` | Le projet documente `fetch`, WebCrypto et un exemple d'envoi depuis un Worker. [Dépôt](https://github.com/MMMikeM/web-push) |
-| `@portable/web-push` | Documente aes128gcm, VAPID, Workers et un comparatif de performances. [Documentation](https://portablejs.com/packages/web-push/) |
+| Bibliothèque absente de la liste initiale | Élément documentaire                                                                                                                                                       |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@pushforge/builder`                      | Le mainteneur annonce WebCrypto, aucune dépendance et la prise en charge de Workers. [Dépôt](https://github.com/draphy/pushforge)                                          |
+| `webpush-webcrypto`                       | Utilise WebCrypto ; l'auteur précise que l'exécution sur Workers est théorique et n'a pas été essayée par lui. [Dépôt](https://github.com/alastaircoote/webpush-webcrypto) |
+| `@mmmike/web-push`                        | Le projet documente `fetch`, WebCrypto et un exemple d'envoi depuis un Worker. [Dépôt](https://github.com/MMMikeM/web-push)                                                |
+| `@portable/web-push`                      | Documente aes128gcm, VAPID, Workers et un comparatif de performances. [Documentation](https://portablejs.com/packages/web-push/)                                           |
 
 Phrase officielle exacte :
 
@@ -117,11 +117,11 @@ Phrase officielle exacte :
 
 **Déduit, chiffres non établis.**
 
-| Coût CPU sur Workers Free | Valeur |
-|---|---|
-| Chiffrement aes128gcm par message | ? |
-| Signature VAPID | ? |
-| Envoi à tous les abonnements des amis | ? |
+| Coût CPU sur Workers Free             | Valeur |
+| ------------------------------------- | ------ |
+| Chiffrement aes128gcm par message     | ?      |
+| Signature VAPID                       | ?      |
+| Envoi à tous les abonnements des amis | ?      |
 
 Aucun benchmark Workers correspondant n'a été retrouvé. Le comparatif Portable mesure des opérations par seconde sur Node et un processeur identifié ; il ne mesure pas la consommation CPU facturée par Workers. Ces valeurs ne permettent donc pas de garantir le respect des 10 ms. [Comparatif Portable, sans date affichée](https://portablejs.com/packages/web-push/) ; [limites Workers, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/).
 
@@ -152,13 +152,13 @@ Phrase officielle exacte sur la pérennité d'une offre D1 gratuite :
 
 **Lu dans la source.** Les conditions générales permettent à Cloudflare de terminer un service gratuit et de modifier ou retirer des fonctionnalités. **Déduit :** aucun engagement de gel des quotas ou de maintien perpétuel de cette architecture gratuite n'est établi. [Conditions générales, sections 2.6 et 8, 12/09/2025](https://www.cloudflare.com/terms/).
 
-| Question | Réponse courte et statut | Source |
-|---|---|---|
-| 1. Données en UE | **Lu :** `eu` existe et contraint les réplicas. **Déduit :** Free paraît admis ; localisation Time Travel **?** | [Localisation, 02/10/2026](https://developers.cloudflare.com/d1/configuration/data-location/) ; [Time Travel, 06/11/2026](https://developers.cloudflare.com/d1/reference/time-travel/) |
-| 2. Sauvegarde et sortie | **Lu :** Time Travel gratuit 7 jours ; export SQL Wrangler ou REST ; exemple planifié Workflows vers R2 | [Time Travel, 06/11/2026](https://developers.cloudflare.com/d1/reference/time-travel/) ; [exemple, 12/10/2026](https://developers.cloudflare.com/workflows/examples/backup-d1/) |
-| 3. Limites Workers | **Lu :** 100 000 requêtes/jour, 10 ms CPU, 5 Cron, 50 sous-requêtes externes ; assets directs gratuits | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) ; [assets, 12/11/2026](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/) |
-| 4. Web Push | **Déduit :** WebCrypto conseillé ; `web-push` n'est plus exclu par principe. CPU **?** | [Crypto, 17/10/2026](https://developers.cloudflare.com/workers/runtime-apis/nodejs/crypto/) ; [retours datés de 2025 et 2026](https://github.com/web-push-libs/web-push/issues/718) |
-| 5. Conditions | **Lu :** Workers démarre sans carte. **Déduit :** aucune restriction non commerciale trouvée, aucun gel des quotas garanti | [Workers, sans date affichée](https://www.cloudflare.com/products/workers/) ; [conditions, 12/09/2025](https://www.cloudflare.com/terms/) |
+| Question                | Réponse courte et statut                                                                                                   | Source                                                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1. Données en UE        | **Lu :** `eu` existe et contraint les réplicas. **Déduit :** Free paraît admis ; localisation Time Travel **?**            | [Localisation, 02/10/2026](https://developers.cloudflare.com/d1/configuration/data-location/) ; [Time Travel, 06/11/2026](https://developers.cloudflare.com/d1/reference/time-travel/)     |
+| 2. Sauvegarde et sortie | **Lu :** Time Travel gratuit 7 jours ; export SQL Wrangler ou REST ; exemple planifié Workflows vers R2                    | [Time Travel, 06/11/2026](https://developers.cloudflare.com/d1/reference/time-travel/) ; [exemple, 12/10/2026](https://developers.cloudflare.com/workflows/examples/backup-d1/)            |
+| 3. Limites Workers      | **Lu :** 100 000 requêtes/jour, 10 ms CPU, 5 Cron, 50 sous-requêtes externes ; assets directs gratuits                     | [Limites, 13/11/2026](https://developers.cloudflare.com/workers/platform/limits/) ; [assets, 12/11/2026](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/) |
+| 4. Web Push             | **Déduit :** WebCrypto conseillé ; `web-push` n'est plus exclu par principe. CPU **?**                                     | [Crypto, 17/10/2026](https://developers.cloudflare.com/workers/runtime-apis/nodejs/crypto/) ; [retours datés de 2025 et 2026](https://github.com/web-push-libs/web-push/issues/718)        |
+| 5. Conditions           | **Lu :** Workers démarre sans carte. **Déduit :** aucune restriction non commerciale trouvée, aucun gel des quotas garanti | [Workers, sans date affichée](https://www.cloudflare.com/products/workers/) ; [conditions, 12/09/2025](https://www.cloudflare.com/terms/)                                                  |
 
 ## Pages non lues
 

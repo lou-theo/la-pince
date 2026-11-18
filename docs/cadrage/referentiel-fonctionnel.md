@@ -31,47 +31,47 @@ Script exécuté le 16/11 sur l'export JSON produit par `export/lire_tricount.py
 
 ## Tableau par fonction
 
-| Fonction | Tricount | Sesterce | Spliit | SplitPro | Settle Up | Splid | Splitwise |
-|---|---|---|---|---|---|---|---|
-| Sans compte, « qui je suis » | oui | oui (connexions sociales ajoutées) | oui | non | ? | oui | non [D] |
-| Membre sans l'app | oui | ? | oui | ? | ? | ? | ? |
-| Invitation par lien | oui | oui | oui | oui | oui | ? | ? |
-| QR code d'invitation | oui | oui | ? | ? | ? | ? | ? |
-| Rôles, mot de passe de groupe | ? | oui | non [D] | ? | ? | ? | ? |
-| Étiquettes ou sous-groupes de membres | non trouvé | ? | non | non | ? | ? | ? |
-| Archiver un groupe | oui | ? | oui | ? | ? | ? | oui |
-| Plusieurs payeurs | non [D] | ? | non | ? | oui | ? | oui |
-| Catégories | oui | oui | oui | oui | ? | ? | ? |
-| Pièces jointes | oui | ? | oui | oui | Premium | ? | Pro |
-| Multi-devises | oui | ? | oui | oui | oui | oui | Pro |
-| Dépense récurrente | ? | ? | oui (contradiction README) | oui | Premium | ? | oui |
-| Saisie hors ligne | oui | ? | non (PR ouverte) | non | oui | oui | oui |
-| Notes ou commentaires | ? | ? | notes | commentaires | ? | ? | commentaires |
-| Répartition égale, par parts | oui | oui | oui | oui | oui | ? | oui |
-| Par montants exacts | oui | ? | oui | oui | ? | ? | oui |
-| Par pourcentages | ? | ? | oui | oui | ? | ? | oui |
-| Tout cocher ou décocher | ? | ? | oui | ? | ? | ? | ? |
-| Répartition par défaut mémorisée | ? | ? | oui (navigateur) | oui (en base) | ? | ? | Pro [NL] |
-| Soldes par membre | oui | oui | oui | oui | oui | ? | oui |
-| Simplification des remboursements | oui | ? | oui | option | oui | ? | oui |
-| Ma part sur chaque dépense | ? | ? | oui | PR ouverte | ? | ? | ? |
-| Filtre « me concerne » | non | ? | non | partiel | ? | ? | ? |
-| Recherche texte | basique | ? | titre et notes | non (PR ouverte) | ? | ? | Pro |
-| Recherche par montant, date, payeur | ? | ? | non | non | ? | ? | ? |
-| Compteur d'entrées non vues | oui | ? | ? | ? | ? | ? | ? |
-| Notification push | ? | ? | non | oui | oui | ? | oui |
-| Ciblée sur les concernés | non | ? | non | oui | ? | ? | ? |
-| Rappels automatiques | ? | ? | ? | ? | oui | ? | ? |
-| Flux d'activité | ? | ? | oui | oui | ? | ? | oui |
-| Vue desktop complète | non | oui | oui | oui | ? | non [NL] | oui |
-| PWA installable | non | ? | oui | oui | ? | ? | ? |
-| Export CSV | via le support | oui | oui | ? | oui | ? | oui |
-| Import | Splitwise | CSV | non | Splitwise | ? | ? | ? |
-| Stats par catégorie, dans le temps | oui | par catégorie | oui | non | Premium | ? | Pro |
-| Historique des modifications | non trouvé | ? | partiel | non | ? | ? | oui |
-| OCR de ticket | ? | ? | oui (OpenAI) | non | ? | ? | Pro |
-| Prix enregistrés | ? | ? | non | non | ? | ? | ? |
-| Commande groupée complétée plus tard | ? | ? | non | non | ? | ? | ? |
+| Fonction                              | Tricount       | Sesterce                           | Spliit                     | SplitPro         | Settle Up | Splid    | Splitwise    |
+| ------------------------------------- | -------------- | ---------------------------------- | -------------------------- | ---------------- | --------- | -------- | ------------ |
+| Sans compte, « qui je suis »          | oui            | oui (connexions sociales ajoutées) | oui                        | non              | ?         | oui      | non [D]      |
+| Membre sans l'app                     | oui            | ?                                  | oui                        | ?                | ?         | ?        | ?            |
+| Invitation par lien                   | oui            | oui                                | oui                        | oui              | oui       | ?        | ?            |
+| QR code d'invitation                  | oui            | oui                                | ?                          | ?                | ?         | ?        | ?            |
+| Rôles, mot de passe de groupe         | ?              | oui                                | non [D]                    | ?                | ?         | ?        | ?            |
+| Étiquettes ou sous-groupes de membres | non trouvé     | ?                                  | non                        | non              | ?         | ?        | ?            |
+| Archiver un groupe                    | oui            | ?                                  | oui                        | ?                | ?         | ?        | oui          |
+| Plusieurs payeurs                     | non [D]        | ?                                  | non                        | ?                | oui       | ?        | oui          |
+| Catégories                            | oui            | oui                                | oui                        | oui              | ?         | ?        | ?            |
+| Pièces jointes                        | oui            | ?                                  | oui                        | oui              | Premium   | ?        | Pro          |
+| Multi-devises                         | oui            | ?                                  | oui                        | oui              | oui       | oui      | Pro          |
+| Dépense récurrente                    | ?              | ?                                  | oui (contradiction README) | oui              | Premium   | ?        | oui          |
+| Saisie hors ligne                     | oui            | ?                                  | non (PR ouverte)           | non              | oui       | oui      | oui          |
+| Notes ou commentaires                 | ?              | ?                                  | notes                      | commentaires     | ?         | ?        | commentaires |
+| Répartition égale, par parts          | oui            | oui                                | oui                        | oui              | oui       | ?        | oui          |
+| Par montants exacts                   | oui            | ?                                  | oui                        | oui              | ?         | ?        | oui          |
+| Par pourcentages                      | ?              | ?                                  | oui                        | oui              | ?         | ?        | oui          |
+| Tout cocher ou décocher               | ?              | ?                                  | oui                        | ?                | ?         | ?        | ?            |
+| Répartition par défaut mémorisée      | ?              | ?                                  | oui (navigateur)           | oui (en base)    | ?         | ?        | Pro [NL]     |
+| Soldes par membre                     | oui            | oui                                | oui                        | oui              | oui       | ?        | oui          |
+| Simplification des remboursements     | oui            | ?                                  | oui                        | option           | oui       | ?        | oui          |
+| Ma part sur chaque dépense            | ?              | ?                                  | oui                        | PR ouverte       | ?         | ?        | ?            |
+| Filtre « me concerne »                | non            | ?                                  | non                        | partiel          | ?         | ?        | ?            |
+| Recherche texte                       | basique        | ?                                  | titre et notes             | non (PR ouverte) | ?         | ?        | Pro          |
+| Recherche par montant, date, payeur   | ?              | ?                                  | non                        | non              | ?         | ?        | ?            |
+| Compteur d'entrées non vues           | oui            | ?                                  | ?                          | ?                | ?         | ?        | ?            |
+| Notification push                     | ?              | ?                                  | non                        | oui              | oui       | ?        | oui          |
+| Ciblée sur les concernés              | non            | ?                                  | non                        | oui              | ?         | ?        | ?            |
+| Rappels automatiques                  | ?              | ?                                  | ?                          | ?                | oui       | ?        | ?            |
+| Flux d'activité                       | ?              | ?                                  | oui                        | oui              | ?         | ?        | oui          |
+| Vue desktop complète                  | non            | oui                                | oui                        | oui              | ?         | non [NL] | oui          |
+| PWA installable                       | non            | ?                                  | oui                        | oui              | ?         | ?        | ?            |
+| Export CSV                            | via le support | oui                                | oui                        | ?                | oui       | ?        | oui          |
+| Import                                | Splitwise      | CSV                                | non                        | Splitwise        | ?         | ?        | ?            |
+| Stats par catégorie, dans le temps    | oui            | par catégorie                      | oui                        | non              | Premium   | ?        | Pro          |
+| Historique des modifications          | non trouvé     | ?                                  | partiel                    | non              | ?         | ?        | oui          |
+| OCR de ticket                         | ?              | ?                                  | oui (OpenAI)               | non              | ?         | ?        | Pro          |
+| Prix enregistrés                      | ?              | ?                                  | non                        | non              | ?         | ?        | ?            |
+| Commande groupée complétée plus tard  | ?              | ?                                  | non                        | non              | ?         | ?        | ?            |
 
 Sources principales : code décompilé de Tricount 14.8.2 ; help.tricount.com/articles/tricount-faqs et tricount.com (lus le 16/11) ; clones de Spliit (`f293974`) et SplitPro (`7f48b66`) ; fiches App Store de Sesterce, Settle Up, Splid ; splitwise.com.
 
