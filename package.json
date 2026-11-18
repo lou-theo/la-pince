@@ -1,0 +1,26 @@
+{
+  "name": "la-pince",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": "24.22.1"
+  },
+  "scripts": {
+    "prepare": "lefthook install",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint --max-warnings 0 .",
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "test": "pnpm --recursive --if-present test",
+    "verifier": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "prettier": "@la-pince/config/prettier",
+  "devDependencies": {
+    "@la-pince/config": "workspace:*",
+    "eslint": "catalog:",
+    "lefthook": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}
