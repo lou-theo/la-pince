@@ -97,5 +97,9 @@
   "balances_sync_pending_one": "Ces soldes comptent 1 saisie non envoyée. Dernière synchro {when}.",
   "balances_sync_pending": "Ces soldes comptent {count} saisies non envoyées. Dernière synchro {when}.",
   "moment_today": "à {time}",
-  "moment_other_day": "le {day} à {time}"
+  "moment_other_day": "le {day} à {time}",
+  "share_link": "Partager le lien du groupe",
+  "share_text": "Le groupe « {title} » sur La Pince :",
+  "share_copied": "Lien copié : colle-le dans un message aux personnes à inviter.",
+  "share_manual": "Copie ce lien et envoie-le aux personnes à inviter :"
 }

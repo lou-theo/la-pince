@@ -70,6 +70,7 @@ function GroupLoader({ token }: { readonly token: string }) {
     case 'ready':
       return (
         <GroupHome
+          token={token}
           group={state.group}
           changes={state.changes}
           outbox={state.outbox}
