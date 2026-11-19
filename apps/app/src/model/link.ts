@@ -11,3 +11,8 @@ export function tokenFromLink(text: string): string | undefined {
   const token = groupTokenSchema.safeParse(candidate);
   return token.success ? token.data : undefined;
 }
+
+/** Link of a group on this site, the one its members share; the token is already checked by the route. */
+export function groupLink(origin: string, token: string): string {
+  return `${origin}/g/${token}`;
+}

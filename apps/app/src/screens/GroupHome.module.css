@@ -71,3 +71,17 @@
 .offline {
   color: var(--color-muted);
 }
+
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-3);
+}
+
+.shareManual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex-basis: 100%;
+}

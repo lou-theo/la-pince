@@ -15,9 +15,12 @@ import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
 import { OperationDetail } from './OperationDetail.tsx';
 import { OperationList } from './OperationList.tsx';
+import { ShareLink } from './ShareLink.tsx';
 import type { GroupView } from './view.ts';
 
 interface GroupHomeProps {
+  /** Token of the group's link, which the members pass on to each other. */
+  readonly token: string;
   readonly group: GroupResponse;
   readonly changes: ReadonlyMap<OperationId, Change>;
   /** Revisions waiting to be sent, in the order they were entered. */
@@ -34,6 +37,7 @@ interface GroupHomeProps {
 
 /** Home of a group: asks “who I am” until this phone knows it, then shows the group as that member, its operations and its balances. */
 export function GroupHome({
+  token,
   group,
   changes,
   outbox,
@@ -96,6 +100,7 @@ export function GroupHome({
             {m.group_change_member()}
           </button>
         </p>
+        <ShareLink token={token} title={group.title} />
       </header>
       <nav className={styles.tabs} aria-label={m.tabs_label()}>
         <Tab href="/">{m.tab_operations()}</Tab>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { tokenFromLink } from './link.ts';
+import { groupLink, tokenFromLink } from './link.ts';
 
 const token = 'abcdefghijklmnopqrstuvwxyz_0123456789-AB';
 
@@ -22,5 +22,13 @@ describe('tokenFromLink', () => {
     expect(tokenFromLink('https://la-pince.example/')).toBeUndefined();
     expect(tokenFromLink('https://la-pince.example/g/')).toBeUndefined();
     expect(tokenFromLink('')).toBeUndefined();
+  });
+});
+
+describe('groupLink', () => {
+  it('builds the link of the group on this site, which tokenFromLink reads back', () => {
+    const link = groupLink('https://la-pince.example', token);
+    expect(link).toBe(`https://la-pince.example/g/${token}`);
+    expect(tokenFromLink(link)).toBe(token);
   });
 });
