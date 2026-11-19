@@ -4,13 +4,15 @@
   "type": "module",
   "packageManager": "pnpm@11.15.1",
   "scripts": {
-    "prepare": "lefthook install",
+    "prepare": "lefthook install && pnpm generate",
+    "generate": "pnpm --recursive --if-present generate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint --max-warnings 0 .",
     "typecheck": "pnpm --recursive --if-present typecheck",
     "test": "pnpm --recursive --if-present test",
-    "verifier": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
+    "verifier": "pnpm generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "captures": "pnpm --filter @la-pince/captures start"
   },
   "prettier": "@la-pince/config/prettier",
   "devDependencies": {

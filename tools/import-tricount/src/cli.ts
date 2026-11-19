@@ -26,7 +26,9 @@ export async function run({ args, env, print }: CliOptions): Promise<number> {
   const hasToken = given !== undefined && given !== '';
   // A new link token replaces the group's link at once: only on demand, so that a forgotten variable never breaks the link the group uses.
   if (path === undefined || adminToken === undefined || adminToken === '' || hasToken === (env.LA_PINCE_NEW_LINK === '1')) {
-    print('usage: pnpm start <tricount export.json>, with ADMIN_TOKEN and either LA_PINCE_GROUP_TOKEN or LA_PINCE_NEW_LINK=1 in the environment');
+    print(
+      'usage: pnpm start <tricount export.json>, with ADMIN_TOKEN and either LA_PINCE_GROUP_TOKEN or LA_PINCE_NEW_LINK=1 in the environment; LA_PINCE_URL (server) and LA_PINCE_APP_URL (app) optional',
+    );
     return 2;
   }
   const serverUrl = env.LA_PINCE_URL ?? 'http://localhost:8787';
@@ -40,7 +42,9 @@ export async function run({ args, env, print }: CliOptions): Promise<number> {
   const token = hasToken ? given : newToken();
   // Printed before any call: the server may hold it even if the import stops.
   print(`link token, to keep out of any file (LA_PINCE_GROUP_TOKEN for the next import): ${token}`);
-  print(`group: ${new URL(`/api/groups/${token}`, serverUrl).href}`);
+  // The app's link, by default on the Vite dev server of apps/app.
+  const appUrl = env.LA_PINCE_APP_URL === undefined || env.LA_PINCE_APP_URL === '' ? 'http://localhost:5173' : env.LA_PINCE_APP_URL;
+  print(`group: ${new URL(`/g/${token}`, appUrl).href}`);
   try {
     const report = await importTricount({ data, serverUrl, adminToken, token });
     print(`${report.title}: ${String(report.written)} revisions written, ${String(report.deleted)} of them deletions`);

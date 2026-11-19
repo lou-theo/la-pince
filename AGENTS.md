@@ -16,28 +16,31 @@ PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cl
 
 - `packages/core` : calcul, types, validation (schémas zod de toute donnée entrante), contrat de synchronisation, conversion Tricount ; ne dépend d'aucun autre paquet du repo. `fixtures/tricount-demo.json` : corpus anonymisé, seule donnée issue du vrai groupe admise dans le repo.
 - `packages/config` : configs partagées (tsconfig de base, ESLint, Prettier, preset Vitest).
+- `apps/app` : PWA React (Vite, routeur wouter) ; `src/model/` fonctions pures (couverture 100 %), `src/sync/` client de l'API, `src/storage/` ce que le téléphone retient, `src/screens/` écrans et leurs CSS modules, `src/i18n/` textes (messages dans `messages/fr.json`, compilés par Paraglide dans `src/i18n/paraglide/`, ignoré par git).
 - `apps/server` : Worker Hono, D1 par Drizzle ; schéma dans `src/schema.ts`, migrations générées dans `drizzle/` (jamais écrites à la main), tests de l'API dans workerd.
 - `tools/import-tricount` : script local qui importe un export Tricount dans un serveur par son API et relit les soldes ; lancé sous Node, sans étape de build.
+- `tools/captures` : captures des écrans sur le groupe de démo (planches avant/après, GIF d'un parcours), mode d'emploi dans le skill `.claude/skills/captures`.
 - `docs/cadrage/` : cadrage du projet (besoin, décisions, plan) ; `docs/cadrage/essais/` garde des essais jetables, hors lint et format.
-- À venir, créé avec son premier code : `apps/app` (PWA React).
 
-Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint `import-x/no-extraneous-dependencies`) : app, server et import dépendent de core, jamais l'un de l'autre.
+Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint `import-x/no-extraneous-dependencies`) : app, server et import dépendent de core, jamais l'un de l'autre ; l'outil de captures utilise aussi l'import.
 
 ## Commandes
 
-- `pnpm install` : installe et pose le hook git avant push (lefthook) ; à lancer dans chaque copie de travail, worktree compris, sans quoi le hook peut laisser passer le push sans rien vérifier.
-- `pnpm verifier` : format, lint, typecheck et tests de tous les paquets ; lancé avant chaque push et rejoué par la CI.
+- `pnpm install` : installe, compile les textes de l'app (`pnpm generate`) et pose le hook git avant push (lefthook) ; à lancer dans chaque copie de travail, worktree compris, sans quoi le hook peut laisser passer le push sans rien vérifier.
+- `pnpm verifier` : textes compilés (`pnpm generate`), format, lint, typecheck et tests de tous les paquets ; lancé avant chaque push et rejoué par la CI.
 - `pnpm format` : reformate tout le repo (Prettier, largeur 150).
 - `pnpm --filter @la-pince/core test` : tests d'un seul paquet, avec couverture.
 - `pnpm --filter @la-pince/server migrations:generate` : écrit la migration d'un changement de `apps/server/src/schema.ts`, à committer avec lui.
 - `pnpm --filter @la-pince/server dev` : serveur local sur une D1 locale (`wrangler dev`), le secret d'administration dans `apps/server/.dev.vars` (`ADMIN_TOKEN=…`, ignoré par git) ; migrations appliquées par `wrangler d1 migrations apply la-pince --local`.
-- `pnpm --filter @la-pince/import-tricount start <chemin absolu de l'export>` : importe un export dans le serveur local (`LA_PINCE_URL` pour un autre), avec `ADMIN_TOKEN` et soit `LA_PINCE_GROUP_TOKEN` (jeton du lien d'un import précédent, gardé), soit `LA_PINCE_NEW_LINK=1` (nouveau lien, l'ancien cesse de marcher) ; secrets saisis sans écho (`read -rs ADMIN_TOKEN && export ADMIN_TOKEN`) plutôt que tapés dans la commande, que l'historique du shell garde ; le jeton du lien s'affiche dans le terminal avant tout appel, jamais dans un fichier. Jamais l'export réel de `temp/` avant l'étape 8.
+- `pnpm --filter @la-pince/app dev` : app sur http://localhost:5173, l'API passée au serveur local (port 8787) par le proxy de Vite.
+- `pnpm captures --avant origin/main` : planches et GIF de toute PR qui touche un écran, à joindre à sa description (skill `captures`).
+- `pnpm --filter @la-pince/import-tricount start <chemin absolu de l'export>` : importe un export dans le serveur local (`LA_PINCE_URL` pour un autre) et affiche le lien du groupe dans l'app (`LA_PINCE_APP_URL`, par défaut celle de `pnpm --filter @la-pince/app dev`), avec `ADMIN_TOKEN` et soit `LA_PINCE_GROUP_TOKEN` (jeton du lien d'un import précédent, gardé), soit `LA_PINCE_NEW_LINK=1` (nouveau lien, l'ancien cesse de marcher) ; secrets saisis sans écho (`read -rs ADMIN_TOKEN && export ADMIN_TOKEN`) plutôt que tapés dans la commande, que l'historique du shell garde ; le jeton du lien s'affiche dans le terminal avant tout appel, jamais dans un fichier. Jamais l'export réel de `temp/` avant l'étape 8.
 
 ## Code
 
 - TypeScript strict avec `noUncheckedIndexedAccess` et `exactOptionalPropertyTypes` ; aucun `any`, aucune désactivation de règle ESLint sans commentaire qui dit pourquoi.
 - Une condition ne teste jamais un nombre ou une chaîne par sa valeur de vérité (`if (amount)` confond 0 centime et absence) : comparaison explicite.
-- Tests à côté du code (`src/**/*.test.ts`), par l'interface publique ; simulations seulement hors de notre code. Le cœur est couvert à 100 % ; cas tirés d'une autre app sous licence compatible cités avec leur source.
+- Tests à côté du code (`src/**/*.test.ts`, `.test.tsx` pour un écran), par l'interface publique ; simulations seulement hors de notre code. Le cœur est couvert à 100 % ; cas tirés d'une autre app sous licence compatible cités avec leur source.
 - Code en anglais (noms, commentaires, intitulés de tests), termes du domaine sous le nom donné par `CONTEXT.md` ; docs, messages de commit et descriptions de PR en français, un identifiant du code cité entre accents graves.
 - Commentaires : seulement le « pourquoi » non évident, jamais une paraphrase du code.
 - Versions des dépendances dans le catalogue de `pnpm-workspace.yaml`, référencées par `catalog:`.

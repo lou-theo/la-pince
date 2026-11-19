@@ -10,15 +10,16 @@ La Pince est une PWA installable (iPhone, Android, ordinateur), sans compte, uti
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | `packages/core`         | calcul des effets et des soldes, types, schémas zod, contrat de synchronisation, conversion Tricount                                                      | aucun paquet |
 | `packages/config`       | configs partagées : TypeScript, ESLint, Prettier, Vitest                                                                                                  | aucun paquet |
-| `apps/app` (à venir)    | PWA React et Vite, cache local IndexedDB, file d'envoi                                                                                                    | core         |
+| `apps/app`              | PWA React et Vite : groupe par son lien et « qui je suis » ; à venir : liste, soldes, saisie, cache local IndexedDB, file d'envoi                         | core         |
 | `apps/server`           | Worker Hono, accès D1 par Drizzle, API de synchronisation et route d'administration ; Web Push à venir                                                    | core         |
 | `tools/import-tricount` | script local : convertit un export Tricount, écrase le groupe par la route d'administration et l'API de synchronisation, puis relit ses soldes au centime | core         |
+| `tools/captures`        | script local : captures des écrans sur le groupe de démo, planches avant/après et GIF d'un parcours, pour les PR                                          | core, import |
 
 Le même cœur de calcul tourne sur le téléphone et sur le serveur : le téléphone calcule tout pour afficher hors ligne, le serveur valide chaque saisie par les mêmes schémas pour refuser une saisie incohérente. Les frontières tiennent par les dépendances déclarées : ESLint refuse l'import d'un paquet absent du `package.json` le plus proche (pnpm ne suffit pas, Node trouvant les outils installés à la racine). Un paquet n'est créé qu'avec son premier code.
 
 ## Modèle de données
 
-- **Montants en centimes entiers** : aucun nombre à virgule dans le calcul ; un montant saisi est converti à l'entrée (`enteredAmountSchema`) et refusé s'il est ambigu, jamais arrondi. ESLint interdit `parseFloat` et `toFixed` dans le cœur.
+- **Montants en centimes entiers** : aucun nombre à virgule dans le calcul ; un montant saisi est converti à l'entrée (`enteredAmountSchema`) et refusé s'il est ambigu, jamais arrondi. ESLint interdit `parseFloat` et `toFixed` dans le cœur et dans l'app.
 - **Un seul type d'opération** : dépense et remboursement ont la même forme ; la nature sert à l'affichage et, par l'effet, à dire si l'opération compte dans le total dépensé ; elle ne se déduit pas de la forme (une avance pour un ami a la forme d'un remboursement).
 - **Saisie séparée de son effet** : la saisie garde ce que la personne a entré, forme libre et versionnée (aujourd'hui une ligne par membre de la répartition ; demain lignes de reçu, frais communs) ; l'effet, calculé depuis la saisie, donne le payeur, la part de chaque membre en centimes et s'il compte dans le total dépensé. Soldes, filtre « me concerne », notifications et statistiques ne lisent que l'effet : une nouvelle forme de saisie ne les touche pas.
 - **Soldes recalculés à la volée** depuis les effets, sans total stocké qui pourrait diverger ; la performance est un critère du projet et se mesure par des budgets en échec s'ils sont dépassés.
@@ -78,12 +79,24 @@ Chronologie d'un import (`tools/import-tricount`, lancé sur la machine du maint
 4. Il relit le groupe et s'arrête en erreur au moindre écart avec l'export : version refusée, opération en trop ou différente, solde d'un membre différent au centime du calcul fait par le cœur depuis l'export.
 5. Il affiche les totaux. Le jeton du lien ne s'affiche que dans le terminal : qui l'a peut écrire dans le groupe.
 
+## App
+
+`apps/app` est une PWA React servie par Vite, en français seul, sans dépendance à `apps/server` : elle lit le contrat de synchronisation de `packages/core`.
+
+- **Routes** (wouter) : `/g/:token` ouvre un groupe par le jeton de son lien, contrôlé par `groupTokenSchema` avant tout appel ; `/lien` ouvre un groupe dont on colle le lien, repli d'une app installée qui démarre sans son lien ; `/` revient au dernier groupe ouvert sur le téléphone, ou mène à `/lien`.
+- **Lecture** : `src/sync/client.ts` appelle l'API et fait passer chaque réponse par les schémas du cœur ; une réponse hors contrat est une erreur affichée, jamais une donnée lue. Les écrans reçoivent le client par un contexte React, pour que les tests leur donnent un faux transport.
+- **Ce que le téléphone retient** (`src/storage/`) : « qui je suis » par groupe et le dernier groupe ouvert, dans `localStorage` ; un stockage refusé (navigation privée) fait redemander plutôt qu'échouer, et un membre retenu qui n'est plus dans le groupe est redemandé.
+- **Textes** : Paraglide compile `messages/fr.json` en fonctions typées (`pnpm generate`, lancé par `pnpm install` et `pnpm verifier` ; son greffon Vite sert les mêmes fonctions au serveur de développement, au build et aux tests) ; le greffon de format des messages est lu dans `node_modules`, pas sur un CDN, pour que la compilation ne dépende pas du réseau. Chaque code d'erreur passe par une table exhaustive (`src/i18n/errors.ts`).
+- **Mise en page** : CSS modules et variables CSS, sans bibliothèque ; une colonne à la largeur d'un téléphone, centrée sur ordinateur ; thème sombre suivi du système.
+- **PWA** : manifeste et service worker générés par vite-plugin-pwa (`generateSW`), qui ne met en cache que la coquille de l'app, jamais une réponse de l'API ; `Referrer-Policy: no-referrer` par une balise de la page, le jeton du lien étant dans l'adresse.
+- **Développement** : le proxy de Vite passe `/api` au serveur local (`wrangler dev`, port 8787).
+
 ## Outillage
 
 - pnpm avec catalogue de versions (une version par dépendance pour tout le repo) ; Node et pnpm épinglés (`.node-version`, `packageManager`) ; pas d'orchestrateur de monorepo tant que `pnpm --recursive` suffit.
-- TypeScript strict ; le code se lit en source, sans étape de build entre paquets (Vite et Wrangler compilent à la livraison).
-- ESLint avec les règles strictes et typées de typescript-eslint, plus des règles choisies pour le projet ; Prettier en largeur 150.
-- `pnpm verifier` (format, lint, typecheck, tests) tourne avant chaque push par lefthook ; GitHub Actions le rejoue sur chaque PR, et le job `verifier` est requis pour fusionner dans `main`.
+- TypeScript strict ; le code se lit en source, sans étape de build entre paquets (Vite et Wrangler compilent à la livraison) ; seuls les textes de l'app sont générés (`pnpm generate`).
+- ESLint avec les règles strictes et typées de typescript-eslint, plus des règles choisies pour le projet, et pour l'app les règles strictes et typées d'eslint-plugin-react-x et celles d'eslint-plugin-react-hooks ; Prettier en largeur 150.
+- `pnpm verifier` (textes compilés, format, lint, typecheck, tests) tourne avant chaque push par lefthook ; GitHub Actions le rejoue sur chaque PR, et le job `verifier` est requis pour fusionner dans `main`.
 
 ## Tests
 
@@ -91,6 +104,6 @@ Tests par l'interface publique ; simulations seulement hors de notre code. Cinq 
 
 1. **Cœur** (Vitest) : cas cités d'une autre app sous licence MIT, tests de propriétés (fast-check), couverture 100 % ; corpus réel anonymisé du groupe (`packages/core/fixtures/tricount-demo.json` : prénoms et titres inventés, identifiants remplacés, dates, montants et répartitions gardés), chaque effet comparé aux allocations de Tricount et les soldes à un calcul fait hors de ce code.
 2. **Serveur, base et import** : le Worker tourne dans workerd, le runtime de Cloudflare, sur une D1 locale migrée par les migrations commitées (`createTestHarness` de Wrangler, appelé depuis Vitest) ; chaque `pnpm test` du serveur contrôle par `drizzle-kit generate` qu'aucune migration ne manque au schéma ; en cas d'écart, ce contrôle laisse la migration générée (`schema-drift`), à supprimer avant de générer la vraie ; la couverture mesurée porte sur le code qui tourne sous Node (tri des versions reçues, et écritures en base appelées directement contre la D1 locale, 100 %), les routes étant couvertes par les tests d'API. L'import tourne de bout en bout contre ce serveur sur le corpus de démo : 9 609,80 € de dépenses et 1 024,16 € de remboursements relus, soldes égaux au centime, ré-import identique sans version, opération retirée de l'export marquée supprimée, opération modifiée en une version, arrêt sur un serveur qui refuse, perd un centime ou acquitte sans écrire.
-3. **App sans écran** : file d'envoi, cache, IndexedDB simulée.
+3. **App** (Vitest, happy-dom, Testing Library) : écrans rendus par leurs routes avec un faux transport dont les réponses passent par les schémas du cœur, fonctions pures de `src/model/` couvertes à 100 % ; à venir : file d'envoi, cache, IndexedDB simulée.
 4. **Bout en bout** (Playwright, Chromium et WebKit) : saisie hors ligne puis synchronisation vers un second navigateur.
 5. **Performance** : budgets en échec s'ils sont dépassés.

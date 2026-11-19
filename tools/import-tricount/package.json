@@ -2,6 +2,9 @@
   "name": "@la-pince/import-tricount",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/import.ts"
+  },
   "scripts": {
     "start": "node src/bin.ts",
     "typecheck": "tsc --project tsconfig.json",

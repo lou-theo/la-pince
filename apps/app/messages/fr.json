@@ -1,0 +1,23 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_name": "La Pince",
+  "home_title": "Ouvre ton groupe",
+  "home_explanation": "Colle le lien du groupe qu'on t'a envoyé.",
+  "home_link_label": "Lien du groupe",
+  "home_link_placeholder": "https://…",
+  "home_open": "Ouvrir",
+  "home_link_invalid": "Ce lien n'est pas celui d'un groupe La Pince.",
+  "group_loading": "Chargement du groupe…",
+  "group_retry": "Réessayer",
+  "group_other_link": "Ouvrir un autre lien",
+  "group_you_are": "Tu es {name}",
+  "group_change_member": "Ce n'est pas moi",
+  "group_operations_coming": "La liste des dépenses arrive dans la prochaine version.",
+  "who_am_i_title": "Qui es-tu ?",
+  "who_am_i_explanation": "Choisis ton nom : l'app te montrera ta part de chaque dépense. Ce choix reste sur cet appareil.",
+  "link_invalid": "Ce lien est incomplet ou mal recopié.",
+  "not_found": "Cette page n'existe pas.",
+  "error_group_not_found": "Ce groupe n'existe pas, ou son lien a changé : demande le nouveau lien à un membre du groupe.",
+  "error_network": "Le serveur ne répond pas : vérifie ta connexion, puis réessaie.",
+  "error_unexpected": "Le serveur a répondu de façon inattendue : réessaie plus tard."
+}
