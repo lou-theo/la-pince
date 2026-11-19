@@ -1,7 +1,7 @@
-import { MAX_CENTS } from '@la-pince/core';
+import { enteredAmountSchema, MAX_CENTS } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
-import { formatCents } from './money.ts';
+import { centsToInput, formatCents } from './money.ts';
 
 // `Intl` separates thousands with a narrow no-break space and puts a no-break space before the euro sign.
 const nbsp = ' ';
@@ -33,5 +33,19 @@ describe('formatCents', () => {
     expect(() => formatCents(0.5)).toThrow(RangeError);
     expect(() => formatCents(Number.NaN)).toThrow(RangeError);
     expect(() => formatCents(Number.MAX_SAFE_INTEGER + 1)).toThrow(RangeError);
+  });
+});
+
+describe('centsToInput', () => {
+  it('writes cents as typed back into a form, which reads them to the same cents', () => {
+    expect([0, 5, 99, 100, 123_450, MAX_CENTS].map(centsToInput)).toStrictEqual(['0,00', '0,05', '0,99', '1,00', '1234,50', '99999999,99']);
+    for (const cents of [0, 5, 99, 100, 123_450, MAX_CENTS]) {
+      expect(enteredAmountSchema.parse(centsToInput(cents))).toBe(cents);
+    }
+  });
+
+  it('refuses what is not whole, non-negative cents', () => {
+    expect(() => centsToInput(-1)).toThrow(RangeError);
+    expect(() => centsToInput(0.5)).toThrow(RangeError);
   });
 });
