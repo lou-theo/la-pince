@@ -99,6 +99,12 @@ describe('convertTricount', () => {
     ],
     ['a reimbursement to its payer', [{ type_transaction: 'BALANCE', allocations: [share('alice', '-10.00')] }], 'unsupported_reimbursement'],
     ['a member missing from the group', [{ membership_owned: member('mallory') }], 'unknown_member'],
+    [
+      'a member missing from the group with a zero share',
+      [{ allocations: [share('alice', '-5.00'), share('bob', '-5.00'), share('mallory', '0.00')] }],
+      'unknown_member',
+    ],
+    ['an amount with an unexpected field', [{ amount: { currency: 'EUR', value: '-10.00', rate: '1' } }], 'unrecognized_keys'],
     ['two operations with the same identifier', [{ uuid: 'op' }, { uuid: 'op' }], 'duplicate_operation'],
     ['a membership wrapped with two kinds', [{ membership_owned: { A: { uuid: 'alice' }, B: { uuid: 'bob' } } }], 'invalid_membership'],
     ['a membership wrapped with no kind', [{ membership_owned: {} }], 'invalid_membership'],
@@ -120,18 +126,20 @@ describe('convertTricount', () => {
     expect(() => convertTricount(exportOf([], { pagination: { older_url: '/older' } }))).toThrow('partial_export');
   });
 
-  it('locates an error in the faulty operation', () => {
+  it.each([
+    ['shares that do not add up', { amount: euros('-10.01') }, 'all_registry_entry.1.RegistryEntry.entry.total'],
+    ['a repeated identifier', { uuid: 'op0' }, 'all_registry_entry.1'],
+    ['a member missing from the group', { membership_owned: member('mallory') }, 'all_registry_entry.1'],
+  ])('locates %s in the faulty operation', (_, operation, path) => {
     const result = (() => {
       try {
-        return convertTricount(exportOf([{}, { amount: euros('-10.01') }]));
+        return convertTricount(exportOf([{}, operation]));
       } catch (error) {
         return error;
       }
     })();
     expect(result).toBeInstanceOf(ZodError);
-    expect((result as ZodError).issues.map((issue) => issue.path.join('.'))).toStrictEqual([
-      'Response.0.Registry.all_registry_entry.1.RegistryEntry.entry.total',
-    ]);
+    expect((result as ZodError).issues.map((issue) => issue.path.join('.'))).toStrictEqual([`Response.0.Registry.${path}`]);
   });
 });
 

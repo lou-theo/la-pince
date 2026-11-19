@@ -8,7 +8,8 @@ import { type MemberId, memberIdSchema, type OperationId, operationIdSchema } fr
 // income, which La Pince does not model.
 const TRICOUNT_AMOUNT = /^(-?)(\d+\.\d{2})$/;
 
-const tricountCentsSchema = z.object({ currency: z.literal('EUR'), value: z.string() }).transform((amount, context): Cents => {
+// Strict, unlike the rest of the export: a field added to an amount (a second currency, a rate) could change what it means.
+const tricountCentsSchema = z.strictObject({ currency: z.literal('EUR'), value: z.string() }).transform((amount, context): Cents => {
   const parts = TRICOUNT_AMOUNT.exec(amount.value);
   const cents = enteredAmountSchema.safeParse(parts?.[2]);
   if (!cents.success) {
@@ -64,7 +65,8 @@ const registryEntrySchema = z
     // “2026-11-16 15:56:50.945000”: the day is what Tricount shows; the time zone of the rest is not documented.
     date: z.string().refine((date) => z.iso.date().safeParse(DATE.exec(date)?.[1]).success, 'invalid_date'),
   })
-  .transform((operation, context): ImportedOperation => {
+  // The members the operation names, zero shares included, are kept for the group's checks.
+  .transform((operation, context): { operation: ImportedOperation; members: readonly MemberId[] } => {
     const members = operation.allocations.map((allocation) => allocation.membership);
     // Checked before zero shares are dropped, which would hide a member allocated twice.
     if (new Set(members).size !== members.length) {
@@ -91,7 +93,10 @@ const registryEntrySchema = z
       }
       return z.NEVER;
     }
-    return { id: operation.uuid, title: operation.description, date: operation.date.slice(0, 10), entry: entry.data };
+    return {
+      operation: { id: operation.uuid, title: operation.description, date: operation.date.slice(0, 10), entry: entry.data },
+      members: [operation.membership_owned, ...members],
+    };
   });
 
 const noPage = z.null({ error: 'partial_export' });
@@ -111,15 +116,17 @@ const tricountExportSchema = z.object({
           if (members.size !== registry.memberships.length) {
             context.addIssue({ code: 'custom', message: 'duplicate_member', path: ['memberships'] });
           }
-          const operations = registry.all_registry_entry.map(({ RegistryEntry: operation }) => operation);
-          if (new Set(operations.map((operation) => operation.id)).size !== operations.length) {
-            context.addIssue({ code: 'custom', message: 'duplicate_operation', path: ['all_registry_entry'] });
-          }
-          const referenced = operations.flatMap((operation) => [operation.entry.payer, ...operation.entry.lines.map((line) => line.member)]);
-          if (referenced.some((member) => !members.has(member))) {
-            context.addIssue({ code: 'custom', message: 'unknown_member', path: ['all_registry_entry'] });
-          }
-          return registry;
+          const seen = new Set<OperationId>();
+          registry.all_registry_entry.forEach(({ RegistryEntry: { operation, members: referenced } }, index) => {
+            if (seen.has(operation.id)) {
+              context.addIssue({ code: 'custom', message: 'duplicate_operation', path: ['all_registry_entry', index] });
+            }
+            seen.add(operation.id);
+            if (referenced.some((member) => !members.has(member))) {
+              context.addIssue({ code: 'custom', message: 'unknown_member', path: ['all_registry_entry', index] });
+            }
+          });
+          return { ...registry, all_registry_entry: registry.all_registry_entry.map(({ RegistryEntry: { operation } }) => operation) };
         }),
     }),
   ]),
@@ -149,6 +156,6 @@ export function convertTricount(data: unknown): ImportedGroup {
   return {
     title: registry.title,
     members: registry.memberships.map(({ uuid, alias }) => ({ id: uuid, name: alias.display_name })),
-    operations: registry.all_registry_entry.map(({ RegistryEntry: operation }) => operation),
+    operations: registry.all_registry_entry,
   };
 }
