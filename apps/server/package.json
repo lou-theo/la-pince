@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "deploy": "pnpm --filter @la-pince/app build && wrangler d1 migrations apply la-pince --remote --config wrangler.production.jsonc && wrangler deploy --config wrangler.production.jsonc",
     "migrations:generate": "drizzle-kit generate",
     "migrations:check": "drizzle-kit generate --name schema-drift | grep 'No schema changes'",
     "typecheck": "tsc --project tsconfig.json",
