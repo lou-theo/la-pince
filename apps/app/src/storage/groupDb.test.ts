@@ -101,6 +101,26 @@ describe('openGroupDb', () => {
     expect(copy.cursor).toBe(again.seq);
   });
 
+  it('replaces the copy another window saved from a history the server lost, instead of merging into it', async () => {
+    const a = change({ id: 'a', date: '2026-11-01' });
+    const lost = [change({ id: 'lost1', date: '2026-11-02' }), change({ id: 'lost2', date: '2026-11-02' })];
+    // Written after the database was restored to `a`: they take the seqs the lost changes had, and one more.
+    const written = lost.map((gone, index) => ({
+      ...change({ id: `new${String(index)}`, date: '2026-11-03' }),
+      seq: gone.seq,
+      createdSeq: gone.seq,
+    }));
+    const next = change({ id: 'new2', date: '2026-11-03' });
+    const db = await openGroupDb(token);
+    await db.saveRead(readOf(0, [a]));
+    // Another window read the lost changes before the restore and saved them.
+    await db.saveRead(readOf(a.seq, lost, [a]));
+    // This window, still at `a` whose revision the server kept, reads what was written since the restore.
+    const copy = await db.saveRead(readOf(a.seq, [...written, next], [a]));
+    expect([...copy.changes.keys()]).toStrictEqual(['a', 'new0', 'new1', 'new2']);
+    expect(copy.cursor).toBe(next.seq);
+  });
+
   it('keeps the previous copy whole when a save fails halfway', async () => {
     const db = await openGroupDb(token);
     const a = change({ id: 'a', date: '2026-11-01' });
