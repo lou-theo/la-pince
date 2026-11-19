@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "la-pince",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "la-pince",
+      // Placeholder until the database is created in the EU jurisdiction when the app goes online; local runs only use it as a key.
+      "database_id": "local",
+      // Written by drizzle-kit from src/schema.ts, applied by Wrangler in file order.
+      "migrations_dir": "drizzle",
+    },
+  ],
+}

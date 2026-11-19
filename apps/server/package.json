@@ -1,0 +1,28 @@
+{
+  "name": "@la-pince/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "migrations:generate": "drizzle-kit generate",
+    "migrations:check": "drizzle-kit generate --name schema-drift | grep 'No schema changes'",
+    "typecheck": "tsc --project tsconfig.json",
+    "test": "pnpm migrations:check && vitest run --coverage"
+  },
+  "dependencies": {
+    "@la-pince/core": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@la-pince/config": "workspace:*",
+    "@vitest/coverage-v8": "catalog:",
+    "drizzle-kit": "catalog:",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}
