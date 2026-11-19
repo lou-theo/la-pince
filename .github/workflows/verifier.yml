@@ -29,3 +29,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm verifier
+      # End to end (decision 35 f): the app built with its service worker, in Chromium and WebKit, against the Worker on a local D1.
+      - run: pnpm --filter @la-pince/e2e exec playwright install --with-deps chromium webkit
+      - run: pnpm e2e

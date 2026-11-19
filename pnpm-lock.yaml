@@ -18,6 +18,9 @@ catalogs:
     '@inlang/plugin-message-format':
       specifier: 4.6.0
       version: 4.6.0
+    '@playwright/test':
+      specifier: 1.65.1
+      version: 1.65.1
     '@testing-library/dom':
       specifier: 10.4.2
       version: 10.4.2
@@ -328,6 +331,37 @@ importers:
         specifier: workspace:*
         version: link:../import-tricount
       playwright:
+        specifier: 'catalog:'
+        version: 1.65.1
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@24.19.2)
+    devDependencies:
+      '@la-pince/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.1.0(@types/node@24.19.2)(@vitest/coverage-v8@5.1.0)(happy-dom@21.0.4)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
+
+  tools/e2e:
+    dependencies:
+      '@la-pince/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@la-pince/import-tricount':
+        specifier: workspace:*
+        version: link:../import-tricount
+      '@playwright/test':
         specifier: 'catalog:'
         version: 1.65.1
       vite:
@@ -1971,6 +2005,11 @@ packages:
 
   '@oxc-project/types@0.156.0':
     resolution: {integrity: sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw==}
+
+  '@playwright/test@1.65.1':
+    resolution: {integrity: sha512-y+NCIRm2LvY4slUVWvGh1nujJ8RF/hEisIsq2mtUPgdQC4L701bq5hZGMhrpeXjACvwvO9tj5dJqhvM6TP9lbw==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   '@poppinss/colors@4.1.6':
     resolution: {integrity: sha512-H9xkIdFswbS8n1d6vmRd8+c10t2Qe+rZITbbDHHkQixH5+2x1FDGmi/0K+WgWiqQFKPSlIYB7jlH6Kpfn6Fleg==}
@@ -5865,6 +5904,10 @@ snapshots:
     optional: true
 
   '@oxc-project/types@0.156.0': {}
+
+  '@playwright/test@1.65.1':
+    dependencies:
+      playwright: 1.65.1
 
   '@poppinss/colors@4.1.6':
     dependencies:
