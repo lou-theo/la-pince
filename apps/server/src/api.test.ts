@@ -299,7 +299,7 @@ describe('GET /api/groups/:token/changes', () => {
     await send(token, [expense('n2', 'n2-r1')]);
     const seen = await read(token, after(before));
     expect(seen.changes.map((change) => change.id)).toStrictEqual(['n2']);
-    // What a restore to the point before `l2` leaves: the revision and the operation gone, the counter back, as SQLite keeps it in the database.
+    // What a restore to the point before `n2` leaves: the revision and the operation gone, the counter back, as SQLite keeps it in the database.
     const { DB } = await server.getWorker<Env>().getEnv();
     await DB.batch([
       DB.prepare('DELETE FROM operations WHERE id = ?').bind('n2'),
@@ -309,7 +309,7 @@ describe('GET /api/groups/:token/changes', () => {
     expect(await errorOf(await changesAt(token, seen.cursor, 'n2-r1'))).toStrictEqual([409, 'unknown_cursor']);
     expect(await send(token, [expense('n3', 'n3-r1')])).toStrictEqual([{ revisionId: 'n3-r1', status: 'written', seq: seen.cursor }]);
     expect(await errorOf(await changesAt(token, seen.cursor, 'n2-r1'))).toStrictEqual([409, 'unknown_cursor']);
-    // A phone that read `l3` after the restore goes on reading.
+    // A phone that read `n3` after the restore goes on reading.
     expect(await read(token, after(await read(token, after(before))))).toStrictEqual({ changes: [], cursor: seen.cursor, hasMore: false });
   });
 

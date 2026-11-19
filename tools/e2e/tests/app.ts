@@ -8,6 +8,14 @@ export const appUrl = (): string => {
   return url;
 };
 
+export const restoreUrl = (): string => {
+  const url = process.env.E2E_RESTORE_URL;
+  if (url === undefined) {
+    throw new Error('E2E_RESTORE_URL is set by the global setup');
+  }
+  return url;
+};
+
 /** Opens the group of a link as one of its members, and waits for the service worker to control the page, so that it can reload offline. */
 export async function openAs(page: Page, token: string, member: string): Promise<void> {
   await page.goto(`${appUrl()}/g/${token}`);

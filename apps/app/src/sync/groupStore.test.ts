@@ -1,4 +1,5 @@
 import {
+  type ApiError,
   type Change,
   cursorSchema,
   groupResponseSchema,
@@ -95,6 +96,31 @@ describe('createGroupStore', () => {
     });
     await always.store.load();
     expect(always.store.getSnapshot()).toStrictEqual({ status: 'error', error: 'unexpected' });
+  });
+
+  it('gives up, keeping the group shown, when the read from 0 meets a second restore on one of its next pages', async () => {
+    const changes = ['a', 'b', 'gone'].map((id) => change({ id, date: '2026-11-01' }));
+    const [, b, gone] = changes;
+    let restoredAgain = false;
+    const { server, store } = watch(changes, {
+      pageSize: 2,
+      // Past the first page of the read from 0, the server no longer knows `b`: restored once more meanwhile.
+      answer: (url) =>
+        restoredAgain && url.includes(`since=${String(b?.seq)}&`)
+          ? Promise.resolve(json({ error: 'unknown_cursor' } satisfies ApiError, 409))
+          : undefined,
+    });
+    await store.load();
+    changes.splice(2, 1, change({ id: 'c', date: '2026-11-02' }));
+    restoredAgain = true;
+    await store.load();
+    expect(server.calls.filter((url) => url.includes('changes')).slice(-3)).toStrictEqual([
+      `/api/groups/${token}/changes?since=${String(gone?.seq)}&revision=${String(gone?.revisionId)}`,
+      `/api/groups/${token}/changes?since=0`,
+      `/api/groups/${token}/changes?since=${String(b?.seq)}&revision=${String(b?.revisionId)}`,
+    ]);
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'unexpected' });
+    expect(ids(store.getSnapshot())).toStrictEqual(['a', 'b', 'gone']);
   });
 
   it('reads everything again when the seq of its cursor was given to another revision after a restore', async () => {

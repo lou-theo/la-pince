@@ -36,8 +36,7 @@ export function databaseRestore(db: Database): { readonly snapshot: () => Promis
 }
 
 /**
- * Serves the snapshot and the restore to the tests, which run in other processes than the stack: `POST /snapshot`, `POST /restore`. Local only,
- * for the run.
+ * Serves the snapshot and the restore to the tests, which run in other processes than the stack: `POST /snapshot`, `POST /restore`.
  */
 export async function serveRestore(db: Database): Promise<{ readonly url: string; readonly close: () => Promise<void> }> {
   const { snapshot, restore } = databaseRestore(db);
