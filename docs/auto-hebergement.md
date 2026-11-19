@@ -113,7 +113,7 @@ Après une fusion qui a abîmé la base, avec le déploiement automatique : annu
 
 Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi de la perte du compte doit vivre ailleurs. `tools/sauvegarde/sauvegarde.yml` est une tâche planifiée GitHub qui exporte la base chaque nuit et commite le fichier SQL dans un repo privé, seulement s'il a changé : l'historique du repo donne la base à toute date passée. Le fichier est en clair : les liens des groupes n'y sont que hachés, il ne donne accès à aucun groupe, mais il contient les noms, les titres et les montants de tous les groupes de l'instance. Elle tient dans les minutes gratuites de GitHub Actions pour un repo privé ; l'export bloque la base le temps qu'il tourne, quelques secondes pour un groupe.
 
-1. Créer un jeton d'API réservé à la sauvegarde, pour que GitHub ne garde pas celui du déploiement : My Profile, API Tokens, Create Token, Custom token, permission Account, D1, Read ; le récapitulatif doit montrer « D1: Read » seul.
+1. Créer un jeton d'API réservé à la sauvegarde, pour que GitHub ne garde pas celui du déploiement : My Profile, API Tokens, Create Token, Custom token, permission Account, D1, Edit (l'export est refusé en lecture seule) ; le récapitulatif doit montrer « D1: Edit » seul.
 2. Créer le repo privé à côté du dossier du code, pas dedans, et y mettre la tâche (`<compte>` étant son compte GitHub) :
 
    ```sh
