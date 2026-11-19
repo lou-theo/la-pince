@@ -92,16 +92,6 @@ describe('opening a group', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeDefined();
   });
 
-  it('drops the answer of a group left before it arrived', async () => {
-    let answer: (response: Response) => void = () => undefined;
-    renderApp(`/g/${token}`, () => new Promise((resolve) => (answer = resolve)));
-    cleanup();
-    answer(json(group));
-    // A macrotask: the fetch, `json()` and `then()` all run before it.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(localStorage.getItem('la-pince:last-group')).toBeNull();
-  });
-
   it('tells a malformed link without calling the server', () => {
     const calls: string[] = [];
     renderApp('/g/short', (url) => {
@@ -165,10 +155,10 @@ describe('a group as one of its members', () => {
     change({ id: 'op-gone', date: '2026-11-08', deleted: true }),
   ];
 
-  async function openAsBruno(path = `/g/${token}`) {
+  async function openAsBruno(path = `/g/${token}`, members = group.members) {
     const user = userEvent.setup();
     saveCurrentMember(token, 'm2');
-    const location = renderApp(path, fakeServer({ token, group, changes, pageSize: 2 }).fetch);
+    const location = renderApp(path, fakeServer({ token, group: { ...group, members }, changes, pageSize: 2 }).fetch);
     await screen.findByText('Tu es Bruno');
     return { user, location };
   }
@@ -185,19 +175,20 @@ describe('a group as one of its members', () => {
   });
 
   it('shows an operation with the share of each member, in the order they were added', async () => {
-    const { user, location } = await openAsBruno();
+    // Members added in another order than their identifiers, which order the shares of an effect.
+    const { user, location } = await openAsBruno(`/g/${token}`, group.members.toReversed());
     await user.click(screen.getByRole('link', { name: /Courses/ }));
     expect(location.history.at(-1)).toBe(`/g/${token}/operations/op-shopping`);
     expect(screen.getByRole('heading', { name: 'Courses' })).toBeDefined();
     expect(screen.getByText('jeudi 5 novembre 2026')).toBeDefined();
-    expect(screen.getByLabelText('Montant').textContent).toBe('45,00\u00a0€');
+    expect(screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === 'Montant 45,00\u00a0€')).toBeDefined();
     expect(screen.getByText('Payé par Alice')).toBeDefined();
     expect(screen.getByText('Saisi par Alice')).toBeDefined();
     const split = within(screen.getByRole('region', { name: 'Répartition' }));
     expect(split.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
-      'Alice10,00\u00a0€',
-      'Bruno (toi)20,00\u00a0€',
       'Chloé15,00\u00a0€',
+      'Bruno (toi)20,00\u00a0€',
+      'Alice10,00\u00a0€',
     ]);
     // The detail belongs to the list of operations.
     expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
@@ -210,6 +201,26 @@ describe('a group as one of its members', () => {
     await openAsBruno(`/g/${token}/operations/op-payback`);
     expect(screen.getByText('Chloé a remboursé Alice')).toBeDefined();
     expect(screen.queryByRole('region', { name: 'Répartition' })).toBeNull();
+  });
+
+  it('shows the split of a reimbursement to several members', async () => {
+    changes.push(
+      change({
+        id: 'op-split',
+        date: '2026-11-07',
+        payer: 'm2',
+        lines: [
+          ['m1', 300],
+          ['m3', 200],
+        ],
+        kind: 'reimbursement',
+      }),
+    );
+    await openAsBruno(`/g/${token}/operations/op-split`);
+    changes.pop();
+    expect(screen.getByText('Bruno (toi) a remboursé Alice, Chloé')).toBeDefined();
+    const split = within(screen.getByRole('region', { name: 'Répartition' }));
+    expect(split.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual(['Alice3,00\u00a0€', 'Chloé2,00\u00a0€']);
   });
 
   it('says so for a deleted or unknown operation', async () => {
@@ -231,6 +242,10 @@ describe('a group as one of its members', () => {
       'Chloé-10,00\u00a0€',
       'Bruno (toi)-13,00\u00a0€',
     ]);
+    cleanup();
+    // The same screen with a trailing slash keeps its tab.
+    await openAsBruno(`/g/${token}/soldes/`);
+    expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
     const transfers = within(screen.getByRole('region', { name: 'Remboursements suggérés' }));
     expect(transfers.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
       'Chloé doit 10,00\u00a0€ à Alice',

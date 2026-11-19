@@ -38,14 +38,16 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
       <header className={styles.detailHeader}>
         <p className={layout.muted}>{operation.kind === 'reimbursement' ? m.operation_reimbursement() : formatDay(operation.date, { long: true })}</p>
         <h2 className={layout.title}>{operation.title}</h2>
-        <p className={styles.bigAmount} aria-label={m.operation_total()}>
+        <p className={styles.bigAmount}>
+          <span className={layout.visuallyHidden}>{m.operation_total()} </span>
           {formatCents(operation.effect.total)}
         </p>
         <p>{who(view, operation)}</p>
         {operation.kind === 'reimbursement' ? <p className={layout.muted}>{formatDay(operation.date, { long: true })}</p> : null}
         {operation.author === undefined ? null : <p className={layout.muted}>{m.operation_entered_by({ name: view.nameOf(operation.author) })}</p>}
       </header>
-      {operation.kind === 'expense' ? (
+      {/* A reimbursement to a single member says it all in its title line. */}
+      {operation.kind === 'expense' || shares.length > 1 ? (
         <section className={styles.detailSection} aria-labelledby={splitTitle}>
           <h3 id={splitTitle} className={styles.sectionTitle}>
             {m.operation_split()}

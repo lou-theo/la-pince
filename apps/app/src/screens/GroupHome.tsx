@@ -3,7 +3,7 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
-import { liveOperations, sortedBalances } from '../model/group.ts';
+import { liveOperations, sortedBalances, transfers } from '../model/group.ts';
 import { readCurrentMember, saveCurrentMember } from '../storage/device.ts';
 import { Balances } from './Balances.tsx';
 import styles from './GroupHome.module.css';
@@ -27,9 +27,10 @@ export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode 
     return group.members.find((member) => member.id === stored);
   });
   const [choosing, setChoosing] = useState(false);
-  const view = useMemo(() => {
+  const computed = useMemo(() => {
     const operations = liveOperations(changes.values());
-    return { operations, balances: sortedBalances(group.members, operations) };
+    const balances = sortedBalances(group.members, operations);
+    return { operations, balances, transfers: transfers(balances) };
   }, [changes, group.members]);
 
   if (currentMember === undefined || choosing) {
@@ -46,13 +47,12 @@ export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode 
       />
     );
   }
-  const names = new Map(group.members.map((member) => [member.id, member.name]));
-  const groupView: GroupView = {
-    ...view,
+  const view: GroupView = {
+    ...computed,
     me: currentMember.id,
     // Who I am is named “(toi)” wherever a member is named.
     nameOf: (id: MemberId) => {
-      const name = names.get(id) ?? id;
+      const name = group.members.find((member) => member.id === id)?.name ?? id;
       return id === currentMember.id ? `${name} (${m.you()})` : name;
     },
     memberOrder: group.members.map((member) => member.id),
@@ -74,17 +74,17 @@ export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode 
           </button>
         </p>
       </header>
-      <nav className={styles.tabs}>
+      <nav className={styles.tabs} aria-label={m.tabs_label()}>
         <Tab href="/">{m.tab_operations()}</Tab>
         <Tab href="/soldes">{m.tab_balances()}</Tab>
       </nav>
       <Switch>
         <Route path="/">
-          <OperationList view={groupView} />
+          <OperationList view={view} />
         </Route>
-        <Route path="/operations/:id">{({ id }) => <OperationDetail view={groupView} id={id} />}</Route>
+        <Route path="/operations/:id">{({ id }) => <OperationDetail view={view} id={id} />}</Route>
         <Route path="/soldes">
-          <Balances view={groupView} />
+          <Balances view={view} />
         </Route>
         <Route>
           <p className={layout.muted}>{m.not_found()}</p>
@@ -96,8 +96,9 @@ export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode 
 
 function Tab({ href, children }: { readonly href: string; readonly children: ReactNode }) {
   const [location] = useLocation();
-  // An operation's detail belongs to the list of operations.
-  const active = href === '/' ? location === '/' || location.startsWith('/operations/') : location === href;
+  // The routes match with or without a trailing slash; an operation's detail belongs to the list of operations.
+  const path = location.replace(/(.)\/+$/, '$1');
+  const active = href === '/' ? path === '/' || path.startsWith('/operations/') : path === href;
   return (
     <Link className={active ? `${styles.tab ?? ''} ${styles.active ?? ''}` : styles.tab} href={href} aria-current={active ? 'page' : undefined}>
       {children}

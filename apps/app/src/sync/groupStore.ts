@@ -81,6 +81,7 @@ export function createGroupStore(client: ApiClient, token: string): GroupStore {
         if (state.status === 'error') {
           publish({ status: 'loading' });
         }
+        // shortcut: a failed read replaces a group already shown by the error; to revisit when a write triggers a read (expense form).
         reading = read()
           .then(publish)
           .finally(() => {

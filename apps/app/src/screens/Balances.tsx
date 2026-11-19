@@ -1,7 +1,6 @@
-import { type ReactNode, useId, useMemo } from 'react';
+import { type ReactNode, useId } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
-import { transfers } from '../model/group.ts';
 import { formatCents } from '../model/money.ts';
 import layout from './Layout.module.css';
 import styles from './Operations.module.css';
@@ -11,7 +10,7 @@ import type { GroupView } from './view.ts';
 export function Balances({ view }: { readonly view: GroupView }): ReactNode {
   const balancesTitle = useId();
   const transfersTitle = useId();
-  const suggested = useMemo(() => transfers(view.balances), [view.balances]);
+  const suggested = view.transfers;
   return (
     <>
       <section className={styles.detailSection} aria-labelledby={balancesTitle}>

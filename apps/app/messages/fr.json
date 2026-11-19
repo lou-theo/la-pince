@@ -20,6 +20,7 @@
   "error_network": "Le serveur ne répond pas : vérifie ta connexion, puis réessaie.",
   "error_unexpected": "Le serveur a répondu de façon inattendue : réessaie plus tard.",
   "you": "toi",
+  "tabs_label": "Sections du groupe",
   "tab_operations": "Dépenses",
   "tab_balances": "Soldes",
   "operations_empty": "Aucune dépense pour l'instant.",
