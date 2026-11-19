@@ -17,7 +17,8 @@ jobs:
   verifier:
     name: verifier
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Usually under 3 min; the system libraries of the browsers come from Ubuntu's mirror, which took 8 min once.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
