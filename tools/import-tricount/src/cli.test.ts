@@ -36,8 +36,8 @@ describe('run', () => {
     const token = /: ([\w-]{43})$/.exec(lines[0] ?? '')?.[1];
     expect(lines.slice(1)).toStrictEqual([
       `group: http://localhost:5173/g/${String(token)}`,
-      'Groupe de démo: 250 revisions written, 0 of them deletions',
-      "spent 9 609,80 €, reimbursed 1 024,16 €, balances equal to the export's to the cent",
+      'Groupe de démo: 253 revisions written, 0 of them deletions',
+      "spent 9 756,29 €, reimbursed 1 105,25 €, balances equal to the export's to the cent",
     ]);
     const again = await cli([corpusPath], {
       ADMIN_TOKEN,

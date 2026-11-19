@@ -113,13 +113,183 @@
         "all_registry_entry": [
           {
             "RegistryEntry": {
-              "uuid": "f089a5d3-01b2-4b44-817b-200f94489bbd",
+              "uuid": "cc473f62-fca4-457c-b4bb-891fedd962d1",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-88.22"
+              },
+              "description": "Bowling",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-18.26"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "dfdaba17-d518-42a6-81de-c90c8ec32bcf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-18.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-16.66"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-17.65"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a49b9696-751e-4402-a733-3ad46f48a5a0"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-17.65"
+                  }
+                }
+              ],
+              "date": "2026-11-17 00:00:00.000000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "3fa49b91-e3c7-440e-8723-ee8118ea1d29",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-81.09"
+              },
+              "description": "Remboursement",
+              "type_transaction": "BALANCE",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "b006c93f-3057-4f95-8184-9382035e26fb"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-81.09"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "b006c93f-3057-4f95-8184-9382035e26fb"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "0.00"
+                  }
+                }
+              ],
+              "date": "2026-11-17 19:25:55.456000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "72a0a61e-a88d-426c-82cc-408d4fb55562",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-58.27"
+              },
+              "description": "Bowling",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-19.42"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5d343b47-fdd0-4802-930b-eadda0ce37d9"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-19.42"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-19.43"
+                  }
+                }
+              ],
+              "date": "2026-11-16 20:04:52.326000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "3b9b942a-f9c3-439a-a548-c5ed84cac7d6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.20"
               },
-              "description": "Kebabs",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -166,7 +336,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "28638282-b676-49b6-bc60-865c65419878",
+              "uuid": "73ab6b88-97e1-49dc-9b7f-4d6cc18d1229",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -219,13 +389,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "ba1c22f2-3fd7-4b1b-a36c-9b37b99138c2",
+              "uuid": "c8d32846-e0a4-442d-ae14-37c74e9467e7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-21.80"
               },
-              "description": "Fruits et légumes",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -272,13 +442,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "648d4236-c604-4f5f-bc82-433a8c4d3df5",
+              "uuid": "0b07d8c0-f5b2-4b26-bb69-598b7f86c3e7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-110.94"
               },
-              "description": "Courses de la semaine",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -325,13 +495,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "34349d2d-14c6-414b-9771-a7bd2a7c7180",
+              "uuid": "06add298-2d83-48ef-b829-1e48756267b6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-72.00"
               },
-              "description": "Brunch",
+              "description": "Restaurant",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -389,13 +559,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "00dd369e-a0c5-4575-bf3d-dff235a7bfa8",
+              "uuid": "d9d2c895-ba48-47d7-81bc-99a606ec562b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-3.60"
               },
-              "description": "Glaces",
+              "description": "Café",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -431,13 +601,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2ff7443f-eb3e-4118-9ea1-d7b7d146e18a",
+              "uuid": "07e5e5db-cde8-4129-9cc7-287d5643e073",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-15.90"
               },
-              "description": "Cinéma",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -484,13 +654,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d60b43d6-6c5a-4f4c-a048-b6404a59d6d1",
+              "uuid": "512ff2d1-bc8e-4b08-84eb-86a9cc43ca56",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-3.90"
               },
-              "description": "Boulangerie",
+              "description": "Journal",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -537,13 +707,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1f07d096-c2a7-4162-a38d-caaf63a6d0d2",
+              "uuid": "9940c41e-f11f-42e5-93db-6bb24aa088d4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-119.36"
               },
-              "description": "Brunch",
+              "description": "Karaoké",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -590,13 +760,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1d488a4d-a2ec-4740-a455-feea8d5dfa7c",
+              "uuid": "c465989b-a8a5-49dc-bb1c-ae1c07ae821c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-32.00"
               },
-              "description": "Bières",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -654,13 +824,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f8aa9567-bc63-447d-a6bc-8c2262ab6050",
+              "uuid": "b4f2f735-f6bc-418e-a29c-d571485977e6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-32.04"
               },
-              "description": "Fruits et légumes",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -707,13 +877,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "3c836e8b-ee80-436b-bd42-abcb3b36bb75",
+              "uuid": "b5510c60-c6c3-4b31-ba61-9b565a9d2c04",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-7.90"
               },
-              "description": "Café",
+              "description": "Croissants",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -749,13 +919,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "be2fc5d5-6743-409e-91de-07a902fd4d58",
+              "uuid": "01358f17-48a6-4cbc-8995-34e20120108a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-34.84"
               },
-              "description": "Kebabs",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -802,13 +972,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9a7ac965-0637-4e32-afe5-389907e9bcb2",
+              "uuid": "a0ce9b59-3f64-4430-bae4-fd489cc32b5c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-31.20"
               },
-              "description": "Kebabs",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -855,13 +1025,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f0723aee-b2db-40c0-9205-b3ce505e8b2c",
+              "uuid": "79972687-4559-46b7-8900-4b79fb7cb84b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-43.90"
               },
-              "description": "Bowling",
+              "description": "Restaurant",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -919,13 +1089,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9336c183-b206-4817-a2b2-54295d3944b8",
+              "uuid": "28e24237-7c25-477c-9a89-f476bab70df7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-7.80"
               },
-              "description": "Café",
+              "description": "Glaces",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -983,13 +1153,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4d9a8898-95fc-436d-a584-022ca87ddcc9",
+              "uuid": "c0e53e7e-b109-4014-84ab-7e05e215a773",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-75.10"
               },
-              "description": "Escape game",
+              "description": "Bowling",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1047,13 +1217,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "dfe1667e-b4cd-4f11-b90e-c13a6e704917",
+              "uuid": "73c090d0-65a0-4001-8eaf-68249077be1d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.78"
               },
-              "description": "Pizzas",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1100,13 +1270,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4e59fefd-983e-4695-ad4a-a496025aa811",
+              "uuid": "07fe9253-2ed7-4325-b2c3-8befe6b87163",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-2.37"
               },
-              "description": "Café",
+              "description": "Journal",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1142,13 +1312,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "fa21b9eb-f525-4a67-ab6d-6f808d79d3b3",
+              "uuid": "249ecd55-b319-4186-a720-86a7d9745c5f",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.00"
               },
-              "description": "Apéro",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1195,13 +1365,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1cf7f09b-84b6-49c2-aac7-ffbe12b9bb9b",
+              "uuid": "be3147fb-d5f5-40a4-88b6-8d323629a9a8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.50"
               },
-              "description": "Fruits et légumes",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1248,7 +1418,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "95d9c5b4-9a54-47d9-944d-76cf6225d3d7",
+              "uuid": "fdba7bfe-fa49-4f2c-8b95-4fa4029030c1",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -1301,13 +1471,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "96f85e28-1b0e-4acc-80a8-fa538f577ed7",
+              "uuid": "4c92bf0f-a719-42ac-b8a6-1da62939a9c9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-2.50"
               },
-              "description": "Pain et fromage",
+              "description": "Café",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1354,13 +1524,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "befad35f-b0a8-4173-a72a-09f46b153c08",
+              "uuid": "dc3a3ed3-ab71-4778-a529-591edcc9a5ef",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-15.90"
               },
-              "description": "Tapas",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1407,13 +1577,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b25efbdf-83f0-4b65-be3d-902aa2cc07d4",
+              "uuid": "50f3ebaa-e419-410e-acb6-b6122dc0e094",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-45.09"
               },
-              "description": "Péage",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1460,13 +1630,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a36993aa-5937-4365-91b2-8378a9784d2d",
+              "uuid": "5a56261c-302d-4f57-9af0-57f28ac06dba",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-21.80"
               },
-              "description": "Apéro",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1513,13 +1683,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4439be45-bf5f-4cc5-9f60-3e14ed36eec6",
+              "uuid": "3656e951-69b7-4d91-8733-77c128ed6047",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-4.50"
               },
-              "description": "Parking",
+              "description": "Journal",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1555,13 +1725,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "e1809d5d-f837-432c-b412-4e290930ef71",
+              "uuid": "ec66baf4-e52b-4f3f-b9c9-19dad8fb13d3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-37.80"
               },
-              "description": "Pizzas",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1608,13 +1778,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "3980e797-779e-4471-a1cf-f5deb1c06d5a",
+              "uuid": "7d6bd1da-a2cf-4411-9998-dadbc7ac83dd",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-12.60"
               },
-              "description": "Cinéma",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1661,13 +1831,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f38e09e9-0be0-42cc-a395-e282ea559e93",
+              "uuid": "ce869139-a187-416b-aca4-6e70c3ecff7d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-83.12"
               },
-              "description": "Barbecue",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1736,13 +1906,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b06c3d03-eea7-48e1-bdcc-4c5133cf6001",
+              "uuid": "85f99f57-bd7f-4ae4-b0b6-b4561efc7268",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-114.15"
               },
-              "description": "Bowling",
+              "description": "Escape game",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1789,7 +1959,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "15eec3f9-9008-4b48-80db-1fbbb7f6e22d",
+              "uuid": "3b362111-724c-4eb3-ab81-98e541875e9a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -1831,7 +2001,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4568fc41-680b-4a63-859c-8df7b0b861a1",
+              "uuid": "71f3cc52-1699-443f-877d-695f904698b6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -1873,13 +2043,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5b5a42cb-a82b-41be-80c3-315ae5ef9767",
+              "uuid": "05c27dae-850b-4c98-80ed-185c9bc3c62a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.60"
               },
-              "description": "Tapas",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1926,13 +2096,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "7e4cf486-5caa-484f-a7b1-3cae1b7210e9",
+              "uuid": "c5cd93ee-a3dd-4358-9a0a-ff3c9434e37c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.00"
               },
-              "description": "Cinéma",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -1979,13 +2149,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f893dbbc-5559-40e2-9bc6-5b96106acbd1",
+              "uuid": "6ffabd45-9122-4bb9-bbc6-71c3bf5406de",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.00"
               },
-              "description": "Apéro",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2021,7 +2191,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "dc6f7a9b-a07c-4d52-9c89-678ce135266b",
+              "uuid": "eb37c255-1d3a-4c24-81c1-ff72477d30e1",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -2118,7 +2288,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "0eb1244b-dffd-446a-8cad-6d22beae2053",
+              "uuid": "8d22c71d-9389-4920-80a4-47cd60055387",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -2160,7 +2330,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4a83c800-c317-483a-a6c9-169807acd230",
+              "uuid": "d06f3ad4-1608-4e4a-a3fd-0e49fcf0236b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -2202,13 +2372,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a3c4548c-63d8-4db6-8343-77ae71f2ee3c",
+              "uuid": "fc49e786-8707-42e7-a4e4-eca73a235797",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-514.50"
               },
-              "description": "Location de voiture",
+              "description": "Courses du week-end",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2277,13 +2447,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b37f18cd-ba2b-4f13-8df1-2cd80e44d904",
+              "uuid": "d91be1d0-7b0e-4df3-a71c-a3b12475ce8f",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-9.20"
               },
-              "description": "Glaces",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2363,13 +2533,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "399638d4-b8cb-4457-94af-3aef639c4550",
+              "uuid": "ada4f70e-41e4-43e7-b74d-a18a5d0319c8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.00"
               },
-              "description": "Boulangerie",
+              "description": "Croissants",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2449,7 +2619,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "aaa567b1-e8d8-448f-a93b-7290253ac4d2",
+              "uuid": "5c105178-9bad-4304-8014-e80c05fae6d9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -2535,7 +2705,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c84a4cc5-5a80-44bd-b8f4-fb7eff77918b",
+              "uuid": "4270074e-ba94-4994-9fe3-e300fe065c91",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -2577,13 +2747,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "23ef1883-e9ee-4bf7-8b26-ba326501384a",
+              "uuid": "564b44e1-a3e1-40bb-af3d-f3dd08391953",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-23.40"
               },
-              "description": "Cinéma",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2663,13 +2833,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "30aaeb9d-3cc2-42f6-9183-d617f43457f3",
+              "uuid": "855ca03a-e8f4-4d50-ae60-8cec3af498c2",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-8.60"
               },
-              "description": "Café",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2738,7 +2908,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b0f31b3e-88a0-4f59-9b1e-1a9c7135fecc",
+              "uuid": "00f46440-4393-4532-b0c5-8d400ffb2f18",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -2780,13 +2950,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5dd02657-f6ad-451d-8be0-2a6239f6d3c3",
+              "uuid": "733cbd19-e296-4100-ac5c-c80c3f5d5e85",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-8.60"
               },
-              "description": "Café",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2866,13 +3036,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "88e4f8f4-ac28-4356-bbc3-78816c9e2066",
+              "uuid": "cfa481e0-2099-4ae9-aefe-0cd0fb59b970",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-8.60"
               },
-              "description": "Café",
+              "description": "Boulangerie",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -2952,7 +3122,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "ec21f701-38dc-43e3-8d36-d699ea35c1c5",
+              "uuid": "5de80f1b-5181-40a7-aab0-2f908bc73b38",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -2994,7 +3164,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9eff57c5-4cbe-448d-a969-e887018a4d0e",
+              "uuid": "0bceff5c-aea2-427c-83bb-fdeff1ec15d4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -3036,13 +3206,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "0fc6ffa7-bf9a-4788-867d-5771fd4c715f",
+              "uuid": "777b2dea-61c0-488a-8dce-37ee7023ecd3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-118.60"
               },
-              "description": "Karaoké",
+              "description": "Restaurant",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3089,13 +3259,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "320a3c86-57c5-4e25-b3db-ece16aabbd05",
+              "uuid": "b06ae4ef-61ed-4939-af1c-78bcb63ac981",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-76.04"
               },
-              "description": "Barbecue",
+              "description": "Karaoké",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3175,13 +3345,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f85e404a-1c4a-4d7d-8e45-b20690f80c39",
+              "uuid": "013b2d89-dce3-48e4-b462-18cec6fb82a0",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-83.00"
               },
-              "description": "Essence",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3217,13 +3387,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d7e56029-f82f-4a91-8a69-9938c12e8efb",
+              "uuid": "5969209e-b152-4010-ae9b-d2f86a8de479",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.00"
               },
-              "description": "Courses",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3270,13 +3440,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "ff1c93bc-69b0-4b1c-bb58-05a639e17813",
+              "uuid": "1ebedfec-918e-41c7-b9af-ae9cba458fe0",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-1.00"
               },
-              "description": "Glaces",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3312,13 +3482,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a9215131-0ff0-4c83-a9c5-bf8fdaa4844b",
+              "uuid": "6536fa4f-af32-402b-a56b-020ee551303c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.20"
               },
-              "description": "Bières",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3354,13 +3524,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "08fb37ba-ea0e-4059-bb10-06d70f06d61a",
+              "uuid": "8652efbf-f4c9-431b-85e2-89db0aad3a42",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.49"
               },
-              "description": "Bières",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3440,7 +3610,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "212105e9-6dc0-46da-953c-5e19d75bede6",
+              "uuid": "8d9786b3-4edf-4954-93ee-cd1afc6d7583",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -3526,13 +3696,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "7940e02c-cb89-4535-8f2f-daedec76a9af",
+              "uuid": "30b74aab-e153-4e21-929c-0b03a52445a1",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.20"
               },
-              "description": "Crêpes",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3568,7 +3738,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "59118800-2753-45d7-a5b9-0fe7bfa8a5fd",
+              "uuid": "5811b904-19f9-42fb-b6d6-fcaf5b30677a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -3610,7 +3780,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "bd22a131-cfaa-4a97-9ec7-6173de35c76f",
+              "uuid": "40a6dcb3-8c3b-4be7-9ffa-2957dee12bad",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -3674,13 +3844,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f999d721-7a46-4ad8-80b7-fd44b42e75e4",
+              "uuid": "b5e868d9-601a-42d0-8db3-5736acf1bc5b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-5.00"
               },
-              "description": "Journal",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3749,13 +3919,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "8fa9e90d-bd6b-4a42-a50d-181f6832017c",
+              "uuid": "f72b812a-5986-46c5-92c5-c8df9d497e43",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-22.00"
               },
-              "description": "Apéro",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3802,7 +3972,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "981373be-3594-460f-ac05-2ea41b0a4690",
+              "uuid": "f0411154-5655-44be-b32c-726c2aa951e2",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -3855,13 +4025,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "8307f97e-301d-49c9-9926-61e0b1e5819a",
+              "uuid": "0f206aa8-e167-4b4f-918e-60f69e04e7a7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-12.00"
               },
-              "description": "Cinéma",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3908,13 +4078,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "439983f0-a9dc-48b5-8c2b-f7364df92bf7",
+              "uuid": "c59cfcf7-c5f3-4363-9436-4d7b976ce989",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-17.80"
               },
-              "description": "Cinéma",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3950,13 +4120,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "66a73fca-b15b-4ad7-9f4a-1e14ab8f3959",
+              "uuid": "433a2bb7-c0d8-45bb-9fe7-39a58bfb2892",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.00"
               },
-              "description": "Pizzas",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -3992,13 +4162,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "66285c86-fae6-4ae6-9f07-3cebecc1e1b2",
+              "uuid": "4694ec3f-0172-4add-bc1e-5ba39fd5d9b3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.50"
               },
-              "description": "Journal",
+              "description": "Boulangerie",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4034,13 +4204,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9e8f1ff3-f0a1-43ce-8ef6-6f6417ca0a66",
+              "uuid": "b0704d0b-7326-4949-a8a9-493f0189d278",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-51.00"
               },
-              "description": "Bowling",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4098,13 +4268,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "de87a57e-4d8a-413d-ada6-f01658b5d858",
+              "uuid": "16e89271-7a8e-446b-a0a2-097f315784f9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-76.00"
               },
-              "description": "Karaoké",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4173,13 +4343,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "62a9a16b-e8a5-475b-bd38-f4eb53c26278",
+              "uuid": "6373946d-ac4e-46dd-ad65-5eaad00b0524",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.00"
               },
-              "description": "Cinéma",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4215,13 +4385,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "cff303d7-0b71-437c-9bea-a1f28817d37c",
+              "uuid": "004a2670-3403-4e35-ac84-85b56c738d6d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-59.76"
               },
-              "description": "Escape game",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4279,13 +4449,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "e2f68da4-bf96-4efc-bbd0-991385e0600a",
+              "uuid": "cccfd1f8-7a4b-4e80-af87-c3187425d853",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-50.00"
               },
-              "description": "Restaurant",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4354,13 +4524,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "146d2c82-6430-4802-a4ef-666ffb4ba127",
+              "uuid": "0116bdf4-0eb3-482e-b5f1-adf7e893f0af",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.00"
               },
-              "description": "Apéro",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4396,13 +4566,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "e9e25da9-eb88-4793-97fb-fe0e4482a5cc",
+              "uuid": "44a79d11-4876-42cf-a648-ffe779f8f44a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.50"
               },
-              "description": "Glaces",
+              "description": "Café",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4438,13 +4608,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "6a2419db-6af2-4548-bc01-ab9846fef5c0",
+              "uuid": "68969275-4b51-4612-835f-b8476d31cf0f",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-18.00"
               },
-              "description": "Bières",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4502,13 +4672,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "60de8d78-357f-4d67-a3f5-6f188972c9c1",
+              "uuid": "481ecbf9-a91d-487d-8f42-9bd037288e84",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-36.00"
               },
-              "description": "Bières",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4566,13 +4736,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "7d2e4113-eaba-4ee0-bf9f-008cded73395",
+              "uuid": "e31fe8a2-38e4-407c-943e-84069240b81f",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-15.00"
               },
-              "description": "Crêpes",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4630,13 +4800,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9ef6a7d8-4015-4039-a89b-3627337b0f3a",
+              "uuid": "ac522424-ad18-4ac2-914b-a4a2e700ae76",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-4.12"
               },
-              "description": "Glaces",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4738,13 +4908,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a72da858-1915-48e0-baaa-d902bc6b0131",
+              "uuid": "8dc784eb-2e17-4385-b7dd-41105eb40fd3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-12.00"
               },
-              "description": "Fruits et légumes",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4780,13 +4950,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "51f4b8b7-b1e0-45e7-9cad-e88a76d55119",
+              "uuid": "d20e6f05-9261-4847-92ef-b2ca85c7a633",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-73.40"
               },
-              "description": "Restaurant",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4855,7 +5025,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "87559f78-0add-4d46-8bc5-dfc12b1c82e2",
+              "uuid": "1c5f2203-d280-4e73-b3cd-d5f476bc9ebb",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -4897,13 +5067,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2c59f8f9-daf6-4b4f-8705-025912592e2f",
+              "uuid": "f92d2e28-c33f-4547-bef7-a776e67aa6a4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.00"
               },
-              "description": "Bières",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -4939,13 +5109,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5e156dcc-261f-44e9-a9e9-fa4c600202c7",
+              "uuid": "3a22fb10-6bdf-44cf-8e1d-080cdce1cc8c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-85.92"
               },
-              "description": "Brunch",
+              "description": "Restaurant",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5014,7 +5184,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "0bb476b6-4930-460a-b0f1-93aa9c6c3441",
+              "uuid": "d2dd851b-1cff-4dfa-89da-eab990d7b5e9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -5056,13 +5226,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "88da6a5d-d37f-4407-8d96-cd3e11ede801",
+              "uuid": "8439f32e-b7e3-4828-b853-ccf6b0c3c787",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.00"
               },
-              "description": "Courses",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5098,13 +5268,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "0715d538-2f9a-4773-97e4-ae6ebd666e88",
+              "uuid": "b44a9243-4096-40d2-9e91-46d4a61589f1",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.00"
               },
-              "description": "Fruits et légumes",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5140,13 +5310,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "89b42fd4-10ae-4fec-ae1e-d13da97b1636",
+              "uuid": "34db59f6-b86c-4487-9713-a4bbf44ca7b5",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-59.00"
               },
-              "description": "Restaurant",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5182,13 +5352,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "3649c863-4d60-459d-8df1-087ca80a09cb",
+              "uuid": "ecd81449-4bef-45a0-ab89-e679774ba4c8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-60.00"
               },
-              "description": "Escape game",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5224,13 +5394,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d0237576-a310-4576-a77f-a17762781ab3",
+              "uuid": "3072fd24-eb82-4e40-8de4-d79a8e4054a8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-45.10"
               },
-              "description": "Essence",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5310,13 +5480,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "379c4a8e-0a15-4921-a94a-7c5ff6bf7e54",
+              "uuid": "d95cee07-7451-4456-8c43-8b8fec223f67",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-34.00"
               },
-              "description": "Apéro",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5396,7 +5566,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "61a32905-d253-40af-a1f9-14f35b2d1b75",
+              "uuid": "6d0f98ee-518a-4349-a483-06cf8e7ae057",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -5438,13 +5608,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c4f7edf1-cd6e-41f4-9fc5-384cded0bea7",
+              "uuid": "2a81f3b7-72ae-4b0b-83a0-8f5130f1ba73",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.20"
               },
-              "description": "Cinéma",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5480,13 +5650,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d41b5b85-e210-41e9-a212-89a375a03b36",
+              "uuid": "4440b6ab-e2be-4cd3-8e54-0de98661b85e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.00"
               },
-              "description": "Pizzas",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5522,13 +5692,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "cb358cea-1854-4b6d-aec7-1c83e4d2cf2c",
+              "uuid": "f33814c7-e6d9-4804-ad51-2ce6a218108d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-4.00"
               },
-              "description": "Glaces",
+              "description": "Croissants",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5564,13 +5734,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "fc44d380-4b96-4bab-9e57-456264d3d3b7",
+              "uuid": "d9df21d6-56f6-41d5-81f7-6b063e5267b8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.00"
               },
-              "description": "Pizzas",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5606,13 +5776,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a865cbcc-095e-4e36-bff1-6a13678d607a",
+              "uuid": "777b6a42-a61d-45d7-80fe-341f7ff33d08",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.00"
               },
-              "description": "Croissants",
+              "description": "Boulangerie",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5670,7 +5840,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "af1e5937-6082-42e1-abfb-b348b940d118",
+              "uuid": "c964d3d5-2a11-44c2-893e-c3b7b536aad2",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -5745,13 +5915,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "610a1065-fb2e-4b93-9c96-f79e96e59805",
+              "uuid": "c8f8181a-8bf9-4b7e-a75f-ad278a8c7c91",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-2.40"
               },
-              "description": "Parking",
+              "description": "Boulangerie",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5787,7 +5957,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "163d419b-de81-43ef-9dc1-039b132c0f04",
+              "uuid": "ab243ef1-e7c0-47ea-8e6d-e38fce51b413",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -5829,7 +5999,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b096da58-2212-47dd-97b8-5f572ddc1f59",
+              "uuid": "765346b8-868d-4c06-b41c-aa9a251d42f1",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -5871,13 +6041,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "68afb0b4-384c-4e9b-9548-75ff2aeaa055",
+              "uuid": "58ee630a-84ad-4a97-82bd-4d6d14b9af07",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-42.00"
               },
-              "description": "Karaoké",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -5935,7 +6105,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "be971b5a-597f-4627-8836-a76320aca04e",
+              "uuid": "b1d3259d-9734-44fa-aa88-17898266bcb7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -5977,13 +6147,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "edabafc8-d429-48d4-9e72-789543e16676",
+              "uuid": "69032ffc-8e1e-4991-943c-2484f3c42ab8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-19.90"
               },
-              "description": "Tapas",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6030,7 +6200,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "dc0fbed5-7d1e-4836-b5ef-e426ff058ce6",
+              "uuid": "01a0521f-9992-400b-b926-6b78fdf5006a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -6083,13 +6253,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4aed1b93-62e0-4bce-82e1-7c009a87d157",
+              "uuid": "1b9b1f0e-177f-47bc-99c1-501160adc14c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-39.00"
               },
-              "description": "Tapas",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6136,13 +6306,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5b2b9234-2632-40e5-a90b-7a64a5e6261a",
+              "uuid": "3ee73046-3dc2-4a44-af00-12e58eea6020",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-31.00"
               },
-              "description": "Courses",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6178,13 +6348,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "fbc022de-54c3-46c0-ba67-97d98ce71065",
+              "uuid": "304aef53-52ff-4ed0-bb34-274a042a30bd",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-15.65"
               },
-              "description": "Courses",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6220,13 +6390,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2b921187-a5ba-46fe-8f25-81e7d1d13bc6",
+              "uuid": "893a9f62-bcd3-4912-b119-8c790e2c39cf",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-4.00"
               },
-              "description": "Parking",
+              "description": "Glaces",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6262,13 +6432,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "8cde0aaa-bb33-4097-b18b-9a40e81260d2",
+              "uuid": "71654e35-8002-4cba-8a5f-f426d69682c2",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-72.00"
               },
-              "description": "Brunch",
+              "description": "Escape game",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6348,13 +6518,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f1724c09-ebee-45c6-a036-4d735da9cb8c",
+              "uuid": "52671758-ef9e-4cd9-8074-a62d5770f999",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-28.00"
               },
-              "description": "Fruits et légumes",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6412,13 +6582,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2b2b018b-151f-4b9e-895e-a94163545e61",
+              "uuid": "7eaef70f-6adc-45af-8b29-9c04f1f326dc",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-14.00"
               },
-              "description": "Cinéma",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6476,13 +6646,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "3c8c99b0-f046-4dfb-83c6-0a208fe54f16",
+              "uuid": "fca5e724-1404-4e93-8193-3fe92f9359a7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-34.50"
               },
-              "description": "Fruits et légumes",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6529,13 +6699,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a3cc6a52-5e95-4cc6-babc-62e28e676d52",
+              "uuid": "5df9da95-73ae-476d-acd8-c1effc0835d0",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-23.70"
               },
-              "description": "Tapas",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6571,13 +6741,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "fb2211e6-0e91-4301-9693-af3cc3c5a350",
+              "uuid": "f83cfaa5-0ad8-4915-8bf2-93e37d3a6ba7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-64.09"
               },
-              "description": "Restaurant",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6646,7 +6816,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "342bea83-6b6a-4147-8490-074768b0690a",
+              "uuid": "576b98c7-1e6b-43a5-910c-1398f2be2391",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -6699,13 +6869,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1630b4a9-c599-4828-b206-6f7dc77e8f6c",
+              "uuid": "6b7fbe9c-ca71-4f8f-aa67-2bec16a74331",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.00"
               },
-              "description": "Crêpes",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6763,13 +6933,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f9eb5af4-f923-4127-b959-dadfd2cdb252",
+              "uuid": "3c3cca90-cbd0-48f7-a3ab-1ab526aad282",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-15.00"
               },
-              "description": "Tapas",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6838,13 +7008,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b53e45bd-11a8-4960-bf7a-0387b600a38c",
+              "uuid": "653707ce-3ae7-425e-b86e-2a82a99fb9ed",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-41.00"
               },
-              "description": "Barbecue",
+              "description": "Bowling",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6891,13 +7061,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b188583c-43b7-4472-8b5f-ff87c55a99eb",
+              "uuid": "6b8accde-f2a5-4731-be16-38f48c141309",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-13.50"
               },
-              "description": "Cinéma",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -6944,13 +7114,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "34cc5b52-02fa-431d-a05f-33e4a31ef323",
+              "uuid": "cf7d4a67-e1fa-4f3c-bd94-4466243619ed",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-46.87"
               },
-              "description": "Péage",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7008,13 +7178,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a62a250e-62e0-45e2-8c93-6fa907651b13",
+              "uuid": "8c914fe2-44ec-4658-969b-c3a6b4895e13",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-41.00"
               },
-              "description": "Bowling",
+              "description": "Karaoké",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7061,13 +7231,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "349a3ca3-96b2-4282-baa2-4c9ef3e000ba",
+              "uuid": "781a3693-e161-48a9-809c-3c5855d0295f",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-50.00"
               },
-              "description": "Restaurant",
+              "description": "Escape game",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7103,13 +7273,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "daa85731-daee-4833-a32a-0f1d6ff09e11",
+              "uuid": "64a144a3-cd2a-4134-b5c3-6d34cc1d0bde",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-34.90"
               },
-              "description": "Bières",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7167,13 +7337,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "86d2e87c-e896-4eb9-98b9-aeb705ad2d85",
+              "uuid": "270634cb-4200-4d33-a97e-da91bf88b5fd",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-39.00"
               },
-              "description": "Apéro",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7231,7 +7401,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "92380382-9310-4f36-a148-deba9c5267df",
+              "uuid": "e698ead4-a159-48a2-9964-3951f693e24b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -7273,13 +7443,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4c39ceb9-80ca-4fb0-a969-7659967e00b5",
+              "uuid": "588364d1-e6f6-4b3b-a3d2-3115ff30e728",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-5.00"
               },
-              "description": "Journal",
+              "description": "Boulangerie",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7315,13 +7485,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "db7c2a87-8080-467d-860e-ab954ba5b97c",
+              "uuid": "19b8916d-10d1-4f94-90b4-a5bfffda8e8e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-67.00"
               },
-              "description": "Courses de la semaine",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7390,7 +7560,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "7d204c76-9e10-4528-9cc6-b84fc09d981f",
+              "uuid": "2a862ed6-5a7d-4114-9df1-20c5de9dd068",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -7465,13 +7635,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9bee721c-a0f0-447c-884d-c6e472a8175d",
+              "uuid": "3ad64b81-547f-4850-b3aa-aea18fbfce43",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-82.00"
               },
-              "description": "Courses de la semaine",
+              "description": "Escape game",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7551,13 +7721,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "16a6cf07-5f20-4b9d-a1f0-345e7da54655",
+              "uuid": "9304e2a3-7398-4a97-a01d-71369bb239ab",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-90.00"
               },
-              "description": "Barbecue",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7626,7 +7796,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2d496ed5-bda9-443f-9e7a-c90b9b362ce7",
+              "uuid": "75a6207d-a295-4c80-8ea6-b0abbf302b0e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -7734,7 +7904,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b055b00f-7ce5-464f-9407-1eda466fbd56",
+              "uuid": "2155dc0f-50ff-4c94-87c5-87fcb81f7818",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -7842,13 +8012,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c90de382-e3e0-46ad-b860-dbd6f4ac144d",
+              "uuid": "2dfd6274-9f22-4f6b-b3f8-e8feed1e42ca",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-28.00"
               },
-              "description": "Pizzas",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -7939,13 +8109,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "571d5a52-6709-4bed-a870-e71d82ef8ad3",
+              "uuid": "efb8db1c-1d72-437d-8c43-9649be1a761c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-55.00"
               },
-              "description": "Péage",
+              "description": "Bowling",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8003,13 +8173,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c591dca0-4673-4a2b-baae-554798576e73",
+              "uuid": "dae04c97-2cf1-4a7b-a678-25e238b57280",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-58.39"
               },
-              "description": "Péage",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8067,13 +8237,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a22c4b03-40b6-400a-896c-6408afd89373",
+              "uuid": "495252b8-8dd1-4509-bacc-fa7e31259cb5",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-0.07"
               },
-              "description": "Boulangerie",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8109,13 +8279,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "ecfa7948-42fb-42a8-b15f-0a3bcc17d604",
+              "uuid": "1cda15de-29af-441a-9660-f8a81f16d231",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-85.70"
               },
-              "description": "Péage",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8195,7 +8365,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f78d25f0-f175-44b0-a9d9-542809d24970",
+              "uuid": "abb2f4b1-7dbc-4046-baa1-f308e11b3728",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -8237,7 +8407,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "6714e643-1712-4060-87b8-09b009ce6180",
+              "uuid": "767744c0-75f4-4481-a53d-6a6771502f46",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -8279,13 +8449,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "faece991-d072-466f-bee4-681ee61fe0f6",
+              "uuid": "a41a26f1-4ee7-49b2-a43c-e8da6dc44453",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-28.00"
               },
-              "description": "Bières",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8332,13 +8502,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "fd583213-292b-43dc-b3fa-6d31a0305155",
+              "uuid": "51c90b58-2902-448e-a96a-10156cca8156",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-282.00"
               },
-              "description": "Gîte",
+              "description": "Courses du week-end",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8374,13 +8544,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "496430a0-98c8-42b3-a4f9-ca9e1c1f769a",
+              "uuid": "1f39f534-edf0-405f-89bd-efb3749b6ea8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-69.26"
               },
-              "description": "Courses de la semaine",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8427,13 +8597,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "59bf3e78-cbc5-42f9-aaed-14e3c25fdda5",
+              "uuid": "53854693-b127-42b9-9d72-5eb3c4bb6146",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.46"
               },
-              "description": "Crêpes",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8480,13 +8650,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "bd97e7e8-887f-4b2c-894a-38aaa5833c59",
+              "uuid": "18cb4ac4-8b50-465b-b87a-d6c8dde8694d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-19.00"
               },
-              "description": "Tapas",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8533,13 +8703,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "6a02f3a2-96bd-4aec-ae02-63d1c2f58ba9",
+              "uuid": "f14ee148-e307-4823-83d5-c8d684c59ce9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-81.29"
               },
-              "description": "Courses de la semaine",
+              "description": "Bowling",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8608,13 +8778,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4a2a7cb9-1627-4c95-bf26-224748880ae3",
+              "uuid": "ea52fc95-de64-43ca-9639-50a2067870a5",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-8.20"
               },
-              "description": "Croissants",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8650,13 +8820,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "61fe57d3-fda4-493a-8823-eda63d0a4a95",
+              "uuid": "04519fa8-5d47-458f-8e99-7d1e09f3e437",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-328.21"
               },
-              "description": "Billets de train",
+              "description": "Location de bateau",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8692,13 +8862,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "8d79605f-2b6e-4921-a230-94dc33db2e98",
+              "uuid": "1d7fef03-38b1-4ce2-a57b-8c2a9a0bb788",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-50.00"
               },
-              "description": "Barbecue",
+              "description": "Karaoké",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8767,13 +8937,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "392b5b8c-100b-4626-baeb-e20489f513e7",
+              "uuid": "584e660d-b1d3-4f82-8c31-399a260f8abd",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-22.80"
               },
-              "description": "Fruits et légumes",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8809,13 +8979,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "eeb14f7a-69bb-4a72-882c-38189ed3a368",
+              "uuid": "570478fe-6d8b-4f26-a440-eb87808b2d35",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-12.00"
               },
-              "description": "Kebabs",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8873,13 +9043,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "12dd5d38-4584-4b7c-9261-8946fb1a6f3e",
+              "uuid": "b9925e0a-73e9-4983-9f24-fea88879822e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-13.00"
               },
-              "description": "Fruits et légumes",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -8915,7 +9085,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "01a3a472-d702-4e7e-8419-65d551925f9c",
+              "uuid": "a4f17399-2040-4b46-add2-4e98ea8b68f9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -8979,13 +9149,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "6c78771d-8ede-482e-bf60-5e865f0e0e55",
+              "uuid": "cc58d5cd-6829-452b-a2ee-e73d9d86e318",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-12.00"
               },
-              "description": "Apéro",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9032,13 +9202,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "972d1c6c-8b33-424a-966a-3e300be8cceb",
+              "uuid": "3a11bbe1-902a-4731-9ca8-8130f23ffbc4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-12.00"
               },
-              "description": "Pizzas",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9074,13 +9244,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a1e87fac-9952-4095-a7a0-5d3314f64599",
+              "uuid": "d56e4451-bc3e-4687-b800-94bc84f21d10",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-54.00"
               },
-              "description": "Brunch",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9138,13 +9308,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1b297389-10fe-45e5-9a7d-b4a0db203fa9",
+              "uuid": "ec461be7-cf78-4df8-a03a-d820288fe7c3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-113.00"
               },
-              "description": "Bowling",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9257,13 +9427,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "58cae4fb-fbdc-40a0-9f1c-ed3b4df604c0",
+              "uuid": "62e06958-a950-4147-96ba-f17b74ae4806",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-70.99"
               },
-              "description": "Péage",
+              "description": "Bowling",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9321,13 +9491,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "076b3193-4d14-4ad8-ae22-4790872da674",
+              "uuid": "16d5e3de-44e0-4a58-9d1c-b8d653e0c89c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.00"
               },
-              "description": "Tapas",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9363,13 +9533,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "ef8d7eab-37e9-4f61-a699-0d2aa7393961",
+              "uuid": "12178296-14ea-4e26-81a6-d61e2df60253",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.50"
               },
-              "description": "Kebabs",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9405,13 +9575,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4c49f06d-0e43-439d-9392-f236ba50aeeb",
+              "uuid": "fffa651e-1c08-412f-bd8a-d4e633593d05",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-72.49"
               },
-              "description": "Karaoké",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9469,13 +9639,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "78710ba7-0c70-4a00-bb36-7b50c402b45e",
+              "uuid": "499dcd1b-d77a-4b1d-a265-d41aefcd09a9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.60"
               },
-              "description": "Courses",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9522,13 +9692,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "21b1dbb9-0a71-4460-b7b6-2ca9c3abebd7",
+              "uuid": "a0d1bd26-d720-4e20-b24e-f128f4b59f45",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-42.00"
               },
-              "description": "Brunch",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9575,13 +9745,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "acd4bf6b-f274-4bbb-a93b-ffc342152a5e",
+              "uuid": "39e37479-9c6e-44b9-ac58-43a9bd70acbd",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-5.75"
               },
-              "description": "Boulangerie",
+              "description": "Parking",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9617,13 +9787,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "34ff654b-6b94-4a8a-a7c6-f9611c1c21b7",
+              "uuid": "33fe3ac4-dc2b-43f6-abc1-07f2167c38f4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-31.00"
               },
-              "description": "Fruits et légumes",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9670,13 +9840,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "029c2257-1622-46c3-af52-86d405fa312d",
+              "uuid": "0e5c7056-bf7a-422d-91ad-758e390c75c6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.00"
               },
-              "description": "Cinéma",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9712,13 +9882,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "85f531d8-1938-43f3-a486-6c49e0e385c2",
+              "uuid": "4d79b3af-e7d0-4fcf-afe9-fe6dc6f1e393",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.00"
               },
-              "description": "Fruits et légumes",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9754,13 +9924,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c9aaf0da-1cd4-4aec-b8ff-dc3177acc526",
+              "uuid": "e1d337df-c655-439d-8f62-55abcfb908ff",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.00"
               },
-              "description": "Apéro",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9796,13 +9966,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a03ecd8c-de69-4b1a-9f4f-ff18192ecb0e",
+              "uuid": "732a9489-a58a-459a-ad14-7a9990c04cb3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.00"
               },
-              "description": "Kebabs",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9849,13 +10019,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "64481a1b-6edb-4ebd-bbb0-fa2d49427ca8",
+              "uuid": "73cb7f1e-e4ea-4027-a302-85943b1ccf7a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-60.19"
               },
-              "description": "Péage",
+              "description": "Restaurant",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -9913,13 +10083,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2ec11814-3e7f-44dc-abf6-2e61caaf30a4",
+              "uuid": "737ab2bf-6e1e-4611-9780-449f7c58644e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-60.00"
               },
-              "description": "Karaoké",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10010,13 +10180,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "151ee46b-e1e0-467a-8c48-8777364b2956",
+              "uuid": "3ef56a18-d976-400c-a828-76f3c981994e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-0.10"
               },
-              "description": "Glaces",
+              "description": "Boulangerie",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10052,13 +10222,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "04143454-a2cb-4db7-94ad-bd651d0507d0",
+              "uuid": "75b83165-708a-4cb7-86cb-7f1f40dc6445",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-84.00"
               },
-              "description": "Bowling",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10138,13 +10308,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1ea71ff1-b473-40b0-9a57-10fe9f8a7e2c",
+              "uuid": "04e5b2c7-e1d9-45b4-a1dd-0258eafa595d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-19.20"
               },
-              "description": "Tapas",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10180,13 +10350,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4e3e7b28-efe0-422b-8b57-dfcd3324a451",
+              "uuid": "9ff28bd3-49e4-4826-9769-81ff00b226f7",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-22.80"
               },
-              "description": "Courses",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10222,13 +10392,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "12344eff-8528-42a8-97e7-8604cad00ec0",
+              "uuid": "533d54ef-4f6f-4892-bebe-37e8116ce0b5",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-21.00"
               },
-              "description": "Tapas",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10264,13 +10434,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "3985f0a2-4bf2-4736-b76a-e8ef4171b4ba",
+              "uuid": "d0ee48e4-9bff-4ad2-9a5a-cdf59604343d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-81.50"
               },
-              "description": "Escape game",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10361,13 +10531,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "35bf3300-4dca-40f0-ad3f-7950fa72883d",
+              "uuid": "49cb78d8-1a29-433b-8acf-78b7c2da14ba",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-86.00"
               },
-              "description": "Courses de la semaine",
+              "description": "Bowling",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10458,13 +10628,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a57a001e-ea2c-4d6a-b5a8-038ba32cdbb0",
+              "uuid": "f86144f4-1437-47d5-8e7f-8f8424a4d58c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-9.40"
               },
-              "description": "Café",
+              "description": "Glaces",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10533,13 +10703,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f03c482c-d5c3-448d-be16-59f4fa54bf05",
+              "uuid": "7b8ef1d0-cb60-41c0-8021-22a12bf77074",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-12.00"
               },
-              "description": "Apéro",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10575,13 +10745,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "12c8f318-563c-4e3a-912a-41175057f09f",
+              "uuid": "6f2b97df-4839-42fe-b08d-7ed3ca491e01",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.50"
               },
-              "description": "Boulangerie",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10672,13 +10842,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "98ae1d43-9220-4539-aef1-6bcb1a90c286",
+              "uuid": "e4913eea-9608-4724-8b56-c1945befb789",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-68.80"
               },
-              "description": "Karaoké",
+              "description": "Bowling",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10747,13 +10917,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d3082388-df1c-403a-a56f-c9b3fb031f7c",
+              "uuid": "18c79606-e423-4af7-b3a2-8d20801a86e1",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-33.60"
               },
-              "description": "Crêpes",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10789,13 +10959,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1610f770-dcb3-469d-ba88-c1ec10235dff",
+              "uuid": "e6a97940-d4c8-4712-b58c-7cf4ac8deae9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-1.00"
               },
-              "description": "Parking",
+              "description": "Boulangerie",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10831,13 +11001,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "7acb33b6-2920-4d25-9c79-d46987e57106",
+              "uuid": "509de6f6-ea97-4544-9475-5a09e0e3eb05",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.40"
               },
-              "description": "Tapas",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -10873,7 +11043,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "8cd4f3d4-3e9c-4bf6-a6c8-3bcf42e68f99",
+              "uuid": "07647357-91ed-4336-b479-5a95811fb296",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -10970,13 +11140,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2b68dd61-ac67-457c-9e40-a5cd75a3ec88",
+              "uuid": "482d51d3-33f2-4137-9e40-461a9b8039aa",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-84.00"
               },
-              "description": "Brunch",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11034,13 +11204,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "bd6621f8-a713-4f35-a227-4738133fcd86",
+              "uuid": "ef85e3e0-1762-412b-8cff-726740eda953",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.00"
               },
-              "description": "Kebabs",
+              "description": "Apéro",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11076,13 +11246,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9dc6dde2-e49e-4a2d-b30f-8b85894b95b8",
+              "uuid": "f8a713cc-424e-427d-9ec7-4976f67d3dc3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-59.70"
               },
-              "description": "Bowling",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11151,7 +11321,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a29dd8b8-6290-4759-9339-eb809561f830",
+              "uuid": "0c001905-e4d4-4484-a5d1-4d6d920ffae9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -11204,7 +11374,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9a8e9b77-9eb7-4f59-9cdf-7a8abf6384f8",
+              "uuid": "a2e97260-1694-46c7-a2c7-aa00c44a6fa6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -11257,13 +11427,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "80e2e0de-927b-42da-a4aa-e4edde5fa125",
+              "uuid": "35484b84-8978-45fe-8cfb-4f4c3b7425eb",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-72.00"
               },
-              "description": "Escape game",
+              "description": "Karaoké",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11299,13 +11469,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5337595c-858b-4952-8acd-ceebf24ea72b",
+              "uuid": "182fdbaf-67e7-473a-a9e3-7fe50c8b9d1a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-69.50"
               },
-              "description": "Péage",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11374,13 +11544,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "cf700c27-1b6a-4ca7-922f-5e264328fcdd",
+              "uuid": "894d5772-7182-4a70-a161-5de5785a00e3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-55.40"
               },
-              "description": "Restaurant",
+              "description": "Essence",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11416,13 +11586,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "55ba0795-7153-45a1-a23f-ad7ed50712b4",
+              "uuid": "2a74740c-a36e-4450-a6fe-193617461726",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-96.72"
               },
-              "description": "Courses de la semaine",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11502,13 +11672,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "25b2d24e-238e-4b5c-ab06-d97317ec9317",
+              "uuid": "adbab9a2-5a6c-4902-8ad6-117ed3dc142c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-75.50"
               },
-              "description": "Barbecue",
+              "description": "Restaurant",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11577,13 +11747,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "6b989788-58f1-4f3b-a463-200d29a33c38",
+              "uuid": "16d64fdd-a9d3-40ac-a7c5-01d7d39fa277",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-137.92"
               },
-              "description": "Billets de train",
+              "description": "Gîte",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11663,13 +11833,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "285dcb5d-04ce-4129-a185-a47f96a5772e",
+              "uuid": "b022e195-f484-4bf9-97bc-47967ffbda84",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-54.90"
               },
-              "description": "Brunch",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11727,13 +11897,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5c883025-b55d-49ed-a615-d5fc888620e3",
+              "uuid": "4bb8ef07-734a-4a79-9bae-3967112eb8eb",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-17.00"
               },
-              "description": "Bières",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11791,7 +11961,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4df13c8f-77e8-4895-bd1d-4fcdd6ba6f2e",
+              "uuid": "f0cddd16-7c29-425a-b415-00763de927f3",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -11833,7 +12003,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "7685fdde-14bb-4a64-86ec-f089aad0deb2",
+              "uuid": "d83c3461-c247-4888-b4a5-cdfc4bbe5839",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -11875,7 +12045,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a16d8dea-8303-42ce-be95-dc15128fd1fa",
+              "uuid": "5068328d-1a3d-4e1c-a306-53935df0597d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -11917,13 +12087,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "80484a57-c4e5-4a14-8e9d-2d6f7ee392e1",
+              "uuid": "9e3b0ff0-96e4-4ed0-b999-0bf97250c215",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-37.80"
               },
-              "description": "Courses",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -11970,13 +12140,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "0fdfdcb1-03df-4b22-87de-a942a77b5f37",
+              "uuid": "475dbeb0-dd5b-4960-b01d-5486906cae0c",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-50.00"
               },
-              "description": "Essence",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12034,13 +12204,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "93908e21-e9fb-4452-b4e7-1503264efcb7",
+              "uuid": "6f70f9ff-4aa3-4d4d-bfa7-e137fa204e4b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-23.20"
               },
-              "description": "Apéro",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12087,13 +12257,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "049ebc81-abaf-43b3-b9b4-caa33abbdeb2",
+              "uuid": "72231c9b-0167-469a-b479-d88f6f9aaaa4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-56.00"
               },
-              "description": "Escape game",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12151,13 +12321,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d7090275-ed60-4ba5-ae83-aa3120f39b18",
+              "uuid": "9a268cc2-82b2-4a1d-a6ef-76c082bc7f11",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-32.86"
               },
-              "description": "Kebabs",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12215,7 +12385,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "1964b0f6-7aba-4b30-b0db-d301da184936",
+              "uuid": "bb5da188-6edd-4a38-b567-7b177ad930c8",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -12279,13 +12449,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4960f6e7-239c-4d15-b238-497f2fc975c6",
+              "uuid": "b14f0f13-1504-47b0-b5f7-6a6652616861",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-56.00"
               },
-              "description": "Brunch",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12343,13 +12513,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "181974c8-05c7-4198-b930-e81a526896c3",
+              "uuid": "24176021-311c-4c9a-aa7b-92731ff4d1e6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.00"
               },
-              "description": "Kebabs",
+              "description": "Crêpes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12385,13 +12555,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "8e0a26d5-7fc2-4585-ba1c-0bf474563fa0",
+              "uuid": "42fad714-9821-4a13-aeaf-a83b225a9437",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-17.00"
               },
-              "description": "Crêpes",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12471,13 +12641,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "89f5e538-7533-4c32-9471-7d3fd1a210b6",
+              "uuid": "980ffc23-b87f-4947-8f1a-15b143b6a741",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-17.50"
               },
-              "description": "Crêpes",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12546,13 +12716,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "b0c36b99-d0e3-4007-9c9e-c187bd7b45c7",
+              "uuid": "185e1ed5-b14c-47aa-b7c1-09d86f2e75a6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-10.00"
               },
-              "description": "Courses",
+              "description": "Kebabs",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12621,13 +12791,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "7e19b36d-606a-44fe-9154-1b23606d6294",
+              "uuid": "8180d366-cf29-48be-9a78-f10395384093",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-21.00"
               },
-              "description": "Bières",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12696,13 +12866,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "cf83eb08-b557-4681-b247-120fd22868e7",
+              "uuid": "02d5aff3-7063-4e92-945e-a4c9c08f22e0",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-100.00"
               },
-              "description": "Bowling",
+              "description": "Escape game",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12738,13 +12908,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "27b84cae-02e5-4b6b-a768-5ae1646bb070",
+              "uuid": "9817a33e-cc2f-4dd6-b3a2-81e4a71c4d45",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-110.00"
               },
-              "description": "Brunch",
+              "description": "Restaurant",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12835,13 +13005,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "8ddb5b5a-ae35-4d1e-b82e-d03d09ac4975",
+              "uuid": "cc04c2a5-84e0-4f4f-87ac-2562a583dec9",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.00"
               },
-              "description": "Tapas",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12899,13 +13069,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "863cc0ba-86d0-4dcc-bed6-226419054737",
+              "uuid": "dafcb36d-92ce-4f27-8fd0-a61c38e58675",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.00"
               },
-              "description": "Courses",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -12963,13 +13133,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2c6be2fa-f2fa-4d84-bafa-0da2f4548b1b",
+              "uuid": "48e856d1-51a6-4279-a546-8cfcc306c218",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-30.00"
               },
-              "description": "Crêpes",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13005,7 +13175,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "06a15fae-6158-4742-a497-28e799a85083",
+              "uuid": "befb2c59-559e-40f1-a9de-b0af11e8d47e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -13058,7 +13228,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "45d5612d-0975-4601-b209-72b787874350",
+              "uuid": "dcc592fc-e5ec-4aeb-8092-9f873888e814",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -13100,13 +13270,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "2dc59f26-cc48-4e0e-b484-3bd92ded5d7c",
+              "uuid": "3e8367e1-dd08-4640-bdb1-b93680d8f095",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.00"
               },
-              "description": "Boulangerie",
+              "description": "Pain et fromage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13142,13 +13312,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "e4b26b39-ffd5-465f-8dda-1bd5635736d7",
+              "uuid": "6346361b-da4c-4e1a-afb9-6c440e326c29",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-5.50"
               },
-              "description": "Café",
+              "description": "Croissants",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13184,13 +13354,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "03e90d58-0f4e-4d53-b232-b36f6afe2770",
+              "uuid": "20d7956b-88dc-4a78-9ca7-b8ebf394a5ae",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.00"
               },
-              "description": "Pain et fromage",
+              "description": "Parking",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13226,13 +13396,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f67026c2-1167-4c61-916a-202000acc414",
+              "uuid": "2652ef37-e1c5-49c6-920a-f7ab67b1834b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-6.80"
               },
-              "description": "Pain et fromage",
+              "description": "Glaces",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13268,13 +13438,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "72bfefbe-035e-4687-a93a-3382db4477f9",
+              "uuid": "47f0fcef-5aa3-4e67-8a19-96815dd59553",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-100.00"
               },
-              "description": "Essence",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13376,13 +13546,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5e7fb396-8b31-4d23-b7c9-1665cf4ef263",
+              "uuid": "766d932b-2178-49f2-b94f-1e4346ab2bab",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-15.00"
               },
-              "description": "Kebabs",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13429,13 +13599,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5ef40176-5c5f-4524-880b-b1b6fbfbb3e5",
+              "uuid": "0d06d8e8-cd16-4f44-ae2a-b71aac00a54b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-23.20"
               },
-              "description": "Crêpes",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13482,13 +13652,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "bc53be62-744f-4ab9-b2ef-8b005a191efd",
+              "uuid": "dd30981d-ef83-4340-8dc1-499061b17430",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-56.09"
               },
-              "description": "Escape game",
+              "description": "Brunch",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13546,13 +13716,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "e082a1ea-921d-4038-a12d-bbdbb09771e5",
+              "uuid": "1024cb80-3bcb-4480-918f-08ef650f067a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-32.93"
               },
-              "description": "Bières",
+              "description": "Cinéma",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13588,13 +13758,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "0b08f962-2a2d-4022-ba79-a6e3939748f7",
+              "uuid": "0d8a75a2-a068-40ad-868f-ecf077826f4a",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-51.70"
               },
-              "description": "Escape game",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13663,13 +13833,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4ce2d481-4240-4d63-9603-3c75db4fc322",
+              "uuid": "3658e283-450f-4370-9bb6-da418c5a3420",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-40.00"
               },
-              "description": "Restaurant",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13738,13 +13908,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "270a0115-92a9-4678-9f48-27e1744d7f25",
+              "uuid": "703376bf-90b6-44ce-ab89-69670adcc4c2",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-59.00"
               },
-              "description": "Brunch",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13813,13 +13983,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d70433fc-b00a-4582-baf1-f05b5cf3e4e0",
+              "uuid": "0b72f71e-cfc5-4459-b114-1e2a9d35e858",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-13.05"
               },
-              "description": "Bières",
+              "description": "Courses",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13855,13 +14025,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "eec2f0fe-df15-4c30-98cf-82546c9f513d",
+              "uuid": "1829144e-57f9-4c0a-b658-0308b21c9a82",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-11.70"
               },
-              "description": "Bières",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13897,13 +14067,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c902bd34-5b17-42d3-8693-115339ea59f0",
+              "uuid": "0f972774-1a78-48ae-b2af-e0b3f5f142ce",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-35.90"
               },
-              "description": "Fruits et légumes",
+              "description": "Pizzas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -13961,13 +14131,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "9d50d2f6-dbdc-42f7-ac0d-ff79c1b3c9dc",
+              "uuid": "d6d0cb7f-8e41-49cc-90bd-767caf1580a6",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.00"
               },
-              "description": "Cinéma",
+              "description": "Tapas",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14003,13 +14173,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c30a3e29-33fa-4f9d-91e9-a7e650a657d7",
+              "uuid": "ee4c4865-f8d7-49db-ad42-39efd20e0d86",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-48.00"
               },
-              "description": "Courses de la semaine",
+              "description": "Barbecue",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14067,13 +14237,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "f4887607-4088-4cb6-9762-b8cdc32958d7",
+              "uuid": "f7715462-344e-4ce8-bb2f-17dc9a7bb72b",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-20.00"
               },
-              "description": "Apéro",
+              "description": "Fruits et légumes",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14109,13 +14279,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "a4e7ef17-510a-4292-a650-34dfde6c4ff5",
+              "uuid": "84387d99-0e7d-4bd7-aeb2-ca9e98d490e1",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-54.08"
               },
-              "description": "Restaurant",
+              "description": "Péage",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14217,7 +14387,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d959e32f-108e-4e7d-9019-f3dd8c658062",
+              "uuid": "07f18e9d-ebbc-4dd7-8230-7c477a2c8aed",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -14259,7 +14429,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "d0ea5b75-462c-4ed7-bd94-048eeb9bbf50",
+              "uuid": "478a7c57-c017-4ff0-b5e4-bbb8e48cddd4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -14301,13 +14471,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "fbe80702-72f7-4ee6-8df6-293742b9cbbc",
+              "uuid": "5988e34e-8743-499d-9af9-a10e48c82a3d",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-67.50"
               },
-              "description": "Essence",
+              "description": "Karaoké",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14376,13 +14546,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "141514fd-6400-43b3-a3c4-420814a1dfec",
+              "uuid": "4590d1ac-8cc2-42bf-a369-cc2dd916a32e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-25.00"
               },
-              "description": "Cinéma",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14429,13 +14599,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "37428202-a974-4fe2-b304-bf0509120792",
+              "uuid": "0420dc12-d64d-4bdb-a0a4-7911d4833f97",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-52.00"
               },
-              "description": "Brunch",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14493,7 +14663,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "5f9364c2-b953-44af-9d48-bf24b99d5aaa",
+              "uuid": "bfa85b1d-4288-4510-b89b-f6f06ba8d99e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
@@ -14557,13 +14727,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "758bf753-caf1-49b5-9cbc-007601428cea",
+              "uuid": "2bbd0f76-b42c-49a5-b4ff-e4f87b71a3b4",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-17.00"
               },
-              "description": "Tapas",
+              "description": "Bières",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14599,13 +14769,13 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "c5cd3f45-8218-4a3d-b934-09ed5b446957",
+              "uuid": "cbbe322e-d663-4839-8d3a-360b8141f016",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
                 "value": "-109.95"
               },
-              "description": "Barbecue",
+              "description": "Courses de la semaine",
               "type_transaction": "NORMAL",
               "membership_owned": {
                 "RegistryMembershipNonUser": {
@@ -14696,7 +14866,7 @@
           },
           {
             "RegistryEntry": {
-              "uuid": "4b1a4aad-9167-4443-b5ba-bc37b5cd9219",
+              "uuid": "cacc2d5d-e37a-4855-b0d3-a64279cdcd3e",
               "status": "ACTIVE",
               "amount": {
                 "currency": "EUR",
