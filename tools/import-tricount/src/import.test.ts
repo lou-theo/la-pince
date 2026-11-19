@@ -97,7 +97,21 @@ describe('importTricount', () => {
     const { data, token } = newCorpus();
     await run(data, token);
     registryOf(data).all_registry_entry.shift();
-    const reports = await Promise.all([run(data, token), run(data, token)]);
+    // Both read the group before either sends: both send the same deletion.
+    let reads = 0;
+    let bothRead: () => void = () => undefined;
+    const barrier = new Promise<void>((resolve) => (bothRead = resolve));
+    const together: Fetch = async (url, init) => {
+      if (init?.method === 'POST') {
+        await barrier;
+      }
+      const response = await fetch(url, init);
+      if (url.pathname.endsWith('/changes') && ++reads === 2) {
+        bothRead();
+      }
+      return response;
+    };
+    const reports = await Promise.all([run(data, token, { fetch: together }), run(data, token, { fetch: together })]);
     expect(reports.map((report) => report.written).reduce((sum, written) => sum + written)).toBe(1);
   });
 

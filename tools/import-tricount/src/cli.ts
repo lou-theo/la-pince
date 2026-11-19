@@ -26,7 +26,7 @@ export async function run({ args, env, print }: CliOptions): Promise<number> {
   const hasToken = given !== undefined && given !== '';
   // A new link token replaces the group's link at once: only on demand, so that a forgotten variable never breaks the link the group uses.
   if (path === undefined || adminToken === undefined || adminToken === '' || hasToken === (env.LA_PINCE_NEW_LINK === '1')) {
-    print('usage: ADMIN_TOKEN=… [LA_PINCE_URL=…] (LA_PINCE_GROUP_TOKEN=… | LA_PINCE_NEW_LINK=1) pnpm start <tricount export.json>');
+    print('usage: pnpm start <tricount export.json>, with ADMIN_TOKEN and either LA_PINCE_GROUP_TOKEN or LA_PINCE_NEW_LINK=1 in the environment');
     return 2;
   }
   const serverUrl = env.LA_PINCE_URL ?? 'http://localhost:8787';
