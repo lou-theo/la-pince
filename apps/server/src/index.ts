@@ -146,6 +146,10 @@ app.put('/api/admin/groups/:id', async (context) => {
   const positions = new Map(existing.map((row) => [row.id, row.position]));
   let next = Math.max(-1, ...positions.values()) + 1;
   const tokenHash = await sha256(group.data.token);
+  const [holder] = await db.select({ id: groups.id }).from(groups).where(eq(groups.tokenHash, tokenHash));
+  if (holder !== undefined && holder.id !== id) {
+    return apiError(context, 'token_in_use', 409);
+  }
   await db.batch([
     db
       .insert(groups)
