@@ -3,6 +3,7 @@ import {
   type Change,
   computeBalances,
   type Effect,
+  type Entry,
   type Kind,
   type Member,
   type MemberId,
@@ -20,6 +21,7 @@ export interface OperationView {
   readonly kind: Kind;
   readonly author: MemberId | undefined;
   readonly createdSeq: number;
+  readonly entry: Entry;
   readonly effect: Effect;
 }
 
@@ -30,7 +32,7 @@ export function liveOperations(changes: Iterable<Change>): OperationView[] {
     const effect = operationEffect(change);
     if ('entry' in change && effect !== undefined) {
       const { id, title, date, author, createdSeq } = change;
-      operations.push({ id, title, date, kind: change.entry.kind, author, createdSeq, effect });
+      operations.push({ id, title, date, kind: change.entry.kind, author, createdSeq, entry: change.entry, effect });
     }
   }
   // ISO days compare as strings.

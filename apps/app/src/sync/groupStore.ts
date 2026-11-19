@@ -1,4 +1,4 @@
-import { type Change, type Cursor, cursorSchema, type GroupResponse, type OperationId } from '@la-pince/core';
+import { type Change, type Cursor, cursorSchema, type GroupResponse, type Operation, type OperationId, type RejectionReason } from '@la-pince/core';
 
 import type { ApiClient, LoadError } from './client.ts';
 
@@ -11,13 +11,22 @@ export type GroupState =
       /** Current revision of each operation, deleted ones included, read up to a page with `hasMore: false`. */
       readonly changes: ReadonlyMap<OperationId, Change>;
       readonly cursor: Cursor;
+      /** Why the last read failed, the group shown being the last one read in full; cleared by the next read that succeeds. */
+      readonly readError?: LoadError;
     };
+
+/** Why a revision was not written: the request failed, or the server refused the revision. */
+export type SendError = LoadError | RejectionReason;
+/** `reread`: whether the group could be read again after the write, so that the screens show it; a revision written but not read back is still written. */
+export type SendResult = { readonly ok: true; readonly reread: boolean } | { readonly ok: false; readonly error: SendError };
 
 export interface GroupStore {
   readonly subscribe: (listener: () => void) => () => void;
   readonly getSnapshot: () => GroupState;
   /** Reads the group and every change since the last read; a call during a read waits for that read. */
   readonly load: () => Promise<void>;
+  /** Sends one revision, then reads the group again so that the screens show it as the server wrote it. */
+  readonly send: (operation: Operation) => Promise<SendResult>;
 }
 
 const start = cursorSchema.parse(0);
@@ -68,6 +77,23 @@ export function createGroupStore(client: ApiClient, token: string): GroupStore {
     }
   }
 
+  function load(): Promise<void> {
+    if (reading === undefined) {
+      if (state.status === 'error') {
+        publish({ status: 'loading' });
+      }
+      reading = read()
+        // A group already shown stays on screen when a read fails, with the error beside it.
+        .then((next) => {
+          publish(next.status === 'error' && state.status === 'ready' ? { ...state, readError: next.error } : next);
+        })
+        .finally(() => {
+          reading = undefined;
+        });
+    }
+    return reading;
+  }
+
   return {
     subscribe(listener) {
       listeners.add(listener);
@@ -76,19 +102,20 @@ export function createGroupStore(client: ApiClient, token: string): GroupStore {
       };
     },
     getSnapshot: () => state,
-    load() {
-      if (reading === undefined) {
-        if (state.status === 'error') {
-          publish({ status: 'loading' });
-        }
-        // shortcut: a failed read replaces a group already shown by the error; to revisit when a write triggers a read (expense form).
-        reading = read()
-          .then(publish)
-          .finally(() => {
-            reading = undefined;
-          });
+    load,
+    async send(operation) {
+      const sent = await client.sendOperations(token, [operation]);
+      if (!sent.ok) {
+        return sent;
       }
-      return reading;
+      const [answer] = sent.value;
+      if (answer?.status === 'rejected') {
+        return { ok: false, error: answer.reason };
+      }
+      // A read that started before the write may have missed it: wait for it, then read again.
+      await reading;
+      await load();
+      return { ok: true, reread: state.status === 'ready' && state.readError === undefined };
     },
   };
 }

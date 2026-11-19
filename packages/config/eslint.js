@@ -29,6 +29,7 @@ export default defineConfig(
           devDependencies: [
             '**/*.test.{ts,tsx}',
             '**/test-setup.ts',
+            '**/src/testing/**',
             '**/vitest.config.ts',
             '**/vite.config.ts',
             '**/drizzle.config.ts',

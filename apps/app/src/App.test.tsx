@@ -1,14 +1,12 @@
 import { groupResponseSchema } from '@la-pince/core';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { Router } from 'wouter';
-import { memoryLocation } from 'wouter/memory-location';
 
-import { App } from './App.tsx';
 import { saveCurrentMember } from './storage/device.ts';
-import { createApiClient, type Fetch } from './sync/client.ts';
+import type { Fetch } from './sync/client.ts';
 import { change, fakeServer, json } from './testing/fake-server.ts';
+import { renderApp as renderWith } from './testing/render.tsx';
 
 const token = 'demo-token-of-the-app-tests-0123456789';
 const group = groupResponseSchema.parse({
@@ -22,15 +20,7 @@ const group = groupResponseSchema.parse({
 
 const server = fakeServer({ token, group }).fetch;
 
-function renderApp(path: string, fetchFn: Fetch = server) {
-  const location = memoryLocation({ path, record: true });
-  render(
-    <Router hook={location.hook}>
-      <App client={createApiClient(fetchFn)} />
-    </Router>,
-  );
-  return location;
-}
+const renderApp = (path: string, fetchFn: Fetch = server) => renderWith(path, fetchFn);
 
 describe('opening a group', () => {
   it('asks who I am, remembers it on this phone, and lets me change', async () => {
@@ -180,7 +170,7 @@ describe('a group as one of its members', () => {
     const rows = screen.getAllByRole('listitem').map((row) => [...row.querySelectorAll('span span')].map((span) => span.textContent));
     expect(rows).toStrictEqual([
       ['Virement', '7 nov. 2026 · Chloé a remboursé Alice', '5,00\u00a0€', 'Remboursement'],
-      ['Péage', '6 nov. 2026 · Payé par Bruno (toi)', '7,00\u00a0€', 'Pas concerné'],
+      ['Péage', '6 nov. 2026 · Payé par Bruno (toi)', '7,00\u00a0€', 'Tu as avancé 7,00\u00a0€'],
       ['Courses', '5 nov. 2026 · Payé par Alice', '45,00\u00a0€', 'Ta part 20,00\u00a0€'],
     ]);
     expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
@@ -259,7 +249,7 @@ describe('a group as one of its members', () => {
     await openAsBruno(`/g/${token}/soldes/`);
     expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
     const transfers = within(screen.getByRole('region', { name: 'Remboursements suggérés' }));
-    expect(transfers.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
+    expect(transfers.getAllByRole('listitem').map((line) => line.firstChild?.textContent)).toStrictEqual([
       'Chloé doit 10,00\u00a0€ à Alice',
       'Bruno (toi) doit 13,00\u00a0€ à Alice',
     ]);

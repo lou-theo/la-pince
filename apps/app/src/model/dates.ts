@@ -6,3 +6,9 @@ const longDays = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numer
 export function formatDay(day: string, { long = false }: { readonly long?: boolean } = {}): string {
   return (long ? longDays : days).format(new Date(`${day}T00:00:00Z`));
 }
+
+/** The day of `now` on this phone's calendar, `YYYY-MM-DD`: the day a person sees when entering an expense, not the UTC one. */
+export function localDay(now: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${String(now.getFullYear())}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}

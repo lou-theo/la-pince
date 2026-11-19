@@ -1,4 +1,4 @@
-import { type ApiError, type Change, groupResponseSchema } from '@la-pince/core';
+import { type ApiError, type Change, groupResponseSchema, operationSchema } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
 import { change, fakeServer, json } from '../testing/fake-server.ts';
@@ -92,5 +92,87 @@ describe('createGroupStore', () => {
     const unknown = createGroupStore(createApiClient(fakeServer({ token, group }).fetch), 'another-token-of-the-store-tests-012345');
     await unknown.load();
     expect(unknown.getSnapshot()).toStrictEqual({ status: 'error', error: 'group_not_found' });
+  });
+
+  it('keeps a group already shown when a read fails, with the error beside it until a read succeeds', async () => {
+    let down = false;
+    const { store } = watch([change({ id: 'a', date: '2026-11-01' })], {
+      answer: (url) => (down && url.includes('changes') ? Promise.reject(new TypeError('Failed to fetch')) : undefined),
+    });
+    await store.load();
+    down = true;
+    await store.load();
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'network' });
+    expect(ids(store.getSnapshot())).toStrictEqual(['a']);
+    down = false;
+    await store.load();
+    expect(store.getSnapshot()).not.toHaveProperty('readError');
+  });
+});
+
+describe('sending a revision', () => {
+  const expense = (id: string, revisionId: string, payer = 'm1') =>
+    operationSchema.parse({
+      id,
+      revisionId,
+      title: 'Courses',
+      date: '2026-11-05',
+      entry: { version: 1, kind: 'expense', payer, lines: [{ member: 'm1', amount: 500 }] },
+    });
+
+  it('writes it, then reads the group again to show it as the server wrote it', async () => {
+    const { server, store } = watch([]);
+    await store.load();
+    expect(await store.send(expense('new', 'new-1'))).toStrictEqual({ ok: true, reread: true });
+    expect(ids(store.getSnapshot())).toStrictEqual(['new']);
+    expect(server.calls.slice(2).map((url) => url.replace(`/api/groups/${token}`, ''))).toStrictEqual(['/operations', '', '/changes?since=0']);
+  });
+
+  it('reads again after a read that started before the write, which may have missed it', async () => {
+    let open: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    // The first read of the changes is answered late, with the history as it was before the write.
+    let firstRead = true;
+    const { store } = watch([], {
+      answer: (url) => {
+        if (!firstRead || !url.includes('changes')) {
+          return undefined;
+        }
+        firstRead = false;
+        return gate.then(() => json({ changes: [], cursor: 0, hasMore: false }));
+      },
+    });
+    const first = store.load();
+    const sending = store.send(expense('new', 'new-1'));
+    open();
+    await first;
+    expect(ids(store.getSnapshot())).toStrictEqual([]);
+    expect(await sending).toStrictEqual({ ok: true, reread: true });
+    expect(ids(store.getSnapshot())).toStrictEqual(['new']);
+  });
+
+  it('tells a revision written but not read back', async () => {
+    let written = false;
+    const { store } = watch([], {
+      answer: (url) => {
+        written ||= url.endsWith('/operations');
+        return written && url.includes('changes') ? Promise.reject(new TypeError('Failed to fetch')) : undefined;
+      },
+    });
+    await store.load();
+    expect(await store.send(expense('new', 'new-1'))).toStrictEqual({ ok: true, reread: false });
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'network' });
+  });
+
+  it('tells a refused revision or a failed request, without reading again', async () => {
+    let down = false;
+    const { server, store } = watch([], {
+      answer: (url) => (down && url.endsWith('/operations') ? Promise.reject(new TypeError('Failed to fetch')) : undefined),
+    });
+    await store.load();
+    expect(await store.send(expense('new', 'new-1', 'stranger'))).toStrictEqual({ ok: false, error: 'unknown_member' });
+    down = true;
+    expect(await store.send(expense('new', 'new-2'))).toStrictEqual({ ok: false, error: 'network' });
+    expect(server.calls.filter((url) => url.includes('changes'))).toHaveLength(1);
   });
 });

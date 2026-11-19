@@ -6,7 +6,10 @@ import {
   type GroupResponse,
   groupResponseSchema,
   MAX_CHANGES,
+  type Operation,
+  operationBatchResponseSchema,
   pageFollowsQuery,
+  type RevisionResult,
 } from '@la-pince/core';
 
 /** The part of `fetch` the client uses, so that tests hand it a fake transport. */
@@ -24,6 +27,8 @@ export interface ApiClient {
   readonly fetchGroup: (token: string) => Promise<ApiResult<GroupResponse>>;
   /** One page of the changes since the cursor, checked to answer that very query. */
   readonly fetchChanges: (token: string, since: Cursor) => Promise<ApiResult<ChangesResponse, ChangesError>>;
+  /** Sends revisions in one batch; the result of each, in the order sent. */
+  readonly sendOperations: (token: string, operations: readonly Operation[]) => Promise<ApiResult<RevisionResult[]>>;
 }
 
 interface Schema<T> {
@@ -32,10 +37,10 @@ interface Schema<T> {
 
 /** Client of the sync API of `apps/server`; every answer goes through the schemas of the core before the app reads it. */
 export function createApiClient(fetchFn: Fetch): ApiClient {
-  async function read<T>(url: string, schema: Schema<T>): Promise<ApiResult<T, ChangesError>> {
+  async function read<T>(url: string, schema: Schema<T>, init?: RequestInit): Promise<ApiResult<T, ChangesError>> {
     let response: Response;
     try {
-      response = await fetchFn(url);
+      response = await fetchFn(url, init);
     } catch {
       return { ok: false, error: 'network' };
     }
@@ -51,14 +56,13 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
 
   const groupUrl = (token: string) => `/api/groups/${encodeURIComponent(token)}`;
 
+  // Only a read of the changes may answer `cursor_ahead`: elsewhere such an answer is outside the contract.
+  const withoutCursor = <T>(result: ApiResult<T, ChangesError>): ApiResult<T> =>
+    result.ok || result.error !== 'cursor_ahead' ? (result as ApiResult<T>) : { ok: false, error: 'unexpected' };
+
   return {
     async fetchGroup(token) {
-      const result = await read(groupUrl(token), groupResponseSchema);
-      if (result.ok) {
-        return result;
-      }
-      // A group read never answers `cursor_ahead`: such an answer is outside the contract.
-      return { ok: false, error: result.error === 'cursor_ahead' ? 'unexpected' : result.error };
+      return withoutCursor(await read(groupUrl(token), groupResponseSchema));
     },
     async fetchChanges(token, since) {
       const result = await read(`${groupUrl(token)}/changes?since=${String(since)}`, changesResponseSchema);
@@ -66,6 +70,22 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
         return { ok: false, error: 'unexpected' };
       }
       return result;
+    },
+    async sendOperations(token, operations) {
+      const result = withoutCursor(
+        await read(`${groupUrl(token)}/operations`, operationBatchResponseSchema, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operations }),
+        }),
+      );
+      if (!result.ok) {
+        return result;
+      }
+      const { results } = result.value;
+      const answersEach =
+        results.length === operations.length && results.every((answer, index) => answer.revisionId === operations[index]?.revisionId);
+      return answersEach ? { ok: true, value: results } : { ok: false, error: 'unexpected' };
     },
   };
 }

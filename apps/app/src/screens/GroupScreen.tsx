@@ -70,7 +70,16 @@ function GroupLoader({ token }: { readonly token: string }) {
         </Layout>
       );
     case 'ready':
-      return <GroupHome token={token} group={state.group} changes={state.changes} />;
+      return (
+        <GroupHome
+          token={token}
+          group={state.group}
+          changes={state.changes}
+          readError={state.readError}
+          onRetry={() => void store.load()}
+          send={store.send}
+        />
+      );
   }
 }
 
