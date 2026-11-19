@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@la-pince/core": "workspace:*",
+    "idb": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "wouter": "catalog:"
+    "wouter": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@inlang/paraglide-js": "catalog:",
@@ -26,6 +28,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "fake-indexeddb": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

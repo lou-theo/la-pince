@@ -1,8 +1,7 @@
-// What this phone remembers between visits. Storage may be unavailable (private browsing, blocked site
+// What this phone remembers between visits, outside of any group (the copy of a group and who I am in it: `groupDb.ts`). Storage may be unavailable (private browsing, blocked site
 // data): the app then asks again rather than failing.
 
 const lastGroupKey = 'la-pince:last-group';
-const currentMemberKey = (token: string) => `la-pince:group:${token}:current-member`;
 
 function read(key: string): string | undefined {
   try {
@@ -24,10 +23,4 @@ function write(key: string, value: string): void {
 export const readLastGroup = (): string | undefined => read(lastGroupKey);
 export const saveLastGroup = (token: string): void => {
   write(lastGroupKey, token);
-};
-
-/** “Who I am” in a group, as chosen on this phone; the caller checks it is still a member. */
-export const readCurrentMember = (token: string): string | undefined => read(currentMemberKey(token));
-export const saveCurrentMember = (token: string, memberId: string): void => {
-  write(currentMemberKey(token), memberId);
 };

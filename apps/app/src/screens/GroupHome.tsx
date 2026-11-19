@@ -5,7 +5,6 @@ import { Link, Route, Switch, useLocation } from 'wouter';
 import { loadErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { liveOperations, sortedBalances, transfers } from '../model/group.ts';
-import { readCurrentMember, saveCurrentMember } from '../storage/device.ts';
 import type { LoadError } from '../sync/client.ts';
 import type { SendResult } from '../sync/groupStore.ts';
 import { Balances } from './Balances.tsx';
@@ -18,9 +17,11 @@ import { OperationList } from './OperationList.tsx';
 import type { GroupView } from './view.ts';
 
 interface GroupHomeProps {
-  readonly token: string;
   readonly group: GroupResponse;
   readonly changes: ReadonlyMap<OperationId, Change>;
+  /** Who I am, as remembered on this phone, possibly a member who left the group. */
+  readonly currentMember: MemberId | undefined;
+  readonly onChooseMember: (member: MemberId) => void;
   /** Why the last read failed, the group shown being the last one read in full. */
   readonly readError: LoadError | undefined;
   readonly onRetry: () => void;
@@ -28,12 +29,9 @@ interface GroupHomeProps {
 }
 
 /** Home of a group: asks “who I am” until this phone knows it, then shows the group as that member, its operations and its balances. */
-export function GroupHome({ token, group, changes, readError, onRetry, send }: GroupHomeProps): ReactNode {
+export function GroupHome({ group, changes, currentMember: remembered, onChooseMember, readError, onRetry, send }: GroupHomeProps): ReactNode {
   // A remembered member who left the group is asked again.
-  const [currentMember, setCurrentMember] = useState(() => {
-    const stored = readCurrentMember(token);
-    return group.members.find((member) => member.id === stored);
-  });
+  const currentMember = group.members.find((member) => member.id === remembered);
   const [choosing, setChoosing] = useState(false);
   const computed = useMemo(() => {
     const operations = liveOperations(changes.values());
@@ -48,8 +46,7 @@ export function GroupHome({ token, group, changes, readError, onRetry, send }: G
         members={group.members}
         currentMember={currentMember}
         onChoose={(member) => {
-          saveCurrentMember(token, member.id);
-          setCurrentMember(member);
+          onChooseMember(member.id);
           setChoosing(false);
         }}
       />
