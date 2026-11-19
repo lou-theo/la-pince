@@ -23,7 +23,7 @@ const notificationMessageSchema = z.strictObject({
   keys: z.strictObject({ p256dh: z.string(), auth: z.string() }),
   groupId: groupIdSchema,
   member: memberIdSchema,
-  // The instance's address, the contact VAPID asks for (decision 45 of the cadrage): no e-mail address to configure.
+  // The instance's address, the contact VAPID asks for (decision 46 of the cadrage): no e-mail address to configure.
   subject: z.string(),
   message: pushMessageSchema,
 });
