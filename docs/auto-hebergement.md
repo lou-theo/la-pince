@@ -133,7 +133,7 @@ Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi d
    gh variable set D1_DATABASE --body <nom de la base> -R <compte>/la-pince-sauvegardes
    ```
 
-4. Lancer une première copie sans attendre la nuit, suivre son passage, puis vérifier que `la-pince.sql` est arrivé dans le repo :
+4. Lancer une première copie sans attendre la nuit, suivre son passage (`gh run watch` le propose quelques secondes après le lancement, le temps que GitHub le crée), puis vérifier que `la-pince.sql` est arrivé dans le repo :
 
    ```sh
    gh workflow run sauvegarde.yml -R <compte>/la-pince-sauvegardes
