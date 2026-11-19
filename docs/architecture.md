@@ -8,7 +8,7 @@ La Pince est une PWA installable (iPhone, Android, ordinateur), sans compte, uti
 
 | Paquet                            | Rôle                                                                                                                            | Dépend de    |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `packages/core`                   | calcul des effets et des soldes, types, schémas zod, conversion Tricount                                                        | aucun paquet |
+| `packages/core`                   | calcul des effets et des soldes, types, schémas zod, contrat de synchro, conversion Tricount                                    | aucun paquet |
 | `packages/config`                 | configs partagées : TypeScript, ESLint, Prettier, Vitest                                                                        | aucun paquet |
 | `apps/app` (à venir)              | PWA React et Vite, cache local IndexedDB, file d'envoi                                                                          | core         |
 | `apps/server` (à venir)           | Worker Hono, accès D1 par Drizzle, Web Push                                                                                     | core         |
@@ -49,6 +49,14 @@ Chronologie d'une dépense saisie dans le métro, sans réseau :
 - Le serveur garde toutes les versions de chaque opération ; la dernière arrivée au serveur gagne, jamais l'horloge du téléphone ; l'historique permet de rattraper une modification écrasée.
 - Une suppression est un marquage, synchronisé comme une modification.
 - Les modifications concurrentes d'une même opération sont rares (usage fait d'ajouts indépendants) : pas de fusion automatique (CRDT), écartée pour sa complexité.
+
+Le contrat vit dans `packages/core`, lu par le téléphone comme par le serveur :
+
+- **Opération envoyée** (`operationSchema`) : identifiant de l'opération, identifiant de la version (tiré sur le téléphone à chaque modification), titre, jour (`YYYY-MM-DD`, jamais une heure), auteur facultatif, puis soit la saisie, soit le marquage `deleted: true`.
+- **Envoi** (`operationBatchSchema`) : 50 versions au plus par requête, écrites dans l'ordre reçu ; `newRevisions` écarte une version déjà reçue ou répétée dans le lot, si bien qu'une ancienne version renvoyée par la file d'envoi n'écrase jamais une plus récente. Avant d'écrire, le serveur refuse une opération qui nomme un non-membre du groupe (`unknownMembers` : payeur, lignes, auteur), contrôle que le téléphone fait aussi avant de mettre l'opération en file.
+- **Lecture** (`changesQuerySchema`, `changesResponseSchema`) : la version courante de chaque opération changée depuis le curseur, par `seq` croissant, 500 au plus par page, le curseur suivant et `hasMore`. Des soldes calculés avant d'avoir lu une page à `hasMore: false` oublient des opérations : le téléphone lit jusque-là.
+- **Groupe** (`groupResponseSchema`) : titre et membres ; les opérations arrivent par la lecture des changements.
+- **Effet** (`operationEffect`) : `computeEffect(operation.id, saisie)`, identique au centime d'un appel à l'autre et après le transit entre téléphone et serveur ; aucun pour une opération supprimée.
 
 ## Outillage
 
