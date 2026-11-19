@@ -48,7 +48,8 @@ export const screens: readonly Screen[] = [
     label: 'Groupe introuvable',
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await page.goto(`${demo.appUrl}/g/${'x'.repeat(40)}`);
-      await page.getByRole('alert').waitFor();
+      // The way to another link, shown for an unknown group only (other errors offer to retry).
+      await page.locator('a[href="/lien"]').waitFor();
     },
   },
   {
@@ -56,7 +57,7 @@ export const screens: readonly Screen[] = [
     label: 'Lien invalide',
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await page.goto(`${demo.appUrl}/g/court`);
-      await settle(page);
+      await page.locator('a[href="/lien"]').waitFor();
     },
   },
 ];

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import corpus from '@la-pince/core/fixtures/tricount-demo.json' with { type: 'json' };
 import { importTricount } from '@la-pince/import-tricount';
-import { createServer } from 'vite';
+import { createServer, type ViteDevServer } from 'vite';
 import { createTestHarness } from 'wrangler';
 
 import type { Demo } from './screens.ts';
@@ -28,30 +28,40 @@ export async function startStack(root: string): Promise<Stack | undefined> {
   }
   const adminToken = `captures-${crypto.randomUUID()}`;
   const server = createTestHarness({ workers: [{ configPath: join(root, 'apps/server/wrangler.jsonc'), secrets: { ADMIN_TOKEN: adminToken } }] });
-  const serverUrl = (await server.listen()).url.href;
-  await server.getWorker().applyD1Migrations('DB');
-  await importTricount({ data: corpus, serverUrl, adminToken, token });
-
-  // The app's Vite plugins read their paths from the working directory, until the stack closes.
   const cwd = process.cwd();
-  process.chdir(appRoot);
-  const vite = await createServer({
-    configFile: join(appRoot, 'vite.config.ts'),
-    root: appRoot,
-    logLevel: 'warn',
-    server: { port: 0, proxy: { '/api': serverUrl } },
-  });
-  await vite.listen();
-  const appUrl = vite.resolvedUrls?.local[0]?.replace(/\/$/, '');
-  if (appUrl === undefined) {
-    throw new Error('Vite did not say where it listens');
-  }
-  return {
-    demo: { appUrl, token },
-    close: async () => {
-      await vite.close();
-      await server.close();
-      process.chdir(cwd);
-    },
+  let vite: ViteDevServer | undefined;
+  // Each step runs even if the one before fails, so that no server outlives the run.
+  const close = async () => {
+    try {
+      await vite?.close();
+    } finally {
+      try {
+        await server.close();
+      } finally {
+        process.chdir(cwd);
+      }
+    }
   };
+  try {
+    const serverUrl = (await server.listen()).url.href;
+    await server.getWorker().applyD1Migrations('DB');
+    await importTricount({ data: corpus, serverUrl, adminToken, token });
+    // The app's Vite plugins read their paths from the working directory, until the stack closes.
+    process.chdir(appRoot);
+    vite = await createServer({
+      configFile: join(appRoot, 'vite.config.ts'),
+      root: appRoot,
+      logLevel: 'warn',
+      server: { port: 0, proxy: { '/api': serverUrl } },
+    });
+    await vite.listen();
+    const appUrl = vite.resolvedUrls?.local[0]?.replace(/\/$/, '');
+    if (appUrl === undefined) {
+      throw new Error('Vite did not say where it listens');
+    }
+    return { demo: { appUrl, token }, close };
+  } catch (error) {
+    await close();
+    throw error;
+  }
 }

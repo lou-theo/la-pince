@@ -1,5 +1,7 @@
 import { execFile } from 'node:child_process';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { promisify } from 'node:util';
 
@@ -20,16 +22,21 @@ interface Viewport {
   readonly screensGo: 'across' | 'down';
 }
 
+const phoneSize = { width: 390, height: 844 };
+const phone: Viewport = {
+  name: 'telephone',
+  label: 'Téléphone (iPhone, 390 × 844)',
+  options: { viewport: phoneSize, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+  boardWidth: 300,
+  screensGo: 'across',
+};
 const viewports: readonly Viewport[] = [
-  {
-    name: 'telephone',
-    label: 'Téléphone (iPhone, 390 × 844)',
-    options: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
-    boardWidth: 300,
-    screensGo: 'across',
-  },
+  phone,
   { name: 'ordinateur', label: 'Ordinateur (1280 × 800)', options: { viewport: { width: 1280, height: 800 } }, boardWidth: 640, screensGo: 'down' },
 ];
+
+// Marks an output folder as written by this tool, the only kind it empties.
+const outputMarker = '.pnpm-captures';
 
 const git = async (cwd: string, ...args: string[]) => (await exec('git', args, { cwd })).stdout.trim();
 
@@ -61,16 +68,11 @@ async function shoot(browser: Browser, demo: Demo, out: string, print: (line: st
 
 /** Films the journey on a phone and turns it into a GIF with ffmpeg. */
 async function film(browser: Browser, demo: Demo, out: string): Promise<string> {
-  const phone = viewports[0];
-  if (phone === undefined) {
-    throw new Error('no phone viewport');
-  }
-  const size = { width: 390, height: 844 };
   const context = await browser.newContext({
     ...phone.options,
     deviceScaleFactor: 1,
     colorScheme: 'light',
-    recordVideo: { dir: join(out, 'video'), size },
+    recordVideo: { dir: join(out, 'video'), size: phoneSize },
   });
   const page = await context.newPage();
   await journey(page, demo);
@@ -94,21 +96,28 @@ export interface Options {
   readonly print: (line: string) => void;
 }
 
-export async function captures({ before, out: outOption, print }: Options): Promise<void> {
+/** Shoots the boards and the GIF; returns false when a screen is missing from the branch, which the board alone would hide. */
+export async function captures({ before, out: outOption, print }: Options): Promise<boolean> {
   const root = await git(process.cwd(), 'rev-parse', '--show-toplevel');
   const branch = await git(root, 'rev-parse', '--abbrev-ref', 'HEAD');
   const mainCheckout = dirname(await git(root, 'rev-parse', '--path-format=absolute', '--git-common-dir'));
   const out = outOption ?? join(mainCheckout, 'temp/captures', branch.replaceAll('/', '-'));
+  if (existsSync(out) && (await readdir(out)).length > 0 && !existsSync(join(out, outputMarker))) {
+    throw new Error(`${out} is not empty and was not written by pnpm captures: choose a new or empty folder`);
+  }
   await rm(out, { recursive: true, force: true });
   await mkdir(out, { recursive: true });
+  await writeFile(join(out, outputMarker), '');
 
   const browser = await chromium.launch();
   try {
     const versions: { label: string; dir: string; found: Map<string, Set<string>> }[] = [];
     if (before !== undefined) {
       const sha = await git(root, 'rev-parse', '--short', before);
-      const checkout = join(out, `.checkout-${sha}`);
+      const checkout = await mkdtemp(join(tmpdir(), `la-pince-captures-${sha}-`));
       print(`version before: ${before} (${sha}), checked out and installed in ${checkout}`);
+      // Forgets the worktrees of an interrupted run, whose folders are gone.
+      await git(root, 'worktree', 'prune');
       await git(root, 'worktree', 'add', '--detach', checkout, sha);
       try {
         await exec('pnpm', ['install', '--frozen-lockfile', '--prefer-offline'], { cwd: checkout });
@@ -126,6 +135,7 @@ export async function captures({ before, out: outOption, print }: Options): Prom
         }
       } finally {
         await git(root, 'worktree', 'remove', '--force', checkout);
+        await rm(checkout, { recursive: true, force: true });
       }
     }
 
@@ -166,6 +176,8 @@ export async function captures({ before, out: outOption, print }: Options): Prom
       await page.close();
       print(`board: ${board.replace(/\.html$/, '.png')}`);
     }
+    const after = versions.at(-1)?.found;
+    return viewports.every((viewport) => after?.get(viewport.name)?.size === screens.length);
   } finally {
     await browser.close();
   }
