@@ -1,6 +1,6 @@
 # La Pince
 
-PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cloudflare Workers et D1. État, décisions et plan : `docs/cadrage/README.md`, seule source de statut, à tenir à jour à chaque avancée. Architecture et raisons : `docs/architecture.md`. Vocabulaire du domaine : `CONTEXT.md`, avec le nom anglais de chaque terme dans le code.
+PWA open source de partage de dépenses pour un groupe d'amis, que chaque groupe héberge sur son propre compte Cloudflare (Workers et D1), pas à pas dans `docs/auto-hebergement.md`. État, décisions et plan : `docs/cadrage/README.md`, seule source de statut, à tenir à jour à chaque avancée. Architecture et raisons : `docs/architecture.md`. Vocabulaire du domaine : `CONTEXT.md`, avec le nom anglais de chaque terme dans le code.
 
 ## Règles
 
@@ -17,7 +17,7 @@ PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cl
 - `packages/core` : calcul, types, validation (schémas zod de toute donnée entrante), contrat de synchronisation, conversion Tricount ; ne dépend d'aucun autre paquet du repo. `fixtures/tricount-demo.json` : corpus anonymisé, seule donnée issue du vrai groupe admise dans le repo.
 - `packages/config` : configs partagées (tsconfig de base, ESLint, Prettier, preset Vitest).
 - `apps/app` : PWA React (Vite, routeur wouter) ; `src/model/` fonctions pures (couverture 100 %), `src/sync/` client de l'API et magasin du groupe, `src/storage/` ce que le téléphone retient, `src/screens/` écrans et leurs CSS modules, `src/testing/` faux serveur des tests, `src/i18n/` textes (messages dans `messages/fr.json`, compilés par Paraglide dans `src/i18n/paraglide/`, ignoré par git).
-- `apps/server` : Worker Hono, D1 par Drizzle ; schéma dans `src/schema.ts`, migrations générées dans `drizzle/` (jamais écrites à la main), tests de l'API dans workerd.
+- `apps/server` : Worker Hono, D1 par Drizzle ; schéma dans `src/schema.ts`, migrations générées dans `drizzle/` (jamais écrites à la main), tests de l'API dans workerd ; `wrangler.jsonc` est la config du local et des tests, `wrangler.production.example.jsonc` le modèle de la config d'une instance déployée, copié dans `wrangler.production.jsonc`, ignoré par git et jamais committé.
 - `tools/import-tricount` : script local qui importe un export Tricount dans un serveur par son API et relit les soldes ; lancé sous Node, sans étape de build.
 - `tools/captures` : captures des écrans sur le groupe de démo (planches avant/après, GIF d'un parcours), mode d'emploi dans le skill `.claude/skills/captures`.
 - `tools/e2e` : tests de bout en bout (Playwright, Chromium et WebKit) et budgets de performance, sur l'app construite et le Worker local, groupes de démo tirés du corpus.
@@ -33,6 +33,7 @@ Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint
 - `pnpm --filter @la-pince/core test` : tests d'un seul paquet, avec couverture.
 - `pnpm --filter @la-pince/server migrations:generate` : écrit la migration d'un changement de `apps/server/src/schema.ts`, à committer avec lui.
 - `pnpm --filter @la-pince/server dev` : serveur local sur une D1 locale (`wrangler dev`), le secret d'administration dans `apps/server/.dev.vars` (`ADMIN_TOKEN=…`, ignoré par git) ; migrations appliquées par `wrangler d1 migrations apply la-pince --local`.
+- `pnpm --filter @la-pince/server run deploy` : construit l'app, applique les migrations à la base distante et publie le Worker avec `apps/server/wrangler.production.jsonc` ; une mise en ligne, donc un point d'arrêt de la règle « Fusion en autonomie » ; `run` obligatoire, `pnpm deploy` étant une commande de pnpm.
 - `pnpm --filter @la-pince/app dev` : app sur http://localhost:5173, l'API passée au serveur local (port 8787) par le proxy de Vite.
 - `pnpm e2e` : tests de bout en bout et budgets (`tools/e2e`), rejoués par la CI après `pnpm verifier` mais hors du hook avant push ; navigateurs à installer une fois par version de Playwright (`pnpm --filter @la-pince/e2e exec playwright install chromium webkit`) ; à lancer pour toute PR qui touche l'app, le serveur ou le contrat.
 - `pnpm captures --avant origin/main` : planches et GIF de toute PR qui touche un écran, à joindre à sa description (skill `captures`).

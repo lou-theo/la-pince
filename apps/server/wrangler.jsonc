@@ -7,7 +7,7 @@
     {
       "binding": "DB",
       "database_name": "la-pince",
-      // Placeholder until the database is created in the EU jurisdiction when the app goes online; local runs only use it as a key.
+      // Local runs and tests only use it as a key; a deployed instance keeps its id in wrangler.production.jsonc (ignored by git).
       "database_id": "local",
       // Written by drizzle-kit from src/schema.ts, applied by Wrangler in file order.
       "migrations_dir": "drizzle",

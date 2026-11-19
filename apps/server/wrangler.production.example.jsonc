@@ -1,0 +1,25 @@
+// Template of the deployment config: copy it to `wrangler.production.jsonc` (ignored by git), fill in the id of your database, then deploy with
+// `pnpm --filter @la-pince/server run deploy`. Setup guide: docs/auto-hebergement.md. `wrangler.jsonc` stays the config of local runs and tests: keep
+// `compatibility_date` the same in both, so that the deployed Worker runs on the runtime the tests ran on.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "la-pince",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  // The same Worker serves the built app: one address, the app calling `/api` on its own origin as with the proxy of Vite in development.
+  "assets": {
+    "directory": "../app/dist",
+    // Any other path is a route of the app (`/g/:token`), answered by its index.html.
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "la-pince",
+      // Printed by `wrangler d1 create la-pince --jurisdiction eu`.
+      "database_id": "<database id>",
+      "migrations_dir": "drizzle",
+    },
+  ],
+}
