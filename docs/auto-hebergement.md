@@ -24,7 +24,7 @@ pnpm install
 pnpm --filter @la-pince/server exec wrangler login
 ```
 
-La commande ouvre le navigateur pour autoriser Wrangler, l'outil en ligne de commande de Cloudflare. Sur une machine sans navigateur, un jeton d'API fait la même chose : créé dans My Profile, API Tokens, à partir du modèle « Edit Cloudflare Workers », avec en plus la permission Account, D1, Edit, puis donné à Wrangler par les variables d'environnement `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` (l'identifiant du compte s'affiche dans Workers & Pages, Account details).
+La commande ouvre le navigateur pour autoriser Wrangler, l'outil en ligne de commande de Cloudflare. Sur une machine sans navigateur, un jeton d'API fait la même chose : My Profile, API Tokens, Create Token, modèle « Edit Cloudflare Workers » ; dans la carte Account policy (qui porte déjà le compte), ajouter D1 en cochant Edit ; le récapitulatif doit montrer « D1: Edit » et « Workers Scripts: Edit ». Le jeton se donne ensuite à Wrangler par les variables d'environnement `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` (l'identifiant du compte s'affiche dans Workers & Pages, Account details), ou par un fichier qui les contient, passé à chaque commande `wrangler` par `--env-file <fichier>`.
 
 ## 3. Créer la base
 
@@ -33,7 +33,7 @@ pnpm --filter @la-pince/server exec wrangler d1 create la-pince --jurisdiction e
 cp apps/server/wrangler.production.example.jsonc apps/server/wrangler.production.jsonc
 ```
 
-`--jurisdiction eu` garde les données et leurs copies dans l'Union européenne ; ce choix ne se change plus après la création. La commande affiche l'identifiant de la base (`database_id`) : le coller dans `apps/server/wrangler.production.jsonc` à la place de `<database id>`. Ce fichier est propre à l'instance et ignoré par git : il ne se publie pas.
+`--jurisdiction eu` garde les données et leurs copies dans l'Union européenne ; ce choix ne se change plus après la création. La commande affiche un extrait de config : n'en prendre que l'identifiant de la base (`database_id`), le nom de liaison qu'elle propose n'étant pas celui de La Pince (`DB`), et le coller dans `apps/server/wrangler.production.jsonc` à la place de `<database id>`. Ce fichier est propre à l'instance et ignoré par git : il ne se publie pas.
 
 ## 4. Déployer
 
@@ -41,7 +41,7 @@ cp apps/server/wrangler.production.example.jsonc apps/server/wrangler.production
 pnpm --filter @la-pince/server run deploy
 ```
 
-La commande construit l'app, applique à la base les migrations qu'elle n'a pas encore, puis publie le Worker, et affiche l'adresse de l'instance. La même commande sert à chaque mise à jour, après avoir récupéré la dernière version du code (`git pull`, puis `pnpm install`).
+La commande construit l'app, applique à la base les migrations qu'elle n'a pas encore, puis publie le Worker, et affiche l'adresse de l'instance. Au tout premier déploiement, l'adresse peut répondre « 404 Not Found » pendant une minute ou deux, le temps que Cloudflare la propage. La même commande sert à chaque mise à jour, après avoir récupéré la dernière version du code (`git pull`, puis `pnpm install`).
 
 ## 5. Poser le secret d'administration
 
