@@ -70,6 +70,15 @@ Le serveur garde dans D1 (`apps/server/src/schema.ts`, migrations dans `apps/ser
 
 Une version et l'état courant de son opération s'écrivent dans un seul lot D1, qui est une transaction (`apps/server/src/store.ts`). Les gardes vivent dans les instructions, pas dans la lecture qui les précède : la version n'est insérée que si son identifiant est nouveau et son opération n'appartient pas à un autre groupe, et l'état courant ne bouge que si la version vient d'être insérée (`changes()`). Deux requêtes qui envoient la même version en même temps n'en écrivent qu'une, et un renvoi ne ramène jamais une opération à une version plus ancienne. Une version qu'une requête concurrente a prise entre la lecture et l'écriture est rejugée sur une lecture fraîche : elle reçoit la réponse qu'elle aurait eue en arrivant après.
 
+## Notifications
+
+Une version écrite notifie, sur chacun de leurs téléphones abonnés, les membres qu'elle concerne avant ou après elle, sauf son auteur ; une version sans auteur, qui ne vient que d'un import, ne notifie personne. Un envoi de plusieurs versions fait une seule notification par téléphone, qui porte les premiers avis et leur nombre.
+
+- **Destinataires dans le cœur** : `noticesByMember` (`packages/core`) calcule les avis de chaque membre depuis l'effet de la version d'avant et de la nouvelle, pure et couverte à 100 %.
+- **Envoi par une file** (Cloudflare Queues) : la requête qui écrit répond d'abord, puis relit les versions écrites et leurs précédentes et dépose un message par téléphone dans la file ; le consommateur lit un message par invocation, le chiffre (RFC 8291) et l'envoie au service de notifications du téléphone, signé par les clés VAPID de l'instance (RFC 8292). Le chiffrement d'un message coûte environ 0,6 ms de CPU sur Workers : tous les envois dans une seule invocation dépasseraient régulièrement les 10 ms de l'offre gratuite dès une dizaine de destinataires, ce qu'une invocation par message évite. L'écriture d'une version ne dépend jamais de l'envoi.
+- **Abonnements** : table `subscriptions` (groupe, adresse du téléphone chez son service de notifications, membre, clés), 200 au plus par groupe ; seuls les services de notifications des navigateurs sont acceptés comme adresse, pour que le lien d'un groupe ne fasse pas envoyer des requêtes ailleurs. Un abonnement que son service dit disparu (404 ou 410) est oublié dans tous les groupes ; un service injoignable ou saturé fait réessayer le message 30 s plus tard.
+- **Instance sans notifications** : sans la file ou sans les clés, l'instance tourne comme avant, et la route de la clé publique répond `notifications_disabled`.
+
 ## Import Tricount
 
 Chronologie d'un import (`tools/import-tricount`, lancé sur la machine du mainteneur) :

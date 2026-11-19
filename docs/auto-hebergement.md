@@ -30,18 +30,19 @@ pnpm --filter @la-pince/server exec wrangler login
 La commande ouvre le navigateur pour autoriser Wrangler, l'outil en ligne de commande de Cloudflare. Sur une machine sans navigateur, un jeton d'API fait la même chose :
 
 1. My Profile, API Tokens, Create Token, modèle « Edit Cloudflare Workers ».
-2. Dans la carte Account policy, qui porte déjà le compte, ajouter D1 en cochant Edit.
-3. Le récapitulatif doit montrer « D1: Edit » et « Workers Scripts: Edit ».
+2. Dans la carte Account policy, qui porte déjà le compte, ajouter D1 et Queues en cochant Edit pour chacun.
+3. Le récapitulatif doit montrer « D1: Edit », « Queues: Edit » et « Workers Scripts: Edit ».
 4. Donner le jeton à Wrangler par les variables d'environnement `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` (l'identifiant du compte s'affiche dans Workers & Pages, Account details), ou par un fichier qui les contient, passé à chaque commande `wrangler` par `--env-file <fichier>`.
 
-## 3. Créer la base
+## 3. Créer la base et la file
 
 ```sh
 pnpm --filter @la-pince/server exec wrangler d1 create la-pince --jurisdiction eu --update-config=false
+pnpm --filter @la-pince/server exec wrangler queues create la-pince-notifications
 cp apps/server/wrangler.production.example.jsonc apps/server/wrangler.production.jsonc
 ```
 
-`--jurisdiction eu` garde les données et leurs copies dans l'Union européenne ; ce choix ne se change plus après la création. `--update-config=false` empêche Wrangler d'écrire la base dans `wrangler.jsonc`, qui reste la config du développement local et des tests. La commande affiche un extrait de config : n'en prendre que l'identifiant de la base (`database_id`) et le coller dans `apps/server/wrangler.production.jsonc` à la place de `<database id>`. Ce fichier est propre à l'instance et ignoré par git : il ne se publie pas.
+`--jurisdiction eu` garde les données et leurs copies dans l'Union européenne ; ce choix ne se change plus après la création. `--update-config=false` empêche Wrangler d'écrire la base dans `wrangler.jsonc`, qui reste la config du développement local et des tests. La commande affiche un extrait de config : n'en prendre que l'identifiant de la base (`database_id`) et le coller dans `apps/server/wrangler.production.jsonc` à la place de `<database id>`. Ce fichier est propre à l'instance et ignoré par git : il ne se publie pas. La file `la-pince-notifications` porte les notifications d'une dépense vers les téléphones (section 5) ; le déploiement échoue tant qu'elle n'existe pas.
 
 ## 4. Déployer
 
@@ -64,7 +65,7 @@ Sur un repo GitHub à soi (un fork, par exemple, dont les workflows sont à acti
    gh api -X POST repos/<compte>/<repo>/environments/production/deployment-branch-policies -f name=main
    ```
 
-2. Y poser les secrets : le jeton d'API de la section 2 (« D1: Edit » et « Workers Scripts: Edit »), l'identifiant du compte, et le contenu de `apps/server/wrangler.production.jsonc` encodé en base64, sur une seule ligne, pour que GitHub ne masque pas chacune de ses lignes dans les journaux. `gh secret set` sans valeur demande de la coller, sans l'afficher :
+2. Y poser les secrets : le jeton d'API de la section 2 (« D1: Edit », « Queues: Edit » et « Workers Scripts: Edit »), l'identifiant du compte, et le contenu de `apps/server/wrangler.production.jsonc` encodé en base64, sur une seule ligne, pour que GitHub ne masque pas chacune de ses lignes dans les journaux. `gh secret set` sans valeur demande de la coller, sans l'afficher :
 
    ```sh
    gh secret set CLOUDFLARE_API_TOKEN --env production -R <compte>/<repo>
@@ -84,6 +85,19 @@ pnpm --filter @la-pince/server exec wrangler secret put ADMIN_TOKEN --config wra
 ```
 
 La seconde commande demande la valeur sans l'afficher.
+
+### Clés des notifications
+
+Les notifications partent du Worker vers le service de notifications de chaque téléphone (Google, Apple, Mozilla, Microsoft), signées par une paire de clés VAPID propre à l'instance. Les créer et les donner à Cloudflare sans qu'elles s'écrivent dans un fichier ni s'affichent :
+
+```sh
+keys=$(node apps/server/scripts/vapid-keys.ts)
+printf '%s' "${keys%% *}" | pnpm --filter @la-pince/server exec wrangler secret put VAPID_PUBLIC_KEY --config wrangler.production.jsonc
+printf '%s' "${keys##* }" | pnpm --filter @la-pince/server exec wrangler secret put VAPID_PRIVATE_KEY --config wrangler.production.jsonc
+unset keys
+```
+
+Une seule fois par instance : changer de clés désabonne tous les téléphones, qui doivent réactiver les notifications. Sans ces deux secrets, ou sans la file, l'instance tourne sans notifications et l'app ne les propose pas.
 
 ## 6. Créer le groupe
 
