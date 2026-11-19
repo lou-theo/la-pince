@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestHarness } from 'wrangler';
 
 import type { Env } from './index.ts';
-import { generateVapidKeys } from './vapid.ts';
+import { generateVapidKeys, toBase64Url } from './vapid.ts';
 
 // The Worker runs in workerd with push keys and its local queue, producer and consumer, as on an instance that has set notifications up.
 const ADMIN_TOKEN = 'admin-token-of-the-tests-0123456789';
@@ -128,7 +128,7 @@ describe('notifications of written revisions', () => {
         .getLogs()
         .flatMap((log) => {
           try {
-            return [JSON.parse(log.message) as { notification: string; group?: string; member?: string }];
+            return [JSON.parse(log.message) as { notification: string; group?: string; member?: string; status?: number }];
           } catch {
             return [];
           }
@@ -144,7 +144,13 @@ describe('notifications of written revisions', () => {
 
   it('goes from the write through the queue to the consumer, for each phone of the members concerned but the author', async () => {
     const { id, token } = await newGroup();
-    // Phones whose push service refuses the connection: the consumer tries each once, then retries later, which the test does not wait for.
+    // Phones with a real key, whose push service refuses the connection, which the local runtime answers with a 500: the consumer encrypts,
+    // sends to each once, then retries later, which the test does not wait for.
+    const pair = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])) as CryptoKeyPair;
+    const phoneKeys = {
+      p256dh: toBase64Url(new Uint8Array((await crypto.subtle.exportKey('raw', pair.publicKey)) as ArrayBuffer)),
+      auth: toBase64Url(crypto.getRandomValues(new Uint8Array(16))),
+    };
     const { DB } = await server.getWorker<Env>().getEnv();
     await DB.batch(
       ['alice', 'bob', 'bob', 'carol'].map((member, index) =>
@@ -152,8 +158,8 @@ describe('notifications of written revisions', () => {
           id,
           `https://127.0.0.1:1/${member}${String(index)}`,
           member,
-          keys.p256dh,
-          keys.auth,
+          phoneKeys.p256dh,
+          phoneKeys.auth,
         ),
       ),
     );
@@ -177,9 +183,9 @@ describe('notifications of written revisions', () => {
     const response = await server.fetch(`/api/groups/${token}/operations`, { method: 'POST', body: JSON.stringify({ operations: [pizza] }) });
     expect(response.status).toBe(200);
     const lines = await consumerLines(id, 2);
-    expect(lines.map((line) => [line.notification, line.member])).toStrictEqual([
-      ['retry', 'bob'],
-      ['retry', 'bob'],
+    expect(lines.map((line) => [line.notification, line.member, line.status])).toStrictEqual([
+      ['retry', 'bob', 500],
+      ['retry', 'bob', 500],
     ]);
   });
 });
