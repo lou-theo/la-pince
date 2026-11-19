@@ -63,7 +63,8 @@ export async function startStack(groups: readonly GroupSpec[]): Promise<Stack> {
     app = await serveApp(dist, serverUrl);
     return { appUrl: app.url, dist, close };
   } catch (error) {
-    await close();
+    // The error that stopped the start is the one to tell, not one of the cleanup.
+    await close().catch(() => undefined);
     throw error;
   }
 }

@@ -11,7 +11,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 10_000 },
   reporter: ci ? [['list'], ['github']] : 'list',
-  use: { locale: 'fr-FR', timezoneId: 'Europe/Paris', serviceWorkers: 'allow', trace: 'retain-on-failure' },
+  use: { locale: 'fr-FR', timezoneId: 'Europe/Paris', serviceWorkers: 'allow', trace: ci ? 'off' : 'retain-on-failure' },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },

@@ -9,10 +9,7 @@ import { demoGroup } from '../src/corpus.ts';
 import { budgetGroup } from '../src/groups.ts';
 import { appUrl, openAs } from './app.ts';
 
-/**
- * Budgets of decision 35 (g), on the corpus repeated 10 times (about 2,500 operations): each limit is about twice what the CI measured, below the
- * target of the decision. Measures and base: decision 38.
- */
+/** Budgets of decision 35 (g), on the corpus repeated 10 times (about 2,500 operations); limits and the CI measures they rest on: decision 38. */
 const budgets = {
   balancesMs: 20,
   offlineOpenMs: 1_000,
@@ -21,7 +18,7 @@ const budgets = {
   shellKb: 150,
 };
 
-// Measured on one browser: the budgets watch the app, not the engines.
+// Measured on one browser: the budgets watch the app, not the engines; the computation of the core runs in the Node of the test runner, V8 as in Chromium.
 test.skip(({ browserName }) => browserName !== 'chromium', 'Budgets measured on Chromium only');
 
 function report(name: string, value: number, unit: string, budget: number) {
@@ -41,7 +38,7 @@ test('balances and suggested transfers of 2,500 operations', () => {
     suggestTransfers(computeBalances(group.operations.map((operation) => computeEffect(operation.id, operation.entry))));
     return performance.now() - start;
   });
-  report('soldes et remboursements', median(runs), 'ms', budgets.balancesMs);
+  report('soldes et remboursements (cœur, Node)', median(runs), 'ms', budgets.balancesMs);
 });
 
 test('JS of the shell, compressed', async () => {

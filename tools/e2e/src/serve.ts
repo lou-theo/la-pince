@@ -55,7 +55,12 @@ export async function serveApp(dist: string, apiUrl: string): Promise<{ readonly
       response.writeHead(200, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' });
       response.end(await readFile(file));
     })().catch((error: unknown) => {
-      response.writeHead(502).end(String(error));
+      // Failed after the answer started: cut it, rather than throw in the process that runs the whole suite.
+      if (response.headersSent) {
+        response.destroy();
+      } else {
+        response.writeHead(502).end(String(error));
+      }
     });
   });
   await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
