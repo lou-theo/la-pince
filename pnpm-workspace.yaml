@@ -15,6 +15,8 @@ catalog:
   '@eslint/js': 10.0.1
   '@inlang/paraglide-js': 3.2.2
   '@inlang/plugin-message-format': 4.6.0
+  # Same version as `playwright`, which it pins exactly: both move together.
+  '@playwright/test': 1.65.1
   '@testing-library/dom': 10.4.2
   '@testing-library/react': 16.3.3
   '@testing-library/user-event': 14.6.12

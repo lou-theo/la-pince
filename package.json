@@ -12,7 +12,8 @@
     "typecheck": "pnpm --recursive --if-present typecheck",
     "test": "pnpm --recursive --if-present test",
     "verifier": "pnpm generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "captures": "pnpm --filter @la-pince/captures start"
+    "captures": "pnpm --filter @la-pince/captures start",
+    "e2e": "pnpm --filter @la-pince/e2e e2e"
   },
   "prettier": "@la-pince/config/prettier",
   "devDependencies": {

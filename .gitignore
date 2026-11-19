@@ -8,3 +8,5 @@ node_modules/
 vapid.json
 coverage/
 dist/
+test-results/
+playwright-report/
