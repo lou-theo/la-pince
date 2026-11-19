@@ -24,4 +24,6 @@ Chaque terme du domaine est défini une fois ici ; les docs et l'interface l'emp
 - **Auteur** d'une version (`author`) : le membre « qui je suis » du téléphone qui l'a envoyée, quand il est connu ; il doit être membre du groupe.
 - **Opération supprimée** (`deleted`) : version qui marque l'opération comme supprimée au lieu de l'effacer, pour que la suppression atteigne les autres téléphones ; elle n'a plus d'effet.
 - **Curseur** (`cursor`) : position d'un téléphone dans l'historique des changements du serveur, la valeur du compteur (`seq`) du dernier changement reçu ; il ne fait que croître.
+- **Abonnement** (`subscription`) : inscription d'un téléphone aux notifications d'un groupe, sous le membre « qui je suis » ; une par téléphone et par groupe, déplacée quand « qui je suis » change.
+- **Avis** (`Notice`) : ce qu'une notification dit d'une opération à un membre : ajoutée (`added`), modifiée (`changed`) ou supprimée (`deleted`), avec son titre et son auteur ; un membre reçoit un avis sur une version quand l'opération le touche (`affected`) avant ou après elle, c'est-à-dire qu'il en est le payeur ou y a une part non nulle (plus large que « concerné »), sauf s'il en est l'auteur.
 - **Changement** (`Change`) : version courante d'une opération telle que la lecture la rend, avec son `seq`, la valeur du compteur du serveur quand il l'a écrite.

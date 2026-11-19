@@ -11,6 +11,7 @@
     "test": "pnpm migrations:check && vitest run --coverage"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "catalog:",
     "@la-pince/core": "workspace:*",
     "drizzle-orm": "catalog:",
     "hono": "catalog:",

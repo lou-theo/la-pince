@@ -3,24 +3,36 @@ import {
   type ApiError,
   changesQuerySchema,
   type ChangesResponse,
+  endpointRequestSchema,
   type GroupId,
   groupIdSchema,
   type GroupResponse,
   MAX_BATCH_REVISIONS,
   memberIdSchema,
   type OperationBatchResponse,
+  type PushKeyResponse,
   revisionIdSchema,
+  subscribeRequestSchema,
 } from '@la-pince/core';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { type Context, Hono } from 'hono';
 import { z } from 'zod';
 
+import {
+  deleteSubscription,
+  deliverBatch,
+  log,
+  type NotificationEnv,
+  notifierOf,
+  queueNotifications,
+  queueTest,
+  saveSubscription,
+} from './notifications.ts';
 import { groups, members, operations, revisions } from './schema.ts';
 import { applyBatch } from './store.ts';
 
-export interface Env {
-  readonly DB: D1Database;
+export interface Env extends NotificationEnv {
   /** Secret of the admin route; the route refuses everything when it is not set. */
   readonly ADMIN_TOKEN?: string;
 }
@@ -127,7 +139,75 @@ app.post('/api/groups/:token/operations', async (context) => {
       envelope.data.operations.map((raw) => ({ revisionId: raw.revisionId, raw })),
     ),
   };
+  const notifier = notifierOf(context.env);
+  const written = response.results.flatMap((result) => (result.status === 'written' ? [result.revisionId] : []));
+  if (notifier !== undefined && written.length > 0) {
+    // After the answer: a notification never delays nor fails the write.
+    context.executionCtx.waitUntil(
+      queueNotifications(notifier, groupId, written, new URL(context.req.url).origin).catch((error: unknown) => {
+        log({ notification: 'not_queued', group: groupId, error: String(error) });
+      }),
+    );
+  }
   return context.json(response);
+});
+
+app.get('/api/notifications/key', (context) => {
+  const notifier = notifierOf(context.env);
+  if (notifier === undefined) {
+    return apiError(context, 'notifications_disabled', 404);
+  }
+  return context.json({ publicKey: notifier.publicKey } satisfies PushKeyResponse);
+});
+
+app.put('/api/groups/:token/subscription', async (context) => {
+  const request = subscribeRequestSchema.safeParse(await context.req.json().catch(() => undefined));
+  if (!request.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  if (notifierOf(context.env) === undefined) {
+    return apiError(context, 'notifications_disabled', 404);
+  }
+  const saved = await saveSubscription(context.env.DB, groupId, request.data);
+  if (saved === 'unknown_member') {
+    return apiError(context, 'invalid_request', 400);
+  }
+  return saved === 'full' ? apiError(context, 'too_many_subscriptions', 409) : context.body(null, 204);
+});
+
+// Open even when the instance has no notifications: a phone can always stop a subscription it holds.
+app.delete('/api/groups/:token/subscription', async (context) => {
+  const request = endpointRequestSchema.safeParse(await context.req.json().catch(() => undefined));
+  if (!request.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  await deleteSubscription(context.env.DB, groupId, request.data.endpoint);
+  return context.body(null, 204);
+});
+
+app.post('/api/groups/:token/subscription/test', async (context) => {
+  const request = endpointRequestSchema.safeParse(await context.req.json().catch(() => undefined));
+  if (!request.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  const notifier = notifierOf(context.env);
+  if (notifier === undefined) {
+    return apiError(context, 'notifications_disabled', 404);
+  }
+  const queued = await queueTest(notifier, groupId, request.data.endpoint, new URL(context.req.url).origin);
+  return queued ? context.body(null, 202) : apiError(context, 'subscription_not_found', 404);
 });
 
 app.put('/api/admin/groups/:id', async (context) => {
@@ -168,4 +248,7 @@ app.put('/api/admin/groups/:id', async (context) => {
   return context.json(await readGroup(db, id));
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  queue: (batch, env) => deliverBatch(batch, env, (endpoint, init) => fetch(endpoint, init)),
+} satisfies ExportedHandler<Env>;

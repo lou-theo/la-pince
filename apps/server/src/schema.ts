@@ -48,3 +48,24 @@ export const operations = sqliteTable(
   },
   (table) => [index('operations_changes').on(table.groupId, table.seq)],
 );
+
+// Push subscription of a phone to a group's notifications, as the member it said it was; one per phone and group, since the endpoint names the
+// phone's browser. Removed when the phone stops it or when its push service says it is gone.
+export const subscriptions = sqliteTable(
+  'subscriptions',
+  {
+    groupId: text('group_id')
+      .notNull()
+      .references(() => groups.id),
+    endpoint: text('endpoint').notNull(),
+    memberId: text('member_id').notNull(),
+    // Public key of the phone and authentication secret, in base64url: what the server encrypts each message with.
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.groupId, table.endpoint] }),
+    index('subscriptions_members').on(table.groupId, table.memberId),
+    index('subscriptions_endpoint').on(table.endpoint),
+  ],
+);
