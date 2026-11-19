@@ -59,7 +59,11 @@ describe('openGroupDb', () => {
     await late.saveRead(readOf(0, [first]));
     await ahead.saveRead(readOf(first.seq, [renamed, other], [first]));
     // The late window read from its own cursor before the other window saved, and saw the rename only.
+    const joined = groupResponseSchema.parse({ ...group, members: [...group.members, { id: 'm2', name: 'Bruno' }] });
+    await ahead.saveRead({ ...readOf(other.seq, []), group: joined });
     const merged = await late.saveRead(readOf(first.seq, [renamed], [first]));
+    // Title and members go with the furthest cursor, read later by the other window.
+    expect(merged.group).toStrictEqual(joined);
     expect(titles(merged)).toStrictEqual([
       ['a', 'Renamed'],
       ['b', 'Opération b'],

@@ -109,6 +109,7 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
       try {
         const previous = storedReadSchema.safeParse(await meta.get('read'));
         let saved = cursor;
+        let savedGroup = group;
         if (reset || !previous.success || previous.data.cursor < since) {
           // No copy, or one that misses changes before the read started (an earlier save failed): the window's whole copy replaces it.
           await operations.clear();
@@ -118,7 +119,11 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
         } else {
           // The stored copy holds every change up to its cursor, at or past where the read started, and another window may have saved it further:
           // keep the most recent revision of each operation and the furthest cursor, so that the copy still holds every change up to its cursor.
-          saved = previous.data.cursor > cursor ? previous.data.cursor : cursor;
+          if (previous.data.cursor > cursor) {
+            // Title and members go with the cursor kept: the other window read them later.
+            saved = previous.data.cursor;
+            savedGroup = previous.data.group;
+          }
           for (const change of changes) {
             const current = await operations.get(change.id);
             if (current === undefined || current.seq < change.seq) {
@@ -126,10 +131,10 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
             }
           }
         }
-        await meta.put({ group, cursor: saved, readAt: Date.now() } satisfies z.input<typeof storedReadSchema>, 'read');
+        await meta.put({ group: savedGroup, cursor: saved, readAt: Date.now() } satisfies z.input<typeof storedReadSchema>, 'read');
         const all = await operations.getAll();
         await transaction.done;
-        return { group, changes: new Map(all.map((change) => [change.id, change])), cursor: saved };
+        return { group: savedGroup, changes: new Map(all.map((change) => [change.id, change])), cursor: saved };
       } catch (error) {
         // A request that throws (a value the browser cannot store) does not abort the transaction by itself: what was written before would stay.
         void transaction.done.catch(() => undefined);

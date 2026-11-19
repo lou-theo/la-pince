@@ -101,7 +101,7 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       return { status: 'ready', ...saved, currentMember };
     } catch {
       // Not saved (storage full, database closed by a newer version of the app, until the app reloads): the read still shows, and the next save
-      // writes the whole copy, the stored one missing what this read brought.
+      // that finds the stored copy short of where it started writes the whole copy.
       return inMemory();
     }
   }
