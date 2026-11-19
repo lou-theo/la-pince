@@ -9,6 +9,7 @@ import {
   memberIdSchema,
   type Operation,
   type OperationId,
+  operationSchema,
 } from '@la-pince/core';
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 import { z } from 'zod';
@@ -18,6 +19,14 @@ export interface GroupCopy {
   readonly group: GroupResponse;
   readonly changes: ReadonlyMap<OperationId, Change>;
   readonly cursor: Cursor;
+  /** When the read ended, in milliseconds since the epoch. */
+  readonly readAt: number;
+}
+
+/** A revision waiting in the outbox, under its key, which follows the order of entry. */
+export interface Queued {
+  readonly key: number;
+  readonly operation: Operation;
 }
 
 /** A read ended by a page with `hasMore: false`, to save. */
@@ -41,6 +50,13 @@ export interface GroupDb {
   readonly saveRead: (read: CompleteRead) => Promise<GroupCopy>;
   readonly loadCurrentMember: () => Promise<MemberId | undefined>;
   readonly saveCurrentMember: (member: MemberId) => Promise<void>;
+  /** The revisions of the outbox, in the order they were entered; one that no longer matches the schemas of the core is dropped. */
+  readonly loadOutbox: () => Promise<Queued[]>;
+  /** Queues a revision after the others, and gives its key. */
+  readonly addToOutbox: (operation: Operation) => Promise<number>;
+  readonly removeFromOutbox: (keys: readonly number[]) => Promise<void>;
+  /** Name of the database, which names the lock that lets one window at a time send the outbox. */
+  readonly name: string;
 }
 
 // `read`: the last complete read; `currentMember`: who I am in the group, as chosen on this phone.
@@ -66,7 +82,8 @@ interface Schema extends DBSchema {
 export async function openGroupDb(token: string): Promise<GroupDb> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
   const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
-  const db: IDBPDatabase<Schema> = await openDB<Schema>(`la-pince-group-${hex}`, 1, {
+  const name = `la-pince-group-${hex}`;
+  const db: IDBPDatabase<Schema> = await openDB<Schema>(name, 1, {
     upgrade(database) {
       database.createObjectStore('operations', { keyPath: 'id' });
       database.createObjectStore('meta');
@@ -79,6 +96,8 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
   });
 
   return {
+    name,
+
     async loadCopy() {
       const transaction = db.transaction(['operations', 'meta'], 'readwrite');
       const meta = transaction.objectStore('meta');
@@ -94,7 +113,7 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
       }
       if (read.success && changes.size === records.length) {
         await transaction.done;
-        return { group: read.data.group, changes, cursor: read.data.cursor };
+        return { group: read.data.group, changes, cursor: read.data.cursor, readAt: read.data.readAt };
       }
       // Dropped, so that the next save, finding no copy, writes a whole one instead of merging into records it cannot read.
       await Promise.all([meta.delete('read'), operations.clear()]);
@@ -131,10 +150,11 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
             }
           }
         }
-        await meta.put({ group: savedGroup, cursor: saved, readAt: Date.now() } satisfies z.input<typeof storedReadSchema>, 'read');
+        const readAt = Date.now();
+        await meta.put({ group: savedGroup, cursor: saved, readAt } satisfies z.input<typeof storedReadSchema>, 'read');
         const all = await operations.getAll();
         await transaction.done;
-        return { group: savedGroup, changes: new Map(all.map((change) => [change.id, change])), cursor: saved };
+        return { group: savedGroup, changes: new Map(all.map((change) => [change.id, change])), cursor: saved, readAt };
       } catch (error) {
         // A request that throws (a value the browser cannot store) does not abort the transaction by itself: what was written before would stay.
         void transaction.done.catch(() => undefined);
@@ -154,6 +174,35 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
 
     async saveCurrentMember(member) {
       await db.put('meta', member, 'currentMember');
+    },
+
+    async loadOutbox() {
+      const transaction = db.transaction('outbox', 'readwrite');
+      const [keys, records] = await Promise.all([transaction.store.getAllKeys(), transaction.store.getAll()]);
+      const queued: Queued[] = [];
+      const unreadable: Promise<void>[] = [];
+      keys.forEach((key, index) => {
+        const parsed = operationSchema.safeParse(records[index]);
+        if (parsed.success) {
+          queued.push({ key, operation: parsed.data });
+        } else {
+          // Left by an older version of the app in a format the server would refuse: dropped like a refused revision.
+          unreadable.push(transaction.store.delete(key));
+        }
+      });
+      await Promise.all(unreadable);
+      await transaction.done;
+      return queued;
+    },
+
+    async addToOutbox(operation) {
+      return db.add('outbox', operation);
+    },
+
+    async removeFromOutbox(keys) {
+      const transaction = db.transaction('outbox', 'readwrite');
+      await Promise.all(keys.map((key) => transaction.store.delete(key)));
+      await transaction.done;
     },
   };
 }

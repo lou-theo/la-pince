@@ -2,9 +2,9 @@ import type { Member, MemberId, Operation, Share, SuggestedTransfer } from '@la-
 
 import { m } from '../i18n/paraglide/messages.js';
 import type { BalanceLine, OperationView } from '../model/group.ts';
-import type { SendResult } from '../sync/groupStore.ts';
+import type { QueueResult } from '../sync/groupStore.ts';
 
-/** What the group's screens read: its live operations and balances, computed once per read of the group, seen as “who I am”. */
+/** What the group's screens read: its live operations and balances, the server's copy overlaid with the outbox, seen as “who I am”. */
 export interface GroupView {
   readonly operations: readonly OperationView[];
   readonly balances: readonly BalanceLine[];
@@ -13,8 +13,12 @@ export interface GroupView {
   readonly nameOf: (id: MemberId) => string;
   /** Members in the order they were added, which orders the lines of a split. */
   readonly members: readonly Member[];
-  /** Sends a revision of an operation, then reads the group again. */
-  readonly send: (operation: Operation) => Promise<SendResult>;
+  /** Queues a revision of an operation on the phone, shown at once, sent as soon as the server answers. */
+  readonly enqueue: (operation: Operation) => Promise<QueueResult>;
+  /** Operations whose revision waits in the outbox, counted in the balances. */
+  readonly pendingCount: number;
+  /** When the last complete read of the group ended, in milliseconds since the epoch. */
+  readonly readAt: number;
 }
 
 /** Shares of an operation in the order members were added, a member missing from the group's list last. */

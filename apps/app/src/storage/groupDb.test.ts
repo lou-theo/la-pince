@@ -1,4 +1,4 @@
-import { type Change, cursorSchema, groupResponseSchema, memberIdSchema } from '@la-pince/core';
+import { type Change, cursorSchema, groupResponseSchema, memberIdSchema, operationSchema } from '@la-pince/core';
 import { openDB } from 'idb';
 import { describe, expect, it } from 'vitest';
 
@@ -125,5 +125,37 @@ describe('openGroupDb', () => {
     expect(await db.loadCopy()).toBeUndefined();
     await raw.put('meta', 'not a member id!', 'currentMember');
     expect(await db.loadCurrentMember()).toBeUndefined();
+  });
+});
+
+describe('the outbox of a group', () => {
+  const expense = (id: string, revisionId: string) =>
+    operationSchema.parse({
+      id,
+      revisionId,
+      title: 'Courses',
+      date: '2026-11-05',
+      entry: { version: 1, kind: 'expense', payer: 'm1', lines: [{ member: 'm1', amount: 500 }] },
+    });
+
+  it('keeps the revisions in the order entered across openings, removes the ones answered, and leaves the copy alone', async () => {
+    const db = await openGroupDb(token);
+    const keys = [await db.addToOutbox(expense('a', 'a-1')), await db.addToOutbox(expense('b', 'b-1')), await db.addToOutbox(expense('a', 'a-2'))];
+    await db.saveRead(readOf(0, [change({ id: 'x', date: '2026-11-01' })], [], true));
+    const reopened = await openGroupDb(token);
+    expect((await reopened.loadOutbox()).map((entry) => entry.operation.revisionId)).toStrictEqual(['a-1', 'b-1', 'a-2']);
+    await reopened.removeFromOutbox(keys.slice(0, 2));
+    expect(await reopened.loadOutbox()).toStrictEqual([{ key: keys[2], operation: expense('a', 'a-2') }]);
+    expect(reopened.name).toBe(await databaseName());
+  });
+
+  it('drops a revision that no longer matches the schemas of the core', async () => {
+    const db = await openGroupDb(token);
+    await db.addToOutbox(expense('a', 'a-1'));
+    const raw = await openDB(await databaseName());
+    await raw.add('outbox', { id: 'b', title: 'An older format' });
+    await db.addToOutbox(expense('c', 'c-1'));
+    expect((await db.loadOutbox()).map((entry) => entry.operation.revisionId)).toStrictEqual(['a-1', 'c-1']);
+    expect(await raw.count('outbox')).toBe(2);
   });
 });

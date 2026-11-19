@@ -2,13 +2,13 @@ import { revisionIdSchema } from '@la-pince/core';
 import { type ReactNode, useId, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
-import { sendErrorMessage } from '../i18n/errors.ts';
+import { queueErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { formatDay } from '../model/dates.ts';
 import type { OperationView } from '../model/group.ts';
 import { formatCents } from '../model/money.ts';
 import { deletionOf } from '../model/operationForm.ts';
-import type { SendError } from '../sync/groupStore.ts';
+import type { QueueError } from '../sync/groupStore.ts';
 import layout from './Layout.module.css';
 import styles from './Operations.module.css';
 import { useMounted } from './useMounted.ts';
@@ -18,7 +18,7 @@ import { type GroupView, sharesInOrder, who } from './view.ts';
 export function OperationDetail({ view, id }: { readonly view: GroupView; readonly id: string }): ReactNode {
   const splitTitle = useId();
   const [, navigate] = useLocation();
-  // The detail outlives its deletion button, which goes as soon as the deletion is read back: it leads back to the list, unless the person left.
+  // The detail outlives its deletion button, which goes as soon as the deletion is queued: it leads back to the list, unless the person left.
   const mounted = useMounted();
   const operation = view.operations.find((candidate) => candidate.id === id);
   const back = (
@@ -46,6 +46,7 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
           {formatCents(operation.effect.total)}
         </p>
         <p>{who(view, operation)}</p>
+        {operation.pending ? <p className={styles.pending}>{m.operation_pending()}</p> : null}
         {operation.kind === 'reimbursement' ? <p className={layout.muted}>{formatDay(operation.date, { long: true })}</p> : null}
         {operation.author === undefined ? null : <p className={layout.muted}>{m.operation_entered_by({ name: view.nameOf(operation.author) })}</p>}
       </header>
@@ -87,15 +88,7 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
 function Delete({ view, operation, onDeleted }: { readonly view: GroupView; readonly operation: OperationView; readonly onDeleted: () => void }) {
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<SendError>();
-  const [notReread, setNotReread] = useState(false);
-  if (notReread) {
-    return (
-      <p className={layout.error} role="alert">
-        {m.operation_deleted_not_read()}
-      </p>
-    );
-  }
+  const [error, setError] = useState<QueueError>();
   if (!asking) {
     return (
       <button
@@ -112,14 +105,12 @@ function Delete({ view, operation, onDeleted }: { readonly view: GroupView; read
   const confirm = async () => {
     setSending(true);
     setError(undefined);
-    const result = await view.send(deletionOf(operation, { revisionId: revisionIdSchema.parse(crypto.randomUUID()), author: view.me }));
+    const result = await view.enqueue(deletionOf(operation, { revisionId: revisionIdSchema.parse(crypto.randomUUID()), author: view.me }));
     setSending(false);
-    if (!result.ok) {
-      setError(result.error);
-    } else if (result.reread) {
+    if (result.ok) {
       onDeleted();
     } else {
-      setNotReread(true);
+      setError(result.error);
     }
   };
   return (
@@ -143,7 +134,7 @@ function Delete({ view, operation, onDeleted }: { readonly view: GroupView; read
       </div>
       {error === undefined ? null : (
         <p className={layout.error} role="alert">
-          {sendErrorMessage(error)}
+          {queueErrorMessage(error)}
         </p>
       )}
     </div>

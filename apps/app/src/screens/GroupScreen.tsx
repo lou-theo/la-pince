@@ -30,9 +30,7 @@ function GroupLoader({ token }: { readonly token: string }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const ready = state.status === 'ready';
 
-  useEffect(() => {
-    void store.load();
-  }, [store]);
+  useEffect(() => store.start(), [store]);
   useEffect(() => {
     if (ready) {
       saveLastGroup(token);
@@ -74,11 +72,13 @@ function GroupLoader({ token }: { readonly token: string }) {
         <GroupHome
           group={state.group}
           changes={state.changes}
+          outbox={state.outbox}
+          readAt={state.readAt}
           currentMember={state.currentMember}
           onChooseMember={store.chooseMember}
           readError={state.readError}
-          onRetry={() => void store.load()}
-          send={store.send}
+          onRetry={() => void store.sync()}
+          enqueue={store.enqueue}
         />
       );
   }

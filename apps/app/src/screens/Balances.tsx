@@ -2,6 +2,7 @@ import { type ReactNode, useId } from 'react';
 import { Link } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
+import { formatMoment } from '../model/dates.ts';
 import { formatCents } from '../model/money.ts';
 import { settleHref } from './Forms.tsx';
 import layout from './Layout.module.css';
@@ -30,6 +31,7 @@ export function Balances({ view }: { readonly view: GroupView }): ReactNode {
             </li>
           ))}
         </ul>
+        <p className={layout.muted}>{syncLine(view)}</p>
       </section>
       <section className={styles.detailSection} aria-labelledby={transfersTitle}>
         <h2 id={transfersTitle} className={styles.sectionTitle}>
@@ -62,4 +64,13 @@ export function Balances({ view }: { readonly view: GroupView }): ReactNode {
       </section>
     </>
   );
+}
+
+/** What the balances count beyond the server's copy, and how fresh that copy is. */
+function syncLine(view: GroupView): string {
+  const when = formatMoment(view.readAt);
+  if (view.pendingCount === 0) {
+    return m.balances_sync({ when });
+  }
+  return view.pendingCount === 1 ? m.balances_sync_pending_one({ when }) : m.balances_sync_pending({ count: String(view.pendingCount), when });
 }

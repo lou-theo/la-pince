@@ -85,6 +85,10 @@ describe('adding an expense', () => {
     expect(at(location)).toMatch(/^\/operations\/[0-9a-f-]{36}$/);
     expect(screen.getByText('dimanche 8 novembre 2026')).toBeDefined();
     expect(screen.getByText('Saisi par Bruno (toi)')).toBeDefined();
+    // Sent by the outbox once queued.
+    await waitFor(() => {
+      expect(posted).toHaveLength(1);
+    });
     expect(posted).toMatchObject([
       {
         title: 'Péage',
@@ -162,45 +166,49 @@ describe('adding an expense', () => {
     expect(posted).toStrictEqual([]);
   });
 
-  it('stays on the form and tells a server out of reach', async () => {
-    const { user, location } = await openAsBruno('/nouvelle-depense', { down: (_, init) => init?.method === 'POST' });
+  it('saves without network: the expense shows at once, marked pending and counted in the balances, then leaves when the server answers', async () => {
+    let offline = false;
+    const { user, posted } = await openAsBruno('/nouvelle-depense', { down: () => offline });
+    offline = true;
     await user.type(field('Titre'), 'Péage');
     await user.type(field('Montant'), '10');
+    await user.click(screen.getByRole('checkbox', { name: /Chloé/ }));
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect((await screen.findByRole('alert')).textContent).toBe('Le serveur ne répond pas : vérifie ta connexion, puis réessaie.');
-    expect(at(location)).toBe('/nouvelle-depense');
-    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDefined();
-  });
-
-  it('says a revision written but not read back, stays on the form, and offers to read the group again', async () => {
-    let written = false;
-    const { user, location, posted } = await openAsBruno('/nouvelle-depense', {
-      down: (url, init) => {
-        if (init?.method === 'POST') {
-          written = true;
-          return false;
-        }
-        return written && url.includes('changes');
-      },
-    });
-    await user.type(field('Titre'), 'Péage');
-    await user.type(field('Montant'), '10');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(await screen.findByText("Enregistré, mais le groupe n'a pas pu être relu : relis-le avant de ressaisir quoi que ce soit.")).toBeDefined();
-    expect(at(location)).toBe('/nouvelle-depense');
-    // Saving again sends a revision of the same operation, never a second one.
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    await screen.findByText("Enregistré, mais le groupe n'a pas pu être relu : relis-le avant de ressaisir quoi que ce soit.");
-    expect(posted).toHaveLength(2);
-    expect(new Set(posted.map((operation) => (operation as { id: string }).id)).size).toBe(1);
-    written = false;
-    const banner = screen.getAllByRole('alert').find((alert) => alert.textContent.includes('date de la dernière lecture'));
-    if (banner === undefined) {
-      throw new Error('the read error banner is missing');
-    }
-    await user.click(within(banner).getByRole('button', { name: 'Réessayer' }));
+    expect(await screen.findByRole('heading', { name: 'Péage' })).toBeDefined();
+    expect(screen.getByText("En attente d'envoi")).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Dépenses' }));
-    expect(screen.getAllByRole('link', { name: /Péage/ })).toHaveLength(1);
+    expect(within(screen.getByRole('link', { name: /Péage/ })).getByText("En attente d'envoi")).toBeDefined();
+    await user.click(screen.getByRole('link', { name: 'Soldes' }));
+    // Alice paid 45,00 € with 20,00 € on Bruno, who paid 10,00 € split with Alice: 10,00 - 20,00 - 5,00.
+    const line = (name: string) => screen.getByText(name).closest('li')?.textContent;
+    expect(line('Bruno (toi)')).toBe(euros('Bruno (toi)-15,00'));
+    expect(screen.getByText(/^Dont 1 saisie non envoyée, dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+    expect(posted).toHaveLength(0);
+
+    // A second revision of the same expense counts once.
+    await user.click(screen.getByRole('link', { name: 'Dépenses' }));
+    await user.click(screen.getByRole('link', { name: /Péage/ }));
+    await user.click(screen.getByRole('link', { name: 'Modifier' }));
+    await user.type(field('Titre'), ' A7');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(await screen.findByRole('heading', { name: 'Péage A7' })).toBeDefined();
+    await user.click(screen.getByRole('link', { name: 'Soldes' }));
+    expect(screen.getByText(/^Dont 1 saisie non envoyée/)).toBeDefined();
+    await user.click(screen.getByRole('link', { name: 'Dépenses' }));
+    await user.click(screen.getByRole('link', { name: /Courses/ }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
+    await user.click(await screen.findByRole('link', { name: 'Soldes' }));
+    expect(screen.getByText(/^Dont 2 saisies non envoyées, dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+
+    offline = false;
+    window.dispatchEvent(new Event('online'));
+    await waitFor(() => {
+      expect(screen.getByText(/^Dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+    });
+    // Sent in the order entered, both revisions of the toll included.
+    expect(posted).toMatchObject([{ title: 'Péage' }, { title: 'Péage A7' }, { title: 'Courses', deleted: true }]);
+    expect(posted[1]).not.toHaveProperty('deleted');
   });
 });
 
@@ -259,42 +267,16 @@ describe('a send under way', () => {
     };
   };
 
-  it('sends once on a double click, and cannot be cancelled', async () => {
-    const { gate, release } = held();
-    const { user, posted } = await openAsBruno('/nouvelle-depense', { hold: gate });
+  it('queues once on a double click', async () => {
+    const { user, posted } = await openAsBruno('/nouvelle-depense');
     await user.type(field('Titre'), 'Péage');
     await user.type(field('Montant'), '10');
     await user.dblClick(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(screen.getByRole('button', { name: 'Enregistrement…' })).toHaveProperty('disabled', true);
-    expect(screen.queryByRole('link', { name: 'Annuler' })).toBeNull();
-    release();
     expect(await screen.findByRole('heading', { name: 'Péage' })).toBeDefined();
+    await waitFor(() => {
+      expect(screen.queryByText("En attente d'envoi")).toBeNull();
+    });
     expect(posted).toHaveLength(1);
-  });
-
-  it('does not take back a person who left before the answer', async () => {
-    const { gate, release } = held();
-    const { user, location } = await openAsBruno('/nouvelle-depense', { hold: gate });
-    await user.type(field('Titre'), 'Péage');
-    await user.type(field('Montant'), '10');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    await user.click(screen.getByRole('link', { name: 'Soldes' }));
-    release();
-    await screen.findAllByRole('link', { name: /Enregistrer ce remboursement/ });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(at(location)).toBe('/soldes');
-  });
-
-  it('does not take back from the detail a person who left before the deletion was answered', async () => {
-    const { gate, release } = held();
-    const { user, location } = await openAsBruno('/operations/op-shopping', { hold: gate });
-    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
-    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
-    await user.click(screen.getByRole('link', { name: 'Soldes' }));
-    release();
-    await screen.findAllByRole('link', { name: /Enregistrer ce remboursement/ });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(at(location)).toBe('/soldes');
   });
 
   it('puts the focus on the first field in error, or on the split when only it is wrong', async () => {
@@ -351,25 +333,19 @@ describe('modifying or deleting what is gone', () => {
     expect(screen.getByText("Cette dépense n'existe pas, ou elle a été supprimée.")).toBeDefined();
   });
 
-  it('says a deletion written but not read back', async () => {
-    let written = false;
-    const { user } = await openAsBruno('/operations/op-shopping', {
-      down: (url, init) => {
-        written ||= init?.method === 'POST';
-        return init?.method !== 'POST' && written && url.includes('changes');
-      },
+  it('deletes without network: the operation leaves the list at once, the deletion sent when the server answers', async () => {
+    let offline = false;
+    const { user, posted } = await openAsBruno('/operations/op-shopping', { down: () => offline });
+    offline = true;
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
+    expect(await screen.findByText("Aucune dépense pour l'instant.")).toBeDefined();
+    offline = false;
+    window.dispatchEvent(new Event('online'));
+    await waitFor(() => {
+      expect(posted).toMatchObject([{ id: 'op-shopping', deleted: true }]);
     });
-    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
-    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
-    expect(await screen.findByText("Supprimé, mais le groupe n'a pas pu être relu.")).toBeDefined();
-  });
-
-  it('keeps the operation and tells a failed deletion', async () => {
-    const { user } = await openAsBruno('/operations/op-shopping', { down: (_, init) => init?.method === 'POST' });
-    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
-    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
-    expect((await screen.findByRole('alert')).textContent).toBe('Le serveur ne répond pas : vérifie ta connexion, puis réessaie.');
-    expect(screen.getByRole('heading', { name: 'Courses' })).toBeDefined();
+    expect(screen.getByText("Aucune dépense pour l'instant.")).toBeDefined();
   });
 });
 

@@ -1,9 +1,17 @@
-import { type ApiError, type Change, groupResponseSchema, memberIdSchema, operationSchema } from '@la-pince/core';
+import {
+  type ApiError,
+  type Change,
+  groupResponseSchema,
+  memberIdSchema,
+  operationBatchSchema,
+  operationIdSchema,
+  operationSchema,
+} from '@la-pince/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { type GroupDb, openGroupDb } from '../storage/groupDb.ts';
 import { change, fakeServer, json } from '../testing/fake-server.ts';
-import { createApiClient } from './client.ts';
+import { createApiClient, type Fetch } from './client.ts';
 import { createGroupStore, type GroupState } from './groupStore.ts';
 
 const token = 'demo-token-of-the-store-tests-0123456789';
@@ -123,72 +131,274 @@ describe('createGroupStore', () => {
   });
 });
 
-describe('sending a revision', () => {
-  const expense = (id: string, revisionId: string, payer = 'm1') =>
+describe('the outbox', () => {
+  const expense = (id: string, revisionId: string, payer = 'm1', amount = 500) =>
     operationSchema.parse({
       id,
       revisionId,
       title: 'Courses',
       date: '2026-11-05',
-      entry: { version: 1, kind: 'expense', payer, lines: [{ member: 'm1', amount: 500 }] },
+      entry: { version: 1, kind: 'expense', payer, lines: [{ member: 'm1', amount }] },
     });
+  const failed = () => Promise.reject(new TypeError('Failed to fetch'));
 
-  it('writes it, then reads the group again to show it as the server wrote it', async () => {
-    const { server, store } = watch([]);
-    await store.load();
-    expect(await store.send(expense('new', 'new-1'))).toStrictEqual({ ok: true, reread: true });
-    expect(ids(store.getSnapshot())).toStrictEqual(['new']);
-    expect(server.calls.slice(2).map((url) => url.replace(`/api/groups/${token}`, ''))).toStrictEqual(['/operations', '', '/changes?since=0']);
-  });
-
-  it('reads again after a read that started before the write, which may have missed it', async () => {
-    let open: () => void = () => undefined;
-    const gate = new Promise<void>((resolve) => (open = resolve));
-    // The first read of the changes is answered late, with the history as it was before the write.
-    let firstRead = true;
-    const { store } = watch([], {
-      answer: (url) => {
-        if (!firstRead || !url.includes('changes')) {
-          return undefined;
+  /** A store whose server can be cut off, recording each batch it receives and the most requests it had to answer at once. */
+  function outboxWatch(changes: Change[], options: { token?: string; openDb?: () => Promise<GroupDb>; refuse?: boolean } = {}) {
+    const link = options.token ?? token;
+    const server = fakeServer({ token: link, group, changes });
+    const batches: string[][] = [];
+    const network = { up: true, inFlight: 0, mostInFlight: 0, failReads: false };
+    const fetchFn: Fetch = async (url, init) => {
+      if (!network.up || (network.failReads && init?.method !== 'POST')) {
+        return failed();
+      }
+      network.inFlight += 1;
+      network.mostInFlight = Math.max(network.mostInFlight, network.inFlight);
+      try {
+        if (init?.method === 'POST' && typeof init.body === 'string') {
+          const { operations } = operationBatchSchema.parse(JSON.parse(init.body));
+          batches.push(operations.map((operation) => operation.revisionId));
+          if (options.refuse === true) {
+            const results = operations.map((operation) => ({ revisionId: operation.revisionId, status: 'rejected', reason: 'unknown_member' }));
+            return json({ results });
+          }
         }
-        firstRead = false;
-        return gate.then(() => json({ changes: [], cursor: 0, hasMore: false }));
-      },
+        // An answer that takes a turn of the event loop, so that overlapping requests would show.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return await server.fetch(url, init);
+      } finally {
+        network.inFlight -= 1;
+      }
+    };
+    const store = createGroupStore(createApiClient(fetchFn), link, options.openDb);
+    return { store, batches, network, changes };
+  }
+  const shown = (state: GroupState) =>
+    state.status === 'ready' ? { outbox: state.outbox.map((operation) => operation.revisionId), changes: [...state.changes.keys()] } : state.status;
+
+  it('shows a queued revision at once, sends it, and lets it go once the server copy holds it', async () => {
+    const { store, batches } = outboxWatch([]);
+    await store.load();
+    const queuing = store.enqueue(expense('new', 'new-1'));
+    expect(await queuing).toStrictEqual({ ok: true });
+    expect(shown(store.getSnapshot())).toStrictEqual({ outbox: ['new-1'], changes: [] });
+    await vi.waitFor(() => {
+      expect(shown(store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['new'] });
     });
-    const first = store.load();
-    const sending = store.send(expense('new', 'new-1'));
-    open();
-    await first;
-    expect(ids(store.getSnapshot())).toStrictEqual([]);
-    expect(await sending).toStrictEqual({ ok: true, reread: true });
-    expect(ids(store.getSnapshot())).toStrictEqual(['new']);
+    expect(batches).toStrictEqual([['new-1']]);
   });
 
-  it('tells a revision written but not read back', async () => {
-    let written = false;
-    const { store } = watch([], {
-      answer: (url) => {
-        written ||= url.endsWith('/operations');
-        return written && url.includes('changes') ? Promise.reject(new TypeError('Failed to fetch')) : undefined;
-      },
-    });
-    await store.load();
-    expect(await store.send(expense('new', 'new-1'))).toStrictEqual({ ok: true, reread: false });
-    expect(store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'network' });
+  it('keeps what was entered without network across a restart, then sends it when the server answers again', async () => {
+    const first = outboxWatch([]);
+    await first.store.load();
+    first.network.up = false;
+    await first.store.enqueue(expense('offline', 'offline-1'));
+    await first.store.sync();
+    expect(shown(first.store.getSnapshot())).toStrictEqual({ outbox: ['offline-1'], changes: [] });
+
+    const restarted = outboxWatch(first.changes);
+    restarted.network.up = false;
+    await restarted.store.sync();
+    expect(restarted.store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'network' });
+    expect(shown(restarted.store.getSnapshot())).toStrictEqual({ outbox: ['offline-1'], changes: [] });
+    restarted.network.up = true;
+    await restarted.store.sync();
+    expect(shown(restarted.store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['offline'] });
+    expect(restarted.batches).toStrictEqual([['offline-1']]);
   });
 
-  it('tells a refused revision or a failed request, without reading again', async () => {
-    let down = false;
-    const { server, store } = watch([], {
-      answer: (url) => (down && url.endsWith('/operations') ? Promise.reject(new TypeError('Failed to fetch')) : undefined),
-    });
+  it('sends every revision in the order entered, those of one operation unmerged, by batches of 50, one request at a time', async () => {
+    const { store, batches, network, changes } = outboxWatch([]);
     await store.load();
-    expect(await store.send(expense('new', 'new-1', 'stranger'))).toStrictEqual({ ok: false, error: 'unknown_member' });
-    down = true;
-    expect(await store.send(expense('new', 'new-2'))).toStrictEqual({ ok: false, error: 'network' });
-    expect(server.calls.filter((url) => url.includes('changes'))).toHaveLength(1);
+    network.up = false;
+    const entered = Array.from({ length: 120 }, (_, index) => expense(`op-${String(index % 7)}`, `rev-${String(index)}`, 'm1', 100 + index));
+    for (const operation of entered) {
+      await store.enqueue(operation);
+    }
+    network.up = true;
+    await store.sync();
+    expect(batches.map((batch) => batch.length)).toStrictEqual([50, 50, 20]);
+    expect(batches.flat()).toStrictEqual(entered.map((operation) => operation.revisionId));
+    expect(network.mostInFlight).toBe(1);
+    // The last revision of each operation, as entered, is the one the server keeps.
+    const last = changes.filter((current) => current.id === 'op-1').at(-1);
+    expect(last?.revisionId).toBe('rev-113');
+    expect(shown(store.getSnapshot())).toMatchObject({ outbox: [] });
+  });
+
+  it('drops a refused revision without notice, the operation going back to the server copy', async () => {
+    const { store } = outboxWatch([change({ id: 'a', date: '2026-11-01' })], { refuse: true });
+    await store.load();
+    await store.enqueue(expense('a', 'a-2', 'm1', 999));
+    await store.sync();
+    const state = store.getSnapshot();
+    expect(shown(state)).toStrictEqual({ outbox: [], changes: ['a'] });
+    expect(state.status === 'ready' && state.changes.get(operationIdSchema.parse('a'))?.title).toBe('Opération a');
+  });
+
+  it('keeps a revision written but not read back, and sends it again, the server answering it was a duplicate', async () => {
+    const { store, batches, network, changes } = outboxWatch([]);
+    await store.load();
+    network.failReads = true;
+    await store.enqueue(expense('new', 'new-1'));
+    await store.sync();
+    expect(shown(store.getSnapshot())).toMatchObject({ outbox: ['new-1'] });
+    network.failReads = false;
+    await store.sync();
+    expect(shown(store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['new'] });
+    expect(batches).toStrictEqual([['new-1'], ['new-1']]);
+    expect(changes).toHaveLength(1);
+  });
+
+  it('lets one window at a time send, so that two windows never send the same revision twice', async () => {
+    const lock = fakeLocks();
+    Object.defineProperty(navigator, 'locks', { value: lock, configurable: true });
+    try {
+      const a = outboxWatch([]);
+      const b = outboxWatch(a.changes);
+      await Promise.all([a.store.load(), b.store.load()]);
+      a.network.up = false;
+      for (const index of [1, 2, 3]) {
+        await a.store.enqueue(expense(`op-${String(index)}`, `rev-${String(index)}`));
+      }
+      a.network.up = true;
+      await Promise.all([a.store.sync(), b.store.sync()]);
+      expect([...a.batches, ...b.batches].flat()).toStrictEqual(['rev-1', 'rev-2', 'rev-3']);
+      expect(lock.names).toContain(lock.names[0]);
+      expect(lock.names.every((name) => /^la-pince-group-[0-9a-f]{64}-outbox$/.test(name))).toBe(true);
+      await b.store.load();
+      expect(shown(b.store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['op-1', 'op-2', 'op-3'] });
+    } finally {
+      Reflect.deleteProperty(navigator, 'locks');
+    }
+  });
+
+  it('keeps the outbox when the server rebuilt its history', async () => {
+    const changes = [change({ id: 'a', date: '2026-11-01' }), change({ id: 'gone', date: '2026-11-01' })];
+    const { store, network } = outboxWatch(changes);
+    await store.load();
+    network.up = false;
+    await store.enqueue(expense('new', 'new-1'));
+    changes.splice(1, 1);
+    // The server's base restored from before `gone`, and still refusing writes.
+    const server = fakeServer({ token, group, changes });
+    const rebuilt = createGroupStore(
+      createApiClient((url, init) => {
+        if (init?.method === 'POST') {
+          return failed();
+        }
+        return url.includes('changes') && !url.endsWith('?since=0') ? Promise.resolve(json({ error: 'cursor_ahead' }, 409)) : server.fetch(url, init);
+      }),
+      token,
+    );
+    await rebuilt.sync();
+    expect(shown(rebuilt.getSnapshot())).toStrictEqual({ outbox: ['new-1'], changes: ['a'] });
+  });
+
+  it('refuses to queue a revision naming someone outside the group, or one the phone cannot store', async () => {
+    const { store } = outboxWatch([]);
+    await store.load();
+    expect(await store.enqueue(expense('new', 'new-1', 'stranger'))).toStrictEqual({ ok: false, error: 'unknown_member' });
+    const real = await openGroupDb(otherToken);
+    const full: GroupDb = { ...real, addToOutbox: () => Promise.reject(new DOMException('full', 'QuotaExceededError')) };
+    const noRoom = outboxWatch([], { token: otherToken, openDb: () => Promise.resolve(full) });
+    await noRoom.store.load();
+    expect(await noRoom.store.enqueue(expense('new', 'new-1'))).toStrictEqual({ ok: false, error: 'not_stored' });
+    expect(shown(noRoom.store.getSnapshot())).toMatchObject({ outbox: [] });
+  });
+
+  it('queues in memory when the phone keeps nothing', async () => {
+    const { store, batches } = outboxWatch([], { openDb: () => Promise.reject(new DOMException('denied', 'SecurityError')) });
+    await store.load();
+    await store.enqueue(expense('new', 'new-1'));
+    await store.sync();
+    expect(batches).toStrictEqual([['new-1']]);
+    expect(shown(store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['new'] });
   });
 });
+
+describe('waking the sync', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('syncs at start, on the way back of the network, back to the foreground and every 30 s, a failed send retried sooner, until stopped', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+    let up = true;
+    const server = fakeServer({ token, group, changes: [] });
+    const posts: number[] = [];
+    const reads = () => server.calls.filter((url) => url.includes('changes')).length;
+    const store = createGroupStore(
+      createApiClient((url, init) => {
+        if (init?.method === 'POST') {
+          posts.push(Date.now());
+        }
+        return up ? server.fetch(url, init) : Promise.reject(new TypeError('Failed to fetch'));
+      }),
+      token,
+      // In memory: the simulated IndexedDB schedules its work on the timers faked here.
+      () => Promise.reject(new Error('no storage')),
+    );
+    const stop = store.start();
+    await vi.waitFor(() => {
+      expect(reads()).toBe(1);
+    });
+    window.dispatchEvent(new Event('online'));
+    await vi.waitFor(() => {
+      expect(reads()).toBe(2);
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => {
+      expect(reads()).toBe(3);
+    });
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.waitFor(() => {
+      expect(reads()).toBe(4);
+    });
+
+    up = false;
+    const started = Date.now();
+    await store.enqueue(
+      operationSchema.parse({
+        id: 'new',
+        revisionId: 'new-1',
+        title: 'Courses',
+        date: '2026-11-05',
+        entry: { version: 1, kind: 'expense', payer: 'm1', lines: [{ member: 'm1', amount: 500 }] },
+      }),
+    );
+    // Tried at once, then after 1 s, 2 s and 4 s more.
+    await vi.advanceTimersByTimeAsync(7_000);
+    expect(posts.map((at) => at - started)).toStrictEqual([0, 1_000, 3_000, 7_000]);
+    up = true;
+    await vi.advanceTimersByTimeAsync(8_000);
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', outbox: [] });
+
+    stop();
+    const before = server.calls.length;
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(server.calls).toHaveLength(before);
+  });
+});
+
+/** The Web Locks API as the browser gives it, reduced to exclusive locks granted in the order asked. */
+function fakeLocks() {
+  const tails = new Map<string, Promise<unknown>>();
+  const names: string[] = [];
+  return {
+    names,
+    request<T>(name: string, callback: () => Promise<T>): Promise<T> {
+      names.push(name);
+      const run = (tails.get(name) ?? Promise.resolve()).then(callback);
+      tails.set(
+        name,
+        run.catch(() => undefined),
+      );
+      return run;
+    },
+  };
+}
 
 describe('the copy kept on the phone', () => {
   afterEach(() => {

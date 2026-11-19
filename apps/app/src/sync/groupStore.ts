@@ -3,13 +3,14 @@ import {
   type Cursor,
   cursorSchema,
   type GroupResponse,
+  MAX_BATCH_REVISIONS,
   type MemberId,
   type Operation,
   type OperationId,
-  type RejectionReason,
+  unknownMembers,
 } from '@la-pince/core';
 
-import { askPersistentStorage, type CompleteRead, type GroupDb, openGroupDb } from '../storage/groupDb.ts';
+import { askPersistentStorage, type CompleteRead, type GroupDb, openGroupDb, type Queued } from '../storage/groupDb.ts';
 import type { ApiClient, LoadError } from './client.ts';
 
 export type GroupState =
@@ -21,16 +22,19 @@ export type GroupState =
       /** Current revision of each operation, deleted ones included, read up to a page with `hasMore: false`. */
       readonly changes: ReadonlyMap<OperationId, Change>;
       readonly cursor: Cursor;
+      /** When the last complete read ended, in milliseconds since the epoch. */
+      readonly readAt: number;
+      /** Revisions entered on this phone and not yet acknowledged, in the order they were entered; the screens show them over `changes`. */
+      readonly outbox: readonly Operation[];
       /** Who I am, as chosen on this phone; the screens check it is still a member. */
       readonly currentMember: MemberId | undefined;
       /** Why the last read failed, the group shown being the last one read in full; cleared by the next read that succeeds. */
       readonly readError?: LoadError;
     };
 
-/** Why a revision was not written: the request failed, or the server refused the revision. */
-export type SendError = LoadError | RejectionReason;
-/** `reread`: whether the group could be read again after the write, so that the screens show it; a revision written but not read back is still written. */
-export type SendResult = { readonly ok: true; readonly reread: boolean } | { readonly ok: false; readonly error: SendError };
+/** Why a revision was not queued: it names someone who is not a member of the group, or the phone could not store it. */
+export type QueueError = 'unknown_member' | 'not_stored';
+export type QueueResult = { readonly ok: true } | { readonly ok: false; readonly error: QueueError };
 
 export interface GroupStore {
   readonly subscribe: (listener: () => void) => () => void;
@@ -40,28 +44,46 @@ export interface GroupStore {
    * phone, if any, before asking the server.
    */
   readonly load: () => Promise<void>;
-  /** Sends one revision, then reads the group again so that the screens show it as the server wrote it. */
-  readonly send: (operation: Operation) => Promise<SendResult>;
+  /** Queues a revision on the phone, shows it at once over the server's copy, then tries to send the outbox. */
+  readonly enqueue: (operation: Operation) => Promise<QueueResult>;
+  /** Sends the outbox, then reads what changed. */
+  readonly sync: () => Promise<void>;
+  /**
+   * Syncs now, then on the way back of the network, when the app comes back to the foreground and every 30 s while it is visible, a failed send
+   * being tried again sooner with a growing wait; gives the function that stops it all.
+   */
+  readonly start: () => () => void;
   /** Remembers who I am on this phone. */
   readonly chooseMember: (member: MemberId) => void;
 }
 
 const start = cursorSchema.parse(0);
+const SYNC_INTERVAL = 30_000;
+const FIRST_RETRY = 1_000;
 
 /**
  * The group of one link, read by the screens through `useSyncExternalStore` and kept on the phone by `openDb`. A read is published and saved only
  * once complete (a page with `hasMore: false`): balances computed from part of the changes would leave operations out. Without storage (refused,
- * private browsing), the group lives in memory only.
+ * private browsing), the group and its outbox live in memory only.
  */
 export function createGroupStore(client: ApiClient, token: string, openDb: () => Promise<GroupDb> = () => openGroupDb(token)): GroupStore {
   let state: GroupState = { status: 'loading' };
   const listeners = new Set<() => void>();
   let reading: Promise<void> | undefined;
   let currentMember: MemberId | undefined;
+  let outbox: readonly Queued[] = [];
+  // Keys of the outbox kept in memory, without storage.
+  let memoryKey = 0;
   let persistenceAsked = false;
   const db = openDb().catch(() => undefined);
   // Opened and read once, before the first read from the server.
   let restored: Promise<void> | undefined;
+  let flushing: Promise<boolean> | undefined;
+  // Counts the calls of `flush`, so that one that comes during a pass makes it run again.
+  let flushRequests = 0;
+  let failures = 0;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+  let started = false;
 
   const publish = (next: GroupState) => {
     state = next;
@@ -69,23 +91,34 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       listener();
     }
   };
+  const queued = () => outbox.map((entry) => entry.operation);
+  const publishOutbox = () => {
+    if (state.status === 'ready') {
+      publish({ ...state, outbox: queued() });
+    }
+  };
 
   async function restore(): Promise<void> {
     const opened = await db;
-    const [copy, member] = await Promise.all([opened?.loadCopy(), opened?.loadCurrentMember()]).catch(() => [undefined, undefined] as const);
+    const [copy, member, stored] = await Promise.all([opened?.loadCopy(), opened?.loadCurrentMember(), opened?.loadOutbox()]).catch(
+      () => [undefined, undefined, undefined] as const,
+    );
     currentMember = member;
+    outbox = stored ?? [];
     if (copy !== undefined) {
-      publish({ status: 'ready', ...copy, currentMember });
+      publish({ status: 'ready', ...copy, outbox: queued(), currentMember });
     }
   }
 
   async function save(completed: CompleteRead): Promise<GroupState> {
-    // Built once the saves are done, for who I am may have been chosen meanwhile.
+    // Built once the saves are done, for who I am or the outbox may have changed meanwhile.
     const inMemory = (): GroupState => ({
       status: 'ready',
       group: completed.group,
       changes: completed.known,
       cursor: completed.cursor,
+      readAt: Date.now(),
+      outbox: queued(),
       currentMember,
     });
     const opened = await db;
@@ -98,7 +131,7 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
         persistenceAsked = true;
         void askPersistentStorage().catch(() => undefined);
       }
-      return { status: 'ready', ...saved, currentMember };
+      return { status: 'ready', ...saved, outbox: queued(), currentMember };
     } catch {
       // Not saved (storage full, database closed by a newer version of the app, until the app reloads): the read still shows, and the next save
       // that finds the stored copy short of where it started writes the whole copy.
@@ -120,7 +153,7 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
     for (;;) {
       const page = await client.fetchChanges(token, cursor);
       if (!page.ok) {
-        // The server's history was rebuilt behind our cursor: drop the copy and read it all again, once.
+        // The server's history was rebuilt behind our cursor: drop the copy and read it all again, once; the outbox stays.
         if (page.error === 'cursor_ahead' && since !== start) {
           known = new Map();
           since = start;
@@ -159,6 +192,105 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
     return reading;
   }
 
+  async function removeFromOutbox(keys: readonly number[]): Promise<void> {
+    if (keys.length === 0) {
+      return;
+    }
+    await (await db)?.removeFromOutbox(keys);
+    outbox = outbox.filter((entry) => !keys.includes(entry.key));
+    publishOutbox();
+  }
+
+  /**
+   * Sends the outbox by batches, in the order of entry, one request at a time and without merging revisions of one operation: an old revision
+   * arriving after a newer one would win. Each revision leaves the outbox once answered: refused ones at once, without notice (decision 37);
+   * written ones and resends once a read has brought the server's copy, so that the operation never disappears from the screen in between. Gives
+   * whether the outbox is empty, and whether that took a read.
+   */
+  async function pass(): Promise<'empty' | 'sent' | 'failed'> {
+    const opened = await db;
+    let sent = false;
+    for (;;) {
+      if (opened !== undefined) {
+        // Read again under the lock: another window may have sent part of it.
+        outbox = await opened.loadOutbox();
+        publishOutbox();
+      }
+      const batch = outbox.slice(0, MAX_BATCH_REVISIONS);
+      if (batch.length === 0) {
+        return sent ? 'sent' : 'empty';
+      }
+      const answer = await client.sendOperations(
+        token,
+        batch.map((entry) => entry.operation),
+      );
+      if (!answer.ok) {
+        return 'failed';
+      }
+      await removeFromOutbox(batch.filter((_, index) => answer.value[index]?.status === 'rejected').map((entry) => entry.key));
+      // A read that started before the send may have missed it: wait for it, then read again.
+      await reading;
+      await load();
+      if (state.status !== 'ready' || state.readError !== undefined) {
+        // Written but not read back: sent again next time, the server answering `duplicate`.
+        return 'failed';
+      }
+      await removeFromOutbox(batch.map((entry) => entry.key));
+      sent = true;
+    }
+  }
+
+  /** One sender for every window of the group: the lock of its database, held for a whole pass. */
+  async function exclusive(run: () => Promise<'empty' | 'sent' | 'failed'>) {
+    const opened = await db;
+    // Missing from older browsers (Safari before 15.4), null in test environments, though the DOM types declare it.
+    const locks = navigator.locks as LockManager | null | undefined;
+    return opened === undefined || locks === undefined || locks === null ? run() : locks.request(`${opened.name}-outbox`, run);
+  }
+
+  function scheduleRetry() {
+    failures += 1;
+    clearTimeout(retry);
+    if (started) {
+      retry = setTimeout(() => void sync(), Math.min(SYNC_INTERVAL, FIRST_RETRY * 2 ** (failures - 1)));
+    }
+  }
+
+  /** Gives whether a read followed what was sent. */
+  function flush(): Promise<boolean> {
+    flushRequests += 1;
+    if (flushing !== undefined) {
+      return flushing;
+    }
+    flushing = (async () => {
+      let readBack = false;
+      for (;;) {
+        const requests = flushRequests;
+        const result = await exclusive(pass).catch(() => 'failed' as const);
+        if (result === 'failed') {
+          scheduleRetry();
+          return readBack;
+        }
+        readBack ||= result === 'sent';
+        if (flushRequests === requests) {
+          failures = 0;
+          clearTimeout(retry);
+          return readBack;
+        }
+      }
+    })().finally(() => {
+      flushing = undefined;
+    });
+    return flushing;
+  }
+
+  async function sync(): Promise<void> {
+    await (restored ??= restore());
+    if (!(await flush())) {
+      await load();
+    }
+  }
+
   return {
     subscribe(listener) {
       listeners.add(listener);
@@ -168,19 +300,47 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
     },
     getSnapshot: () => state,
     load,
-    async send(operation) {
-      const sent = await client.sendOperations(token, [operation]);
-      if (!sent.ok) {
-        return sent;
+    sync,
+    async enqueue(operation) {
+      // The server would refuse it: checked before queuing, so that the person can still change it.
+      if (state.status === 'ready' && unknownMembers(operation, new Set(state.group.members.map((member) => member.id))).length > 0) {
+        return { ok: false, error: 'unknown_member' };
       }
-      const [answer] = sent.value;
-      if (answer?.status === 'rejected') {
-        return { ok: false, error: answer.reason };
+      const opened = await db;
+      let key: number;
+      try {
+        key = opened === undefined ? ++memoryKey : await opened.addToOutbox(operation);
+      } catch {
+        return { ok: false, error: 'not_stored' };
       }
-      // A read that started before the write may have missed it: wait for it, then read again.
-      await reading;
-      await load();
-      return { ok: true, reread: state.status === 'ready' && state.readError === undefined };
+      // A pass may have read the outbox again since the revision was stored.
+      if (!outbox.some((entry) => entry.key === key)) {
+        outbox = [...outbox, { key, operation }];
+      }
+      publishOutbox();
+      void flush();
+      return { ok: true };
+    },
+    start() {
+      started = true;
+      const wake = () => void sync();
+      const wakeIfVisible = () => {
+        if (document.visibilityState === 'visible') {
+          wake();
+        }
+      };
+      // `navigator.onLine` is never trusted alone: a request tells whether the server answers.
+      window.addEventListener('online', wake);
+      document.addEventListener('visibilitychange', wakeIfVisible);
+      const interval = setInterval(wakeIfVisible, SYNC_INTERVAL);
+      wake();
+      return () => {
+        started = false;
+        window.removeEventListener('online', wake);
+        document.removeEventListener('visibilitychange', wakeIfVisible);
+        clearInterval(interval);
+        clearTimeout(retry);
+      };
     },
     chooseMember(member) {
       currentMember = member;

@@ -7,6 +7,7 @@ import {
   type Kind,
   type Member,
   type MemberId,
+  type Operation,
   operationEffect,
   type OperationId,
   type SuggestedTransfer,
@@ -23,16 +24,43 @@ export interface OperationView {
   readonly createdSeq: number;
   readonly entry: Entry;
   readonly effect: Effect;
+  /** Its current revision waits in the outbox, not yet sent to the server. */
+  readonly pending: boolean;
+}
+
+/** A revision with the seq of its operation's first revision, which orders operations as they were entered. */
+export type Revision = Operation & { readonly createdSeq: number };
+
+/** What the phone shows: the server's copy overlaid with the revisions of the outbox, the last one of each operation winning, as on the server. */
+export interface Overlaid {
+  readonly revisions: readonly Revision[];
+  /** Operations whose shown revision waits in the outbox. */
+  readonly pending: ReadonlySet<OperationId>;
+}
+
+/**
+ * The server's copy overlaid with the outbox, in the order of entry. An operation entered on this phone and not yet on the server comes after every
+ * operation of the server, in the order of entry, until the server gives it its own `createdSeq`.
+ */
+export function overlay(changes: ReadonlyMap<OperationId, Change>, outbox: readonly Operation[]): Overlaid {
+  const revisions = new Map<OperationId, Revision>(changes);
+  const pending = new Set<OperationId>();
+  outbox.forEach((operation, index) => {
+    const createdSeq = revisions.get(operation.id)?.createdSeq ?? Number.MAX_SAFE_INTEGER - outbox.length + index;
+    revisions.set(operation.id, { ...operation, createdSeq });
+    pending.add(operation.id);
+  });
+  return { revisions: [...revisions.values()], pending };
 }
 
 /** Operations of the group that are not deleted, the latest day first and, within a day, the latest entered first. */
-export function liveOperations(changes: Iterable<Change>): OperationView[] {
+export function liveOperations(revisions: Iterable<Revision>, pending: ReadonlySet<OperationId> = new Set()): OperationView[] {
   const operations: OperationView[] = [];
-  for (const change of changes) {
-    const effect = operationEffect(change);
-    if ('entry' in change && effect !== undefined) {
-      const { id, title, date, author, createdSeq } = change;
-      operations.push({ id, title, date, kind: change.entry.kind, author, createdSeq, entry: change.entry, effect });
+  for (const revision of revisions) {
+    const effect = operationEffect(revision);
+    if ('entry' in revision && effect !== undefined) {
+      const { id, title, date, author, createdSeq } = revision;
+      operations.push({ id, title, date, kind: revision.entry.kind, author, createdSeq, entry: revision.entry, effect, pending: pending.has(id) });
     }
   }
   // ISO days compare as strings.

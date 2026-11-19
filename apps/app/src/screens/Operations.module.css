@@ -49,6 +49,13 @@
   font-size: 0.875rem;
 }
 
+/* An operation entered on this phone and not yet sent. */
+.pending {
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
 .total {
   font-weight: 600;
   font-variant-numeric: tabular-nums;

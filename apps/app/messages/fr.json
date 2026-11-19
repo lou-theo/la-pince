@@ -87,9 +87,12 @@
   "form_error_too_large": "Le total dépasse le plus grand montant possible.",
   "form_error_member_amount": "Montant illisible.",
   "error_unknown_member": "Un membre de cette opération n'est plus dans le groupe : recharge la page, puis réessaie.",
-  "error_refused": "Le serveur a refusé cette opération : recharge la page, puis réessaie.",
-  "form_saved_not_read": "Enregistré, mais le groupe n'a pas pu être relu : relis-le avant de ressaisir quoi que ce soit.",
-  "operation_deleted_not_read": "Supprimé, mais le groupe n'a pas pu être relu.",
   "form_reimbursement_several": "Ce remboursement va à plusieurs membres : il ne se modifie pas dans cette version, seulement se supprime.",
-  "group_read_failed": "Le groupe n'a pas pu être relu : ce qui s'affiche date de la dernière lecture."
+  "group_read_failed": "Le groupe n'a pas pu être relu : ce qui s'affiche date de la dernière lecture.",
+  "error_not_stored": "Ce téléphone n'a pas pu garder ta saisie (stockage plein ou refusé) : libère de la place, puis réessaie.",
+  "operation_pending": "En attente d'envoi",
+  "group_offline": "Hors ligne, dernière synchro {when} : tes saisies partiront au retour du réseau.",
+  "balances_sync": "Dernière synchro {when}.",
+  "balances_sync_pending_one": "Dont 1 saisie non envoyée, dernière synchro {when}.",
+  "balances_sync_pending": "Dont {count} saisies non envoyées, dernière synchro {when}."
 }

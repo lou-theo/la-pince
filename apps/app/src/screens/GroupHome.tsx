@@ -4,9 +4,10 @@ import { Link, Route, Switch, useLocation } from 'wouter';
 
 import { loadErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
-import { liveOperations, sortedBalances, transfers } from '../model/group.ts';
+import { formatMoment } from '../model/dates.ts';
+import { liveOperations, overlay, sortedBalances, transfers } from '../model/group.ts';
 import type { LoadError } from '../sync/client.ts';
-import type { SendResult } from '../sync/groupStore.ts';
+import type { QueueResult } from '../sync/groupStore.ts';
 import { Balances } from './Balances.tsx';
 import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
@@ -19,25 +20,40 @@ import type { GroupView } from './view.ts';
 interface GroupHomeProps {
   readonly group: GroupResponse;
   readonly changes: ReadonlyMap<OperationId, Change>;
+  /** Revisions waiting to be sent, in the order they were entered. */
+  readonly outbox: readonly Operation[];
+  readonly readAt: number;
   /** Who I am, as remembered on this phone, possibly a member who left the group. */
   readonly currentMember: MemberId | undefined;
   readonly onChooseMember: (member: MemberId) => void;
   /** Why the last read failed, the group shown being the last one read in full. */
   readonly readError: LoadError | undefined;
   readonly onRetry: () => void;
-  readonly send: (operation: Operation) => Promise<SendResult>;
+  readonly enqueue: (operation: Operation) => Promise<QueueResult>;
 }
 
 /** Home of a group: asks “who I am” until this phone knows it, then shows the group as that member, its operations and its balances. */
-export function GroupHome({ group, changes, currentMember: remembered, onChooseMember, readError, onRetry, send }: GroupHomeProps): ReactNode {
+export function GroupHome({
+  group,
+  changes,
+  outbox,
+  readAt,
+  currentMember: remembered,
+  onChooseMember,
+  readError,
+  onRetry,
+  enqueue,
+}: GroupHomeProps): ReactNode {
   // A remembered member who left the group is asked again.
   const currentMember = group.members.find((member) => member.id === remembered);
   const [choosing, setChoosing] = useState(false);
   const computed = useMemo(() => {
-    const operations = liveOperations(changes.values());
+    // Balances count what this phone entered and has not sent yet, computed by the same core.
+    const { revisions, pending } = overlay(changes, outbox);
+    const operations = liveOperations(revisions, pending);
     const balances = sortedBalances(group.members, operations);
-    return { operations, balances, transfers: transfers(balances) };
-  }, [changes, group.members]);
+    return { operations, balances, transfers: transfers(balances), pendingCount: pending.size };
+  }, [changes, outbox, group.members]);
 
   if (currentMember === undefined || choosing) {
     return (
@@ -61,7 +77,8 @@ export function GroupHome({ group, changes, currentMember: remembered, onChooseM
       return id === currentMember.id ? `${name} (${m.you()})` : name;
     },
     members: group.members,
-    send,
+    enqueue,
+    readAt,
   };
   return (
     <Layout>
@@ -84,7 +101,15 @@ export function GroupHome({ group, changes, currentMember: remembered, onChooseM
         <Tab href="/">{m.tab_operations()}</Tab>
         <Tab href="/soldes">{m.tab_balances()}</Tab>
       </nav>
-      {readError === undefined ? null : (
+      {readError === 'network' ? (
+        // Without network the app keeps working: the outbox leaves on its own once the server answers.
+        <div className={styles.offline} role="status">
+          <p>{m.group_offline({ when: formatMoment(readAt) })}</p>
+          <button className={layout.link} type="button" onClick={onRetry}>
+            {m.group_retry()}
+          </button>
+        </div>
+      ) : readError === undefined ? null : (
         <div className={styles.readError} role="alert">
           <p>
             {m.group_read_failed()} {loadErrorMessage(readError)}

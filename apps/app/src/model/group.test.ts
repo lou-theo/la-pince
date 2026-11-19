@@ -1,8 +1,8 @@
-import { memberSchema } from '@la-pince/core';
+import { type Change, memberSchema, type Operation, type OperationId, operationSchema } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
 import { change } from '../testing/fake-server.ts';
-import { liveOperations, myShare, sortedBalances, transfers } from './group.ts';
+import { liveOperations, myShare, overlay, sortedBalances, transfers } from './group.ts';
 
 const members = ['Alice', 'Bruno', 'Chloé', 'Denis'].map((name, index) => memberSchema.parse({ id: `m${String(index + 1)}`, name }));
 const [, bruno, chloe] = members.map((member) => member.id);
@@ -24,6 +24,71 @@ describe('liveOperations', () => {
     ]);
     expect(reimbursement).toMatchObject({ id: 'r', title: 'Opération r', date: '2026-11-04', kind: 'reimbursement', author: 'm2' });
     expect(reimbursement?.effect).toStrictEqual({ payer: 'm2', countsAsSpending: false, total: 2_500, shares: [{ member: 'm1', amount: 2_500 }] });
+  });
+});
+
+describe('overlay', () => {
+  const copy = (changes: Change[]) => new Map<OperationId, Change>(changes.map((current) => [current.id, current]));
+  const revision = (id: string, revisionId: string, fields: Record<string, unknown>): Operation =>
+    operationSchema.parse({ id, revisionId, title: `Saisie ${id}`, date: '2026-11-02', ...fields });
+  const expense = (payer: string, lines: [string, number][]) => ({
+    entry: { version: 1, kind: 'expense', payer, lines: lines.map(([member, amount]) => ({ member, amount })) },
+  });
+
+  it('shows the outbox over the server copy: its last revision of each operation wins, and an operation new to the server comes last entered', () => {
+    const server = copy([
+      change({ id: 'a', date: '2026-11-02', createdSeq: 3 }),
+      change({ id: 'b', date: '2026-11-02', createdSeq: 4 }),
+      change({ id: 'c', date: '2026-11-01', createdSeq: 5 }),
+    ]);
+    const outbox = [
+      revision('new-1', 'r1', expense('m1', [['m1', 100]])),
+      revision('a', 'r2', expense('m2', [['m1', 700]])),
+      revision('new-2', 'r3', expense('m1', [['m2', 200]])),
+      revision('a', 'r4', { ...expense('m2', [['m1', 900]]), title: 'Renamed' }),
+      revision('c', 'r5', { deleted: true }),
+    ];
+    const { revisions, pending } = overlay(server, outbox);
+    const operations = liveOperations(revisions, pending);
+    // `a` keeps its place in the order of entry; `c`, deleted on the phone, is gone.
+    expect(operations.map((operation) => [operation.id, operation.title, operation.pending])).toStrictEqual([
+      ['new-2', 'Saisie new-2', true],
+      ['new-1', 'Saisie new-1', true],
+      ['b', 'Opération b', false],
+      ['a', 'Renamed', true],
+    ]);
+    expect([...pending]).toStrictEqual(['new-1', 'a', 'new-2', 'c']);
+  });
+
+  it('counts the outbox in the balances to the cent, the revision of the outbox replacing the server one', () => {
+    const server = copy([
+      change({
+        id: 'a',
+        date: '2026-11-01',
+        payer: 'm1',
+        lines: [
+          ['m1', 1_001],
+          ['m2', 2_002],
+          ['m3', 3_003],
+        ],
+      }),
+      change({ id: 'b', date: '2026-11-01', payer: 'm2', lines: [['m3', 4_999]] }),
+    ]);
+    const outbox = [
+      revision('b', 'r1', expense('m2', [['m3', 5_001]])),
+      revision('new', 'r2', {
+        entry: { version: 1, kind: 'expense', payer: 'm3', total: 900, lines: ['m1', 'm2', 'm3'].map((member) => ({ member, weight: 1 })) },
+      }),
+    ];
+    const { revisions, pending } = overlay(server, outbox);
+    const balances = sortedBalances(members, liveOperations(revisions, pending));
+    // Computed by hand: Alice 60,06 - 10,01 - 3,00; Bruno 50,01 - 20,02 - 3,00; Chloé 9,00 - 30,03 - 50,01 - 3,00.
+    expect(balances.map((line) => [line.member.id, line.balance])).toStrictEqual([
+      ['m1', 4_705],
+      ['m2', 2_699],
+      ['m4', 0],
+      ['m3', -7_404],
+    ]);
   });
 });
 
