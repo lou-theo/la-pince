@@ -54,7 +54,10 @@ describe('fetchChanges', () => {
       value: { changes: [first], cursor: first?.seq, hasMore: true },
     });
     expect(server.calls).toStrictEqual([`/api/groups/${token}/changes?since=0`]);
-    expect((await createApiClient(server.fetch).fetchChanges(token, cursor(first?.seq ?? 0))).ok && second !== undefined).toBe(true);
+    expect(await createApiClient(server.fetch).fetchChanges(token, cursor(first?.seq ?? 0))).toStrictEqual({
+      ok: true,
+      value: { changes: [second], cursor: second?.seq, hasMore: false },
+    });
   });
 
   it('passes on a cursor ahead of the server, and refuses a page that does not answer its query', async () => {

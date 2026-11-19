@@ -40,10 +40,10 @@ describe('createGroupStore', () => {
   });
 
   it('reads only what changed since the last read, keeping the current revision of each operation', async () => {
-    const changes = [change({ id: 'a', date: '2026-11-01' }), change({ id: 'b', date: '2026-11-01' })];
+    const changes = ['a', 'b', 'c'].map((id) => change({ id, date: '2026-11-01' }));
     const { server, store } = watch(changes);
     await store.load();
-    const cursor = changes[1]?.seq;
+    const cursor = changes[2]?.seq;
     changes.push(change({ id: 'a', date: '2026-11-02', title: 'Renamed' }), change({ id: 'b', date: '2026-11-01', deleted: true }));
     await store.load();
     expect(server.calls.at(-1)).toBe(`/api/groups/${token}/changes?since=${String(cursor)}`);
@@ -52,21 +52,25 @@ describe('createGroupStore', () => {
       [
         ['a', 'Renamed', false],
         ['b', 'Opération b', true],
+        ['c', 'Opération c', false],
       ],
     );
   });
 
   it('reads everything again from 0 once when the server is behind its cursor, and gives up the second time', async () => {
-    const changes = [change({ id: 'a', date: '2026-11-01' })];
+    const changes = [change({ id: 'a', date: '2026-11-01' }), change({ id: 'gone', date: '2026-11-01' })];
     let ahead = 1;
     const cursorAhead = (url: string) =>
       !url.includes('changes') || url.endsWith('?since=0') || ahead-- <= 0
         ? undefined
         : Promise.resolve(json({ error: 'cursor_ahead' } satisfies ApiError, 409));
-    const { store } = watch(changes, { answer: cursorAhead });
+    const { server, store } = watch(changes, { answer: cursorAhead });
     await store.load();
+    // The server's base restored from before `gone`: its history no longer holds it.
+    changes.splice(1, 1);
     ahead = 1;
     await store.load();
+    expect(server.calls.at(-1)).toBe(`/api/groups/${token}/changes?since=0`);
     expect(ids(store.getSnapshot())).toStrictEqual(['a']);
 
     const always = watch(changes, { answer: (url) => (url.includes('changes') ? Promise.resolve(json({ error: 'cursor_ahead' }, 409)) : undefined) });
