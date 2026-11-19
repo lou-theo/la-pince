@@ -93,6 +93,11 @@
 }
 
 .transfers > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--space-3);
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-border);
 }
@@ -107,4 +112,22 @@
 
 .negative {
   color: var(--color-danger);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-basis: 100%;
+}
+
+.danger {
+  background: var(--color-danger);
 }

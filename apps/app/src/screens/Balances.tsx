@@ -1,7 +1,9 @@
 import { type ReactNode, useId } from 'react';
+import { Link } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { formatCents } from '../model/money.ts';
+import { settleHref } from './Forms.tsx';
 import layout from './Layout.module.css';
 import styles from './Operations.module.css';
 import type { GroupView } from './view.ts';
@@ -39,7 +41,16 @@ export function Balances({ view }: { readonly view: GroupView }): ReactNode {
           <ul className={styles.transfers}>
             {suggested.map((transfer) => (
               <li key={`${transfer.from}>${transfer.to}`} className={transfer.from === view.me || transfer.to === view.me ? styles.mine : undefined}>
-                {m.transfer_line({ from: view.nameOf(transfer.from), amount: formatCents(transfer.amount), to: view.nameOf(transfer.to) })}
+                <span>
+                  {m.transfer_line({ from: view.nameOf(transfer.from), amount: formatCents(transfer.amount), to: view.nameOf(transfer.to) })}
+                </span>
+                <Link
+                  className={layout.link}
+                  href={settleHref(transfer.from, transfer.to, transfer.amount)}
+                  aria-label={`${m.transfer_settle()} : ${m.transfer_line({ from: view.nameOf(transfer.from), amount: formatCents(transfer.amount), to: view.nameOf(transfer.to) })}`}
+                >
+                  {m.transfer_settle()}
+                </Link>
               </li>
             ))}
           </ul>

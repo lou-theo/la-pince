@@ -20,6 +20,7 @@ const settle = (page: Page) => page.waitForLoadState('networkidle');
 
 const operationLink = 'main a[href*="/operations/"]';
 const balancesTab = 'nav a[href$="/soldes"]';
+const newExpenseLink = 'main a[href$="/nouvelle-depense"]';
 
 const chooseFirstMember = async (page: Page, demo: Demo): Promise<void> => {
   await page.goto(`${demo.appUrl}/g/${demo.token}`);
@@ -75,6 +76,44 @@ export const screens: readonly Screen[] = [
     },
   },
   {
+    name: 'nouvelle-depense',
+    label: 'Nouvelle dépense',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(newExpenseLink).click();
+      await page.locator('form').waitFor();
+    },
+  },
+  {
+    name: 'depense-par-montants',
+    label: 'Dépense par montants',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(newExpenseLink).click();
+      await page.locator('fieldset button[aria-pressed]').nth(1).click();
+    },
+  },
+  {
+    name: 'modifier-depense',
+    label: 'Modifier une dépense',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(operationLink).first().click();
+      await page.locator('a[href$="/modifier"]').click();
+      await page.locator('form').waitFor();
+    },
+  },
+  {
+    name: 'nouveau-remboursement',
+    label: 'Remboursement suggéré',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(balancesTab).click();
+      await page.locator('a[href*="/nouveau-remboursement?"]').first().click();
+      await page.locator('form').waitFor();
+    },
+  },
+  {
     name: 'groupe-introuvable',
     label: 'Groupe introuvable',
     reach: async (page: Page, demo: Demo): Promise<void> => {
@@ -93,7 +132,7 @@ export const screens: readonly Screen[] = [
   },
 ];
 
-/** Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, then the balances. */
+/** Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, the balances, then add an expense. */
 export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.goto(`${demo.appUrl}/lien`);
   await page.waitForTimeout(600);
@@ -108,5 +147,13 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.locator(operationLink).first().click();
   await page.waitForTimeout(1500);
   await page.locator(balancesTab).click();
+  await page.waitForTimeout(2000);
+  await page.locator('nav a').first().click();
+  await page.locator(newExpenseLink).click();
+  await page.locator('form input[type="text"]').first().pressSequentially('Glaces', { delay: 40 });
+  await page.locator('form input[inputmode="decimal"]').first().pressSequentially('12,60', { delay: 40 });
+  await page.waitForTimeout(1200);
+  await page.locator('form button[type="submit"]').click();
+  await page.locator('article').waitFor();
   await page.waitForTimeout(2000);
 }

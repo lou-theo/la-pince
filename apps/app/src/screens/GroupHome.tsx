@@ -1,11 +1,15 @@
-import type { Change, GroupResponse, Member, MemberId, OperationId } from '@la-pince/core';
+import type { Change, GroupResponse, Member, MemberId, Operation, OperationId } from '@la-pince/core';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 
+import { loadErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { liveOperations, sortedBalances, transfers } from '../model/group.ts';
 import { readCurrentMember, saveCurrentMember } from '../storage/device.ts';
+import type { LoadError } from '../sync/client.ts';
+import type { SendResult } from '../sync/groupStore.ts';
 import { Balances } from './Balances.tsx';
+import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
@@ -17,10 +21,14 @@ interface GroupHomeProps {
   readonly token: string;
   readonly group: GroupResponse;
   readonly changes: ReadonlyMap<OperationId, Change>;
+  /** Why the last read failed, the group shown being the last one read in full. */
+  readonly readError: LoadError | undefined;
+  readonly onRetry: () => void;
+  readonly send: (operation: Operation) => Promise<SendResult>;
 }
 
 /** Home of a group: asks “who I am” until this phone knows it, then shows the group as that member, its operations and its balances. */
-export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode {
+export function GroupHome({ token, group, changes, readError, onRetry, send }: GroupHomeProps): ReactNode {
   // A remembered member who left the group is asked again.
   const [currentMember, setCurrentMember] = useState(() => {
     const stored = readCurrentMember(token);
@@ -56,6 +64,8 @@ export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode 
       return id === currentMember.id ? `${name} (${m.you()})` : name;
     },
     memberOrder: group.members.map((member) => member.id),
+    members: group.members,
+    send,
   };
   return (
     <Layout>
@@ -78,10 +88,27 @@ export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode 
         <Tab href="/">{m.tab_operations()}</Tab>
         <Tab href="/soldes">{m.tab_balances()}</Tab>
       </nav>
+      {readError === undefined ? null : (
+        <div className={styles.readError} role="alert">
+          <p>
+            {m.group_read_failed()} {loadErrorMessage(readError)}
+          </p>
+          <button className={layout.link} type="button" onClick={onRetry}>
+            {m.group_retry()}
+          </button>
+        </div>
+      )}
       <Switch>
         <Route path="/">
           <OperationList view={view} />
         </Route>
+        <Route path="/nouvelle-depense">
+          <NewExpense view={view} />
+        </Route>
+        <Route path="/nouveau-remboursement">
+          <NewReimbursement view={view} />
+        </Route>
+        <Route path="/operations/:id/modifier">{({ id }) => <EditOperation view={view} id={id} />}</Route>
         <Route path="/operations/:id">{({ id }) => <OperationDetail view={view} id={id} />}</Route>
         <Route path="/soldes">
           <Balances view={view} />
@@ -96,9 +123,9 @@ export function GroupHome({ token, group, changes }: GroupHomeProps): ReactNode 
 
 function Tab({ href, children }: { readonly href: string; readonly children: ReactNode }) {
   const [location] = useLocation();
-  // The routes match with or without a trailing slash; an operation's detail belongs to the list of operations.
+  // The routes match with or without a trailing slash; every screen but the balances belongs to the operations (detail, forms).
   const path = location.replace(/(.)\/+$/, '$1');
-  const active = href === '/' ? path === '/' || path.startsWith('/operations/') : path === href;
+  const active = href === '/soldes' ? path === href : path !== '/soldes';
   return (
     <Link className={active ? `${styles.tab ?? ''} ${styles.active ?? ''}` : styles.tab} href={href} aria-current={active ? 'page' : undefined}>
       {children}

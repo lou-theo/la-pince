@@ -1,7 +1,8 @@
-import type { MemberId, Share, SuggestedTransfer } from '@la-pince/core';
+import type { Member, MemberId, Operation, Share, SuggestedTransfer } from '@la-pince/core';
 
 import { m } from '../i18n/paraglide/messages.js';
 import type { BalanceLine, OperationView } from '../model/group.ts';
+import type { SendResult } from '../sync/groupStore.ts';
 
 /** What the group's screens read: its live operations and balances, computed once per read of the group, seen as “who I am”. */
 export interface GroupView {
@@ -12,6 +13,9 @@ export interface GroupView {
   readonly nameOf: (id: MemberId) => string;
   /** Members in the order they were added, which orders the lines of a split. */
   readonly memberOrder: readonly MemberId[];
+  readonly members: readonly Member[];
+  /** Sends a revision of an operation, then reads the group again. */
+  readonly send: (operation: Operation) => Promise<SendResult>;
 }
 
 /** Shares of an operation in the order members were added, a member missing from the group's list last. */

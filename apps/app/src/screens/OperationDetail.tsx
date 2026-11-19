@@ -1,9 +1,14 @@
-import { type ReactNode, useId } from 'react';
-import { Link } from 'wouter';
+import { revisionIdSchema } from '@la-pince/core';
+import { type ReactNode, useId, useState } from 'react';
+import { Link, useLocation } from 'wouter';
 
+import { sendErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { formatDay } from '../model/dates.ts';
+import type { OperationView } from '../model/group.ts';
 import { formatCents } from '../model/money.ts';
+import { deletionOf } from '../model/operationForm.ts';
+import type { SendError } from '../sync/groupStore.ts';
 import layout from './Layout.module.css';
 import styles from './Operations.module.css';
 import { type GroupView, sharesInOrder, who } from './view.ts';
@@ -56,6 +61,68 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
           </ul>
         </section>
       ) : null}
+      <div className={styles.actions}>
+        <Link className={layout.button} href={`/operations/${operation.id}/modifier`}>
+          {m.operation_edit()}
+        </Link>
+        <Delete view={view} operation={operation} />
+      </div>
     </article>
+  );
+}
+
+/** Deletion asks once more, since it reaches every phone of the group. */
+function Delete({ view, operation }: { readonly view: GroupView; readonly operation: OperationView }) {
+  const [asking, setAsking] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<SendError>();
+  const [, navigate] = useLocation();
+  if (!asking) {
+    return (
+      <button
+        className={layout.link}
+        type="button"
+        onClick={() => {
+          setAsking(true);
+        }}
+      >
+        {m.operation_delete()}
+      </button>
+    );
+  }
+  const confirm = async () => {
+    setSending(true);
+    setError(undefined);
+    const result = await view.send(deletionOf(operation, { revisionId: revisionIdSchema.parse(crypto.randomUUID()), author: view.me }));
+    setSending(false);
+    if (result.ok) {
+      navigate('/', { replace: true });
+    } else {
+      setError(result.error);
+    }
+  };
+  return (
+    <div className={styles.confirm}>
+      <p>{m.operation_delete_confirm({ title: operation.title })}</p>
+      <div className={styles.actions}>
+        <button className={`${layout.button ?? ''} ${styles.danger ?? ''}`} type="button" disabled={sending} onClick={() => void confirm()}>
+          {sending ? m.operation_deleting() : m.operation_delete_yes()}
+        </button>
+        <button
+          className={layout.link}
+          type="button"
+          onClick={() => {
+            setAsking(false);
+          }}
+        >
+          {m.operation_delete_no()}
+        </button>
+      </div>
+      {error === undefined ? null : (
+        <p className={layout.error} role="alert">
+          {sendErrorMessage(error)}
+        </p>
+      )}
+    </div>
   );
 }
