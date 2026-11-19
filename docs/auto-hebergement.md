@@ -111,7 +111,7 @@ Après une fusion qui a abîmé la base, avec le déploiement automatique : annu
 
 ### Copie quotidienne, au-delà de 7 jours
 
-Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi de la perte du compte doit vivre ailleurs. `tools/sauvegarde/sauvegarde.yml` est une tâche planifiée GitHub qui exporte la base chaque nuit et commite le fichier SQL dans un repo privé, seulement s'il a changé : l'historique du repo donne la base à toute date passée. Le fichier est en clair : les liens des groupes n'y sont que hachés, il ne donne accès à aucun groupe, mais il contient les noms, les titres et les montants de tous les groupes de l'instance. Elle tient dans les minutes gratuites de GitHub Actions pour un repo privé ; l'export bloque la base le temps qu'il tourne, quelques secondes pour un groupe.
+Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi de la perte du compte doit vivre ailleurs. `tools/sauvegarde/sauvegarde.yml` est une tâche planifiée GitHub qui exporte la base chaque nuit et commite une copie dans un repo privé, seulement si la base a changé : l'historique du repo donne la base à toute date passée. Le fichier est compressé puis chiffré avec age (https://age-encryption.org) vers une clé publique : la tâche et le repo ne peuvent pas le relire, seule la clé privée, gardée dans un gestionnaire de mots de passe, l'ouvre. Cette clé perdue, aucune copie ne se restaure plus. À côté de la copie, la tâche commite la clé publique utilisée et l'empreinte SHA-256 de l'export en clair, qui lui sert à voir si la base a changé ; cette empreinte ne permet que de confirmer qu'une base entière qu'on détient déjà est celle de la copie. Elle tient dans les minutes gratuites de GitHub Actions pour un repo privé ; l'export bloque la base le temps qu'il tourne, quelques secondes pour un groupe.
 
 1. Créer un jeton d'API réservé à la sauvegarde, pour que GitHub ne garde pas celui du déploiement : My Profile, API Tokens, Create Token, Custom token, permission Account, D1, Edit (l'export est refusé en lecture seule) ; le récapitulatif doit montrer « D1: Edit » seul.
 2. Créer le repo privé à côté du dossier du code, pas dedans, et y mettre la tâche (`<compte>` étant son compte GitHub) :
@@ -133,25 +133,48 @@ Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi d
    gh variable set D1_DATABASE --body <nom de la base> -R <compte>/la-pince-sauvegardes
    ```
 
-4. Lancer une première copie sans attendre la nuit, suivre son passage (`gh run watch` le propose quelques secondes après le lancement, le temps que GitHub le crée), puis vérifier que `la-pince.sql` est arrivé dans le repo :
+4. Installer age (`brew install age` sur macOS, le paquet `age` de la distribution sur Linux), puis créer la paire de clés sans que la clé privée s'écrive dans un fichier ni s'affiche : la clé publique part en secret `AGE_RECIPIENT` du repo, la clé privée dans le presse-papiers (`pbcopy` sur macOS ; sur Linux, `wl-copy` ou `xclip -selection clipboard`). Un historique du presse-papiers (celui de Spotlight sur macOS, Raycast, Maccy, Klipper sous KDE) garderait la clé : le mettre en pause avant, ou y effacer l'entrée après.
+
+   ```sh
+   cle=$(age-keygen) && printf '%s\n' "$cle" | pbcopy && printf '%s\n' "$cle" | age-keygen -y | gh secret set AGE_RECIPIENT -R <compte>/la-pince-sauvegardes
+   unset cle
+   ```
+
+   `age-keygen` affiche la clé publique, qui n'a rien de secret. Coller aussitôt le presse-papiers dans une entrée du gestionnaire de mots de passe (par exemple dans ses notes : trois lignes, dont celle qui commence par `AGE-SECRET-KEY-`), l'enregistrer, puis vider le presse-papiers en y copiant autre chose. C'est le seul exemplaire de la clé : sans elle, les copies sont illisibles. Une clé changée plus tard (même commandes) rechiffre la copie au passage suivant ; les copies plus anciennes ne s'ouvrent qu'avec l'ancienne clé, à garder.
+
+5. Lancer une première copie sans attendre la nuit, suivre son passage (`gh run watch` le propose quelques secondes après le lancement, le temps que GitHub le crée), puis vérifier que la copie `la-pince.sql.gz.age` est arrivée dans le repo :
 
    ```sh
    gh workflow run sauvegarde.yml -R <compte>/la-pince-sauvegardes
    gh run watch -R <compte>/la-pince-sauvegardes
-   git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql
+   git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql.gz.age
+   ```
+
+6. Vérifier que la clé gardée ouvre la copie, sans rien écrire en clair : copier la clé depuis le gestionnaire de mots de passe, puis comparer l'empreinte de la copie déchiffrée à celle que la tâche a commitée ; les deux lignes affichées doivent être identiques. Vider ensuite le presse-papiers.
+
+   ```sh
+   pbpaste | age -d -i - ../la-pince-sauvegardes/la-pince.sql.gz.age | gunzip | shasum -a 256 | cut -d ' ' -f 1
+   cat ../la-pince-sauvegardes/la-pince.sql.sha256
    ```
 
 GitHub prévient par mail d'une copie en échec la personne qui a poussé la tâche, selon ses réglages de notifications. Une tâche planifiée peut partir en retard, ou plus rarement sauter un jour, quand GitHub est chargé.
 
 ### Restaurer une copie
 
-Une copie se rejoue dans une base neuve, vers laquelle l'instance bascule ensuite ; l'ancienne reste intacte tant qu'on ne la supprime pas. Les copies sont commitées par GitHub : rapatrier d'abord l'historique, puis choisir `<commit>`, celui de la copie voulue. Le fichier extrait contient tous les groupes en clair : il va dans `temp/`, que git ignore, jamais ailleurs dans le dossier du code.
+Une copie se rejoue dans une base neuve, vers laquelle l'instance bascule ensuite ; l'ancienne reste intacte tant qu'on ne la supprime pas. Les copies sont commitées par GitHub : rapatrier d'abord l'historique, puis choisir `<commit>`, celui de la copie voulue, et copier la clé privée depuis le gestionnaire de mots de passe : `age` la lit dans le presse-papiers (`pbpaste` sur macOS ; sur Linux, `wl-paste` ou `xclip -selection clipboard -o`), sans fichier. Le fichier déchiffré contient tous les groupes en clair : il va dans `temp/`, que git ignore, jamais ailleurs dans le dossier du code. Déchiffrer d'abord, puis vider le presse-papiers en y copiant autre chose :
 
 ```sh
-git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql
-mkdir -p temp && git -C ../la-pince-sauvegardes show <commit>:la-pince.sql > "$PWD/temp/la-pince-restauree.sql"
-pnpm --filter @la-pince/server exec wrangler d1 create la-pince-restauree --jurisdiction=eu --update-config=false
-pnpm --filter @la-pince/server exec wrangler d1 execute la-pince-restauree --remote --file="$PWD/temp/la-pince-restauree.sql"
+git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql.gz.age
+mkdir -p temp && git -C ../la-pince-sauvegardes show <commit>:la-pince.sql.gz.age > "$PWD/temp/la-pince-restauree.sql.gz.age"
+pbpaste | age -d -i - "$PWD/temp/la-pince-restauree.sql.gz.age" | gunzip > "$PWD/temp/la-pince-restauree.sql" && test -s "$PWD/temp/la-pince-restauree.sql" && echo "Copie déchiffrée"
 ```
 
-Puis, dans `apps/server/wrangler.production.jsonc`, remplacer seulement `database_id` par celui de la base neuve (donné par `d1 create`), en gardant `database_name` à `la-pince` : le déploiement et les commandes Time Travel trouvent la base par ce nom dans la config, et viseraient sinon l'ancienne base ou échoueraient ; redéployer (section 4, et reposer `WRANGLER_PRODUCTION_JSONC_BASE64` si la CI déploie), et donner `la-pince-restauree` à la variable `D1_DATABASE` du repo de sauvegarde. Les téléphones voient que la base a changé et relisent leur groupe en entier ; ce qui a été saisi après la copie est perdu, sauf ce qui attendait encore dans la file d'envoi d'un téléphone.
+Ne continuer que si « Copie déchiffrée » s'affiche : une mauvaise clé, un presse-papiers vide ou une copie abîmée laissent un fichier vide ou partiel, qui donnerait une base fausse, et qu'on supprime alors (`rm` de la dernière ligne ci-dessous). Puis rejouer la copie dans une base neuve et supprimer le fichier en clair :
+
+```sh
+pnpm --filter @la-pince/server exec wrangler d1 create la-pince-restauree --jurisdiction=eu --update-config=false
+pnpm --filter @la-pince/server exec wrangler d1 execute la-pince-restauree --remote --file="$PWD/temp/la-pince-restauree.sql"
+rm "$PWD/temp/la-pince-restauree.sql" "$PWD/temp/la-pince-restauree.sql.gz.age"
+```
+
+Enfin, dans `apps/server/wrangler.production.jsonc`, remplacer seulement `database_id` par celui de la base neuve (donné par `d1 create`), en gardant `database_name` à `la-pince` : le déploiement et les commandes Time Travel trouvent la base par ce nom dans la config, et viseraient sinon l'ancienne base ou échoueraient ; redéployer (section 4, et reposer `WRANGLER_PRODUCTION_JSONC_BASE64` si la CI déploie), et donner `la-pince-restauree` à la variable `D1_DATABASE` du repo de sauvegarde. Les téléphones voient que la base a changé et relisent leur groupe en entier ; ce qui a été saisi après la copie est perdu, sauf ce qui attendait encore dans la file d'envoi d'un téléphone.
