@@ -1,0 +1,36 @@
+{
+  "name": "@la-pince/app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "generate": "paraglide-js compile --project ./project.inlang --outdir ./src/i18n/paraglide --strategy baseLocale",
+    "typecheck": "tsc --project tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@la-pince/core": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "wouter": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@inlang/paraglide-js": "catalog:",
+    "@inlang/plugin-message-format": "catalog:",
+    "@la-pince/config": "workspace:*",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-pwa": "catalog:",
+    "vitest": "catalog:"
+  }
+}

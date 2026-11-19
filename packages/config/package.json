@@ -16,6 +16,8 @@
     "@vitest/eslint-plugin": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-import-x": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-react-x": "catalog:",
     "eslint-plugin-simple-import-sort": "catalog:",
     "globals": "catalog:",
     "typescript-eslint": "catalog:"

@@ -3,3 +3,5 @@ coverage/
 docs/cadrage/essais/
 # Written by drizzle-kit, which reads its snapshots back.
 apps/server/drizzle/
+# Compiled from the messages by Paraglide.
+apps/app/src/i18n/paraglide/

@@ -3,12 +3,15 @@ import vitest from '@vitest/eslint-plugin';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import prettier from 'eslint-config-prettier';
 import importX from 'eslint-plugin-import-x';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactX from 'eslint-plugin-react-x';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['**/coverage/', '**/dist/', '.claude/', 'docs/cadrage/essais/', 'temp/']),
+  // `i18n/paraglide/` is compiled from the messages by Paraglide.
+  globalIgnores(['**/coverage/', '**/dist/', '**/i18n/paraglide/', '.claude/', 'docs/cadrage/essais/', 'temp/']),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
@@ -22,7 +25,16 @@ export default defineConfig(
       // Package boundary: an import must be declared in the nearest package.json, otherwise Node would find it among the root's tooling dependencies; dev dependencies are for tests and configs only.
       'import-x/no-extraneous-dependencies': [
         'error',
-        { devDependencies: ['**/*.test.ts', '**/vitest.config.ts', '**/drizzle.config.ts', 'eslint.config.js'] },
+        {
+          devDependencies: [
+            '**/*.test.{ts,tsx}',
+            '**/test-setup.ts',
+            '**/vitest.config.ts',
+            '**/vite.config.ts',
+            '**/drizzle.config.ts',
+            'eslint.config.js',
+          ],
+        },
       ],
       'no-console': 'error',
       'no-param-reassign': 'error',
@@ -40,7 +52,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['packages/core/src/**/*.ts'],
+    files: ['packages/core/src/**/*.ts', 'apps/app/src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-globals': ['error', { name: 'parseFloat', message: 'Amounts are whole cents.' }],
       'no-restricted-properties': [
@@ -51,7 +63,11 @@ export default defineConfig(
     },
   },
   {
-    files: ['**/*.test.ts'],
+    files: ['apps/app/**/*.{ts,tsx}'],
+    extends: [reactX.configs['strict-type-checked'], reactHooks.configs.flat.recommended],
+  },
+  {
+    files: ['**/*.test.{ts,tsx}'],
     extends: [vitest.configs.recommended],
     rules: {
       'vitest/consistent-test-it': ['error', { fn: 'it' }],
