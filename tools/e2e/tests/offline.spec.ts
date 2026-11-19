@@ -55,8 +55,14 @@ test('an expense entered offline, after a restart without network, reaches anoth
   await synced(page);
   expect(await balances(page)).toStrictEqual(entered);
 
+  // After a reload the second browser shows its own copy before the server's answer; the delay makes that window certain, so a single read would fail
+  // here and the poll waits for the server.
+  await other.route('**/api/groups/**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await route.continue();
+  });
   await second.reload();
   await expect(second.getByText('Tu es Basile')).toBeVisible();
-  expect(await balances(second)).toStrictEqual(entered);
+  await expect.poll(() => balances(second)).toStrictEqual(entered);
   await other.close();
 });
