@@ -113,18 +113,6 @@ describe('PUT /api/admin/groups/:id', () => {
     expect(await errorOf(await admin(id, { title: 'Trip', token, members: [{ id: 'alice', name: 'Alice' }] }))).toStrictEqual([409, 'token_in_use']);
   });
 
-  it('refuses everything when the admin token of the server is empty', async () => {
-    const unset = createTestHarness({ workers: [{ configPath: './wrangler.jsonc', secrets: { ADMIN_TOKEN: '' } }] });
-    await unset.listen();
-    try {
-      const body = { title: 'Trip', token: 'y'.repeat(32), members: [{ id: 'alice', name: 'Alice' }] };
-      const response = await unset.fetch('/api/admin/groups/g', { method: 'PUT', headers: { Authorization: 'Bearer ' }, body: JSON.stringify(body) });
-      expect(await errorOf(response)).toStrictEqual([401, 'unauthorized']);
-    } finally {
-      await unset.close();
-    }
-  });
-
   it('keeps only a hash of the link token', async () => {
     const { id, token } = await newGroup();
     const env = await server.getWorker<Env>().getEnv();

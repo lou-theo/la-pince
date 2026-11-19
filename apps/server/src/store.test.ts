@@ -73,6 +73,15 @@ describe('writeRevisions', () => {
   });
 });
 
+describe('writeRevisions, revision ids', () => {
+  it('writes nothing when a revision id already taken comes back for another operation of another group', async () => {
+    const [owner, other] = [await newGroup(), await newGroup()];
+    await writeRevisions(db, owner, [write('s11-r1', 's11', 'mine')]);
+    expect(await writeRevisions(db, other, [write('s11-r1', 's12', 'theirs')])).toStrictEqual(new Map());
+    expect(await currentState('s12')).toBeNull();
+  });
+});
+
 describe('settleBatch', () => {
   const expense = (id: string, revision: string, total = 1000) => ({
     revisionId: revisionId(revision),
