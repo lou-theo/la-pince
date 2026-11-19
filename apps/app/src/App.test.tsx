@@ -54,7 +54,7 @@ describe('opening a group', () => {
     expect(await screen.findByRole('heading', { name: 'Qui es-tu ?' })).toBeDefined();
   });
 
-  it('opens without network on the copy kept from the last visit, telling the read that failed', async () => {
+  it('opens without network on the copy kept from the last visit, saying when it was last synced', async () => {
     const user = userEvent.setup();
     renderApp(`/g/${token}`);
     await user.click(await screen.findByRole('button', { name: 'Chloé' }));
@@ -63,7 +63,9 @@ describe('opening a group', () => {
     const location = renderApp('/', () => Promise.reject(new TypeError('Failed to fetch')));
     expect(await screen.findByText('Tu es Chloé')).toBeDefined();
     expect(location.history.at(-1)).toBe(`/g/${token}`);
-    expect(screen.getByRole('alert').textContent).toContain('Le serveur ne répond pas');
+    // Nothing waits to be sent: no promise about it.
+    expect((await screen.findByRole('status')).textContent).toMatch(/^Hors ligne, dernière synchro à \d\d:\d\d\.Réessayer$/);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('tells an unknown group, and offers to paste another link', async () => {

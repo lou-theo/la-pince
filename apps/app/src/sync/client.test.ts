@@ -1,5 +1,5 @@
 import { type ApiError, type Change, cursorSchema, groupResponseSchema, operationSchema } from '@la-pince/core';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { change, fakeServer, json } from '../testing/fake-server.ts';
 import { createApiClient } from './client.ts';
@@ -40,6 +40,49 @@ describe('fetchGroup', () => {
       ok: false,
       error: 'unexpected',
     });
+  });
+});
+
+describe('a request that never ends', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // Like a browser's `fetch`, the fake fails the request or its body once the signal aborts it.
+  const hanging = (stage: 'answer' | 'body') =>
+    createApiClient(
+      (_url, init) =>
+        new Promise<Response>((resolve, reject) => {
+          const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+              init?.signal?.addEventListener('abort', () => {
+                controller.error(new DOMException('Aborted', 'AbortError'));
+              });
+            },
+          });
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+          if (stage === 'body') {
+            resolve(new Response(stream, { status: 200 }));
+          }
+        }),
+    );
+
+  it('is given up after 30 s as a network failure, whether the answer or its body never comes', async () => {
+    vi.useFakeTimers();
+    for (const stage of ['answer', 'body'] as const) {
+      const result = hanging(stage).fetchGroup(token);
+      await vi.advanceTimersByTimeAsync(29_999);
+      let settled = false;
+      void result.then(() => {
+        settled = true;
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await result).toStrictEqual({ ok: false, error: 'network' });
+    }
   });
 });
 

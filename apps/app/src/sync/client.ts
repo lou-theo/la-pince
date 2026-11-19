@@ -31,6 +31,9 @@ export interface ApiClient {
   readonly sendOperations: (token: string, operations: readonly Operation[]) => Promise<ApiResult<RevisionResult[]>>;
 }
 
+// A request still pending past this is given up as a network failure: an answer that never ends would otherwise hold the outbox lock forever.
+const REQUEST_TIMEOUT = 30_000;
+
 interface Schema<T> {
   safeParse(data: unknown): { success: true; data: T } | { success: false };
 }
@@ -38,13 +41,23 @@ interface Schema<T> {
 /** Client of the sync API of `apps/server`; every answer goes through the schemas of the core before the app reads it. */
 export function createApiClient(fetchFn: Fetch): ApiClient {
   async function read<T>(url: string, schema: Schema<T>, init?: RequestInit): Promise<ApiResult<T, ChangesError>> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, REQUEST_TIMEOUT);
     let response: Response;
+    let body: unknown;
     try {
-      response = await fetchFn(url, init);
+      response = await fetchFn(url, { ...init, signal: controller.signal });
+      body = await response.json().catch(() => undefined);
     } catch {
       return { ok: false, error: 'network' };
+    } finally {
+      clearTimeout(timeout);
     }
-    const body: unknown = await response.json().catch(() => undefined);
+    if (controller.signal.aborted) {
+      return { ok: false, error: 'network' };
+    }
     if (response.ok) {
       const parsed = schema.safeParse(body);
       return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: 'unexpected' };

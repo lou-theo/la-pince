@@ -2,7 +2,7 @@ import { type Effect, type Member, type MemberId, revisionIdSchema } from '@la-p
 import { type ReactNode, type SubmitEvent, useId, useMemo, useReducer, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
-import { sendErrorMessage } from '../i18n/errors.ts';
+import { queueErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { selectionOrder } from '../model/members.ts';
 import { formatCents } from '../model/money.ts';
@@ -16,7 +16,7 @@ import {
   typedCents,
   typedSum,
 } from '../model/operationForm.ts';
-import type { SendError } from '../sync/groupStore.ts';
+import type { QueueError } from '../sync/groupStore.ts';
 import layout from './Layout.module.css';
 import styles from './OperationForm.module.css';
 import { useMounted } from './useMounted.ts';
@@ -37,8 +37,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
   const [state, dispatch] = useReducer(formReducer, initial);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<SendError>();
-  const [notReread, setNotReread] = useState(false);
+  const [queueError, setQueueError] = useState<QueueError>();
   const [, navigate] = useLocation();
   const mounted = useMounted();
   const formRef = useRef<HTMLFormElement>(null);
@@ -68,20 +67,17 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
       return;
     }
     setSending(true);
-    setSendError(undefined);
-    setNotReread(false);
-    const result = await view.send(operation.value);
+    setQueueError(undefined);
+    // Queued on the phone and shown at once; the outbox sends it whenever the server answers.
+    const result = await view.enqueue(operation.value);
     if (!mounted.current) {
       return;
     }
     setSending(false);
-    if (!result.ok) {
-      setSendError(result.error);
-    } else if (result.reread) {
+    if (result.ok) {
       navigate(`/operations/${state.id}`, { replace: true });
     } else {
-      // Written but not read back: the detail would not know it yet. Saving again sends a revision of the same operation, never a duplicate.
-      setNotReread(true);
+      setQueueError(result.error);
     }
   };
 
@@ -167,21 +163,15 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
       ) : (
         <Split view={view} members={members} state={state} errors={errors} preview={preview} dispatch={dispatch} splitId={ids.split} />
       )}
-      {sendError === undefined ? null : (
+      {queueError === undefined ? null : (
         <p className={layout.error} role="alert">
-          {sendErrorMessage(sendError)}
+          {queueErrorMessage(queueError)}
         </p>
       )}
-      {notReread ? (
-        <p className={layout.error} role="alert">
-          {m.form_saved_not_read()}
-        </p>
-      ) : null}
       <div className={layout.actions}>
         <button className={layout.button} type="submit" disabled={sending}>
           {sending ? m.form_saving() : m.form_save()}
         </button>
-        {/* A send cannot be taken back: no way to cancel it. */}
         {sending ? null : (
           <Link className={layout.link} href={back}>
             {m.form_cancel()}

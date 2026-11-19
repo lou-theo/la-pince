@@ -12,3 +12,12 @@ export function localDay(now: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${String(now.getFullYear())}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
+
+const times = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const shortDays = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
+
+/** When something happened, on this phone's clock: the time, `14:05`, and the day, `18 nov.`, only when it is not the day of `now`. */
+export function momentOf(at: number, now: Date): { readonly time: string; readonly day: string | undefined } {
+  const moment = new Date(at);
+  return { time: times.format(moment), day: localDay(moment) === localDay(now) ? undefined : shortDays.format(moment) };
+}

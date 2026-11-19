@@ -41,6 +41,7 @@ export function OperationList({ view }: { readonly view: GroupView }): ReactNode
                 <span className={styles.meta}>
                   {formatDay(operation.date)} · {who(view, operation)}
                 </span>
+                {operation.pending ? <span className={styles.pending}>{m.operation_pending()}</span> : null}
               </span>
               <span className={styles.amounts}>
                 <span className={styles.total}>{formatCents(operation.effect.total)}</span>
