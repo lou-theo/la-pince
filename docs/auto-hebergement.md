@@ -136,7 +136,7 @@ Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi d
 4. Installer age (`brew install age` sur macOS, le paquet `age` de la distribution sur Linux), puis créer la paire de clés sans que la clé privée s'écrive dans un fichier ni s'affiche : la clé publique part en secret `AGE_RECIPIENT` du repo, la clé privée dans le presse-papiers (`pbcopy` sur macOS ; sur Linux, `wl-copy` ou `xclip -selection clipboard`). Un historique du presse-papiers (celui de Spotlight sur macOS, Raycast, Maccy, Klipper sous KDE) garderait la clé : le mettre en pause avant, ou y effacer l'entrée après.
 
    ```sh
-   cle=$(age-keygen) && printf '%s\n' "$cle" | age-keygen -y | gh secret set AGE_RECIPIENT -R <compte>/la-pince-sauvegardes && printf '%s\n' "$cle" | pbcopy
+   cle=$(age-keygen) && printf '%s\n' "$cle" | pbcopy && printf '%s\n' "$cle" | age-keygen -y | gh secret set AGE_RECIPIENT -R <compte>/la-pince-sauvegardes
    unset cle
    ```
 
@@ -169,7 +169,7 @@ mkdir -p temp && git -C ../la-pince-sauvegardes show <commit>:la-pince.sql.gz.ag
 pbpaste | age -d -i - "$PWD/temp/la-pince-restauree.sql.gz.age" | gunzip > "$PWD/temp/la-pince-restauree.sql" && test -s "$PWD/temp/la-pince-restauree.sql" && echo "Copie déchiffrée"
 ```
 
-Ne continuer que si « Copie déchiffrée » s'affiche : une mauvaise clé ou un presse-papiers vide laissent un fichier vide, qui donnerait une base vide. Puis rejouer la copie dans une base neuve et supprimer le fichier en clair :
+Ne continuer que si « Copie déchiffrée » s'affiche : une mauvaise clé, un presse-papiers vide ou une copie abîmée laissent un fichier vide ou partiel, qui donnerait une base fausse, et qu'on supprime alors (`rm` de la dernière ligne ci-dessous). Puis rejouer la copie dans une base neuve et supprimer le fichier en clair :
 
 ```sh
 pnpm --filter @la-pince/server exec wrangler d1 create la-pince-restauree --jurisdiction=eu --update-config=false
