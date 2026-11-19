@@ -1,18 +1,7 @@
-import { computeBalances, computeEffect, convertTricount } from '@la-pince/core';
+import { convertTricount } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
-import { demoGroup } from './corpus.ts';
-
-const balancesOf = (data: unknown) => {
-  const group = convertTricount(data);
-  const byName = new Map(group.members.map((member) => [member.id, member.name]));
-  return new Map(
-    [...computeBalances(group.operations.map((operation) => computeEffect(operation.id, operation.entry)))].map(([member, balance]) => [
-      byName.get(member),
-      balance,
-    ]),
-  );
-};
+import { balancesByName as balancesOf, demoGroup } from './corpus.ts';
 
 describe('demoGroup', () => {
   it('draws every identifier again, the same for the same salt, keeping names, amounts and balances', () => {
@@ -24,6 +13,25 @@ describe('demoGroup', () => {
     expect(new Set([...original.members, ...other.members].map((member) => member.id)).size).toBe(original.members.length * 2);
     expect(new Set([...original.operations, ...other.operations].map((operation) => operation.id)).size).toBe(original.operations.length * 2);
     expect(balancesOf(demoGroup('b'))).toStrictEqual(balancesOf(demoGroup('a')));
+  });
+
+  it('gives the balances of the corpus as computed outside this code', () => {
+    // From the test of the conversion in the core, itself checked against a computation made outside the repo.
+    expect(Object.fromEntries(balancesOf(demoGroup('a')))).toStrictEqual({
+      Agathe: 4224,
+      Basile: 1637,
+      Capucine: -3597,
+      Désiré: -9608,
+      Eulalie: 1190,
+      Firmin: 1035,
+      Gaspard: 1,
+      Honorine: -1564,
+      Isidore: 4402,
+      Joséphine: 3548,
+      Léandre: 210,
+      Mélusine: -1,
+      Octave: -1477,
+    });
   });
 
   it('repeats each operation under new identifiers, balances multiplied as much', () => {

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 
+import { computeBalances, computeEffect, convertTricount } from '@la-pince/core';
 import corpus from '@la-pince/core/fixtures/tricount-demo.json' with { type: 'json' };
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
@@ -30,4 +31,12 @@ export function demoGroup(salt: string, copies = 1): unknown {
     ),
   ).flat();
   return remap({ ...corpus, Response: [{ ...response, Registry: { ...registry, all_registry_entry: entries } }] }, salt);
+}
+
+/** Balance of each member of an export by name, in cents, computed by the core outside the app: the reference the scenarios check the screens against. */
+export function balancesByName(data: unknown): Map<string, number> {
+  const group = convertTricount(data);
+  const names = new Map(group.members.map((member) => [member.id, member.name]));
+  const balances = computeBalances(group.operations.map((operation) => computeEffect(operation.id, operation.entry)));
+  return new Map(group.members.map((member) => [names.get(member.id) ?? member.id, balances.get(member.id) ?? 0]));
 }

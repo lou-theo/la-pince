@@ -51,8 +51,17 @@ test('a revision the server refuses leaves the outbox without notice, the others
   await page.getByRole('link', { name: 'Soldes', exact: true }).click();
   await expect(page.getByText(/^Ces soldes comptent 2 saisies non envoyées\./)).toBeVisible();
 
+  // The refusal comes from the real server, in the same batch as the expense it writes.
+  const answered = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith(`/api/groups/${token}/operations`),
+  );
   await context.setOffline(false);
   await wake(page);
+  const { results } = (await (await answered).json()) as { results: { status: string; reason?: string }[] };
+  expect(results.map((result) => [result.status, result.reason])).toStrictEqual([
+    ['written', undefined],
+    ['rejected', 'unknown_member'],
+  ]);
   await synced(page);
   await expect(page.getByRole('alert')).toHaveCount(0);
   await page.getByRole('link', { name: 'Dépenses', exact: true }).click();
@@ -93,6 +102,12 @@ test('a change made offline overwrites, without notice, one made meanwhile in an
   await rename(page, 'Kebabs de Agathe');
   await rename(second, 'Kebabs de Basile');
   await synced(second);
+  // Written on the server before Agathe's change arrives, as a third browser reads it.
+  const observer = await browser.newContext();
+  const observed = await observer.newPage();
+  await openAs(observed, token, 'Capucine');
+  await expect(observed.getByRole('link', { name: /^Kebabs de Basile/ })).toBeVisible();
+  await observer.close();
   await context.setOffline(false);
   await wake(page);
   await synced(page);
