@@ -20,9 +20,10 @@ PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cl
 - `apps/server` : Worker Hono, D1 par Drizzle ; schéma dans `src/schema.ts`, migrations générées dans `drizzle/` (jamais écrites à la main), tests de l'API dans workerd.
 - `tools/import-tricount` : script local qui importe un export Tricount dans un serveur par son API et relit les soldes ; lancé sous Node, sans étape de build.
 - `tools/captures` : captures des écrans sur le groupe de démo (planches avant/après, GIF d'un parcours), mode d'emploi dans le skill `.claude/skills/captures`.
+- `tools/e2e` : tests de bout en bout (Playwright, Chromium et WebKit) et budgets de performance, sur l'app construite et le Worker local, groupes de démo tirés du corpus.
 - `docs/cadrage/` : cadrage du projet (besoin, décisions, plan) ; `docs/cadrage/essais/` garde des essais jetables, hors lint et format.
 
-Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint `import-x/no-extraneous-dependencies`) : app, server et import dépendent de core, jamais l'un de l'autre ; l'outil de captures utilise aussi l'import.
+Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint `import-x/no-extraneous-dependencies`) : app, server et import dépendent de core, jamais l'un de l'autre ; l'outil de captures et les tests de bout en bout utilisent aussi l'import.
 
 ## Commandes
 
@@ -33,6 +34,7 @@ Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint
 - `pnpm --filter @la-pince/server migrations:generate` : écrit la migration d'un changement de `apps/server/src/schema.ts`, à committer avec lui.
 - `pnpm --filter @la-pince/server dev` : serveur local sur une D1 locale (`wrangler dev`), le secret d'administration dans `apps/server/.dev.vars` (`ADMIN_TOKEN=…`, ignoré par git) ; migrations appliquées par `wrangler d1 migrations apply la-pince --local`.
 - `pnpm --filter @la-pince/app dev` : app sur http://localhost:5173, l'API passée au serveur local (port 8787) par le proxy de Vite.
+- `pnpm e2e` : tests de bout en bout et budgets (`tools/e2e`), rejoués par la CI après `pnpm verifier` mais hors du hook avant push ; navigateurs à installer une fois par version de Playwright (`pnpm --filter @la-pince/e2e exec playwright install chromium webkit`) ; à lancer pour toute PR qui touche l'app, le serveur ou le contrat.
 - `pnpm captures --avant origin/main` : planches et GIF de toute PR qui touche un écran, à joindre à sa description (skill `captures`).
 - `pnpm --filter @la-pince/import-tricount start <chemin absolu de l'export>` : importe un export dans le serveur local (`LA_PINCE_URL` pour un autre) et affiche le lien du groupe dans l'app (`LA_PINCE_APP_URL`, par défaut celle de `pnpm --filter @la-pince/app dev`), avec `ADMIN_TOKEN` et soit `LA_PINCE_GROUP_TOKEN` (jeton du lien d'un import précédent, gardé), soit `LA_PINCE_NEW_LINK=1` (nouveau lien, l'ancien cesse de marcher) ; secrets saisis sans écho (`read -rs ADMIN_TOKEN && export ADMIN_TOKEN`) plutôt que tapés dans la commande, que l'historique du shell garde ; le jeton du lien s'affiche dans le terminal avant tout appel, jamais dans un fichier. Jamais l'export réel de `temp/` avant l'étape 8.
 
