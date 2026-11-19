@@ -31,7 +31,7 @@ const cli = async (args: string[], env: Record<string, string>) => {
 
 describe('run', () => {
   it('imports the export file under a new link token printed first, then the totals; the same token next time keeps the link', async () => {
-    const { code, lines } = await cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_URL, LA_PINCE_NEW_LINK: '1' });
+    const { code, lines } = await cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_URL, LA_PINCE_APP_URL: '', LA_PINCE_NEW_LINK: '1' });
     expect(code).toBe(0);
     const token = /: ([\w-]{43})$/.exec(lines[0] ?? '')?.[1];
     expect(lines.slice(1)).toStrictEqual([

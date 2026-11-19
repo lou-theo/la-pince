@@ -43,7 +43,8 @@ export async function run({ args, env, print }: CliOptions): Promise<number> {
   // Printed before any call: the server may hold it even if the import stops.
   print(`link token, to keep out of any file (LA_PINCE_GROUP_TOKEN for the next import): ${token}`);
   // The app's link, by default on the Vite dev server of apps/app.
-  print(`group: ${new URL(`/g/${token}`, env.LA_PINCE_APP_URL ?? 'http://localhost:5173').href}`);
+  const appUrl = env.LA_PINCE_APP_URL === undefined || env.LA_PINCE_APP_URL === '' ? 'http://localhost:5173' : env.LA_PINCE_APP_URL;
+  print(`group: ${new URL(`/g/${token}`, appUrl).href}`);
   try {
     const report = await importTricount({ data, serverUrl, adminToken, token });
     print(`${report.title}: ${String(report.written)} revisions written, ${String(report.deleted)} of them deletions`);
