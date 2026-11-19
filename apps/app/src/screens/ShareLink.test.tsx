@@ -93,6 +93,9 @@ describe('sharing the group link', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(sheet).toHaveBeenCalledTimes(1);
     expect(writeText).not.toHaveBeenCalled();
+    // Once the sheet is closed, the button works again.
+    fireEvent.click(screen.getByRole('button', { name: 'Partager le lien du groupe' }));
+    expect(sheet).toHaveBeenCalledTimes(2);
   });
 
   it('shows the link to copy by hand when the clipboard is out of reach too', async () => {
