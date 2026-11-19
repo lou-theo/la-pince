@@ -68,7 +68,9 @@ describe('opening a group', () => {
   it('tells an unknown group, and offers to paste another link', async () => {
     const user = userEvent.setup();
     const location = renderApp(`/g/${'u'.repeat(40)}`);
-    expect((await screen.findByRole('alert')).textContent).toBe("Ce groupe n'existe pas, ou son lien a changé : demande le nouveau lien à un membre du groupe.");
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      "Ce groupe n'existe pas, ou son lien a changé : demande le nouveau lien à un membre du groupe.",
+    );
     await user.click(screen.getByRole('link', { name: 'Ouvrir un autre lien' }));
     expect(location.history.at(-1)).toBe('/lien');
   });

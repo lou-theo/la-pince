@@ -81,12 +81,12 @@ Chronologie d'un import (`tools/import-tricount`, lancé sur la machine du maint
 
 ## App
 
-`apps/app` est une PWA React servie par Vite, en français seul pour l'instant, sans dépendance à `apps/server` : elle lit le contrat de synchronisation de `packages/core`.
+`apps/app` est une PWA React servie par Vite, en français seul, sans dépendance à `apps/server` : elle lit le contrat de synchronisation de `packages/core`.
 
 - **Routes** (wouter) : `/g/:token` ouvre un groupe par le jeton de son lien, contrôlé par `groupTokenSchema` avant tout appel ; `/lien` ouvre un groupe dont on colle le lien, repli d'une app installée qui démarre sans son lien ; `/` revient au dernier groupe ouvert sur le téléphone, ou mène à `/lien`.
 - **Lecture** : `src/sync/client.ts` appelle l'API et fait passer chaque réponse par les schémas du cœur ; une réponse hors contrat est une erreur affichée, jamais une donnée lue. Les écrans reçoivent le client par un contexte React, pour que les tests leur donnent un faux transport.
 - **Ce que le téléphone retient** (`src/storage/`) : « qui je suis » par groupe et le dernier groupe ouvert, dans `localStorage` ; un stockage refusé (navigation privée) fait redemander plutôt qu'échouer, et un membre retenu qui n'est plus dans le groupe est redemandé.
-- **Textes** : Paraglide compile `messages/fr.json` en fonctions typées (`pnpm generate`, lancé par `pnpm install` et `pnpm verifier`) ; le greffon de format des messages est lu dans `node_modules`, pas sur un CDN, pour que la compilation ne dépende pas du réseau. Chaque code d'erreur passe par une table exhaustive (`src/i18n/errors.ts`).
+- **Textes** : Paraglide compile `messages/fr.json` en fonctions typées (`pnpm generate`, lancé par `pnpm install` et `pnpm verifier` ; son greffon Vite sert les mêmes fonctions au serveur de développement, au build et aux tests) ; le greffon de format des messages est lu dans `node_modules`, pas sur un CDN, pour que la compilation ne dépende pas du réseau. Chaque code d'erreur passe par une table exhaustive (`src/i18n/errors.ts`).
 - **Mise en page** : CSS modules et variables CSS, sans bibliothèque ; une colonne à la largeur d'un téléphone, centrée sur ordinateur ; thème sombre suivi du système.
 - **PWA** : manifeste et service worker générés par vite-plugin-pwa (`generateSW`), qui ne met en cache que la coquille de l'app, jamais une réponse de l'API ; `Referrer-Policy: no-referrer` par une balise de la page, le jeton du lien étant dans l'adresse.
 - **Développement** : le proxy de Vite passe `/api` au serveur local (`wrangler dev`, port 8787).
@@ -94,7 +94,7 @@ Chronologie d'un import (`tools/import-tricount`, lancé sur la machine du maint
 ## Outillage
 
 - pnpm avec catalogue de versions (une version par dépendance pour tout le repo) ; Node et pnpm épinglés (`.node-version`, `packageManager`) ; pas d'orchestrateur de monorepo tant que `pnpm --recursive` suffit.
-- TypeScript strict ; le code se lit en source, sans étape de build entre paquets (Vite et Wrangler compilent à la livraison).
+- TypeScript strict ; le code se lit en source, sans étape de build entre paquets (Vite et Wrangler compilent à la livraison) ; seuls les textes de l'app sont générés (`pnpm generate`).
 - ESLint avec les règles strictes et typées de typescript-eslint, plus des règles choisies pour le projet, et pour l'app les règles strictes et typées d'eslint-plugin-react-x et celles d'eslint-plugin-react-hooks ; Prettier en largeur 150.
 - `pnpm verifier` (textes compilés, format, lint, typecheck, tests) tourne avant chaque push par lefthook ; GitHub Actions le rejoue sur chaque PR, et le job `verifier` est requis pour fusionner dans `main`.
 
