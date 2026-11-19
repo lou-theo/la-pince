@@ -90,7 +90,9 @@ export type RejectionReason = z.infer<typeof rejectionReasonSchema>;
 
 /**
  * Outcome of one revision: `written` with the seq it got, `duplicate` when the same revision had already been received (a resend), or `rejected`
- * with its reason. The outbox drops the revision in all three cases, so that no revision blocks the ones behind it.
+ * with its reason. The outbox drops the revision in all three cases, so that no revision blocks the ones behind it. The phone shows the server's
+ * copy of each operation overlaid with the revisions still in its outbox: a rejected revision leaves the outbox and its operation falls back to the
+ * server's copy. The cursor moves only by reading changes, never by the seq of a `written` answer, which may come after changes not read yet.
  */
 export const revisionResultSchema = z.discriminatedUnion('status', [
   z.strictObject({ revisionId: revisionIdSchema, status: z.literal('written'), seq: seqSchema }),
