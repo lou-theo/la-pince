@@ -31,11 +31,16 @@ const deletionSchema = z.strictObject({ ...revisionFields, deleted: z.literal(tr
 export const operationSchema = z.union([entryRevisionSchema, deletionSchema]);
 export type Operation = z.infer<typeof operationSchema>;
 
-// Given by the server to each revision it writes, from a counter that only grows: a new revision of the operation gets a larger one.
-const seqSchema = z.int().positive();
+/** Given by the server to each revision it writes, from a counter that only grows: a new revision of the operation gets a larger one. */
+export const seqSchema = z.int().positive();
 
-/** Current revision of an operation as the server sends it back. */
-export const changeSchema = z.union([entryRevisionSchema.extend({ seq: seqSchema }), deletionSchema.extend({ seq: seqSchema })]);
+// `createdSeq`, the seq of the operation's first revision, does not move when the operation changes: it orders operations as they were entered.
+const changeFields = { seq: seqSchema, createdSeq: seqSchema };
+
+/** Current revision of an operation as the server sends it back, with the seq that wrote it and the seq of the operation's first revision. */
+export const changeSchema = z
+  .union([entryRevisionSchema.extend(changeFields), deletionSchema.extend(changeFields)])
+  .refine((change) => change.createdSeq <= change.seq, { message: 'created_after_change', path: ['createdSeq'] });
 export type Change = z.infer<typeof changeSchema>;
 
 /** Effect of the operation on the accounts, computed from its entry as on every phone; none for a deleted operation. */

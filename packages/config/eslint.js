@@ -20,7 +20,10 @@ export default defineConfig(
     rules: {
       eqeqeq: ['error', 'always'],
       // Package boundary: an import must be declared in the nearest package.json, otherwise Node would find it among the root's tooling dependencies; dev dependencies are for tests and configs only.
-      'import-x/no-extraneous-dependencies': ['error', { devDependencies: ['**/*.test.ts', '**/vitest.config.ts', 'eslint.config.js'] }],
+      'import-x/no-extraneous-dependencies': [
+        'error',
+        { devDependencies: ['**/*.test.ts', '**/vitest.config.ts', '**/drizzle.config.ts', 'eslint.config.js'] },
+      ],
       'no-console': 'error',
       'no-param-reassign': 'error',
       'object-shorthand': 'error',

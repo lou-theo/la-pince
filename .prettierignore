@@ -1,3 +1,5 @@
 pnpm-lock.yaml
 coverage/
 docs/cadrage/essais/
+# Written by drizzle-kit, which reads its snapshots back.
+apps/server/drizzle/

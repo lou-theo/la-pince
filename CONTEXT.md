@@ -3,6 +3,7 @@
 Chaque terme du domaine est défini une fois ici ; les docs et l'interface l'emploient dans ce sens, le code sous le nom anglais donné entre parenthèses (le code est en anglais, la doc en français).
 
 - **Groupe** (`Group`) : ensemble de personnes qui partagent des dépenses, accessible par un lien, sans compte.
+- **Jeton du lien** (`token`) : secret contenu dans le lien d'un groupe ; qui l'a lit et écrit le groupe, le serveur n'en garde qu'un haché.
 - **Membre** (`Member`) : personne d'un groupe, qu'elle ait l'app ou non ; quelqu'un d'autre peut saisir pour elle.
 - **Qui je suis** (`currentMember`) : le membre qu'une personne déclare être sur son téléphone ; il détermine « ma part » et les notifications reçues.
 - **Opération** (`Operation`) : ce qu'on enregistre dans un groupe, dépense ou remboursement ; seul objet de la synchronisation.
