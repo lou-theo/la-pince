@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { groupResponseSchema } from './group.ts';
+import { adminGroupSchema, groupResponseSchema } from './group.ts';
 
 const group = {
   title: 'Trip',
@@ -26,5 +26,22 @@ describe('groupResponseSchema', () => {
     ['an unknown field', { ...group, token: 'secret' }],
   ])('rejects %s', (_, response) => {
     expect(groupResponseSchema.safeParse(response).success).toBe(false);
+  });
+});
+
+describe('adminGroupSchema', () => {
+  const token = 'a'.repeat(32);
+
+  it('accepts a title, a link token and the members', () => {
+    expect(adminGroupSchema.parse({ ...group, token })).toStrictEqual({ ...group, token });
+  });
+
+  it.each([
+    ['a token shorter than 32 characters', { ...group, token: 'a'.repeat(31) }],
+    ['a token with a character a link would encode', { ...group, token: `${'a'.repeat(31)}/` }],
+    ['a member listed twice', { ...group, token, members: [...group.members, { id: 'bob', name: 'Bob again' }] }],
+    ['no token', group],
+  ])('rejects %s', (_, request) => {
+    expect(adminGroupSchema.safeParse(request).success).toBe(false);
   });
 });

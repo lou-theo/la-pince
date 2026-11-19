@@ -26,3 +26,7 @@ export function compareIds(a: string, b: string): number {
   }
   return a < b ? -1 : 1;
 }
+
+/** Identifier of a group, chosen by whoever creates it (the Tricount identifier for an imported group); never secret, unlike its link's token. */
+export const groupIdSchema = idSchema.brand('GroupId');
+export type GroupId = z.infer<typeof groupIdSchema>;

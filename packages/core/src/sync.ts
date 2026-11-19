@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import type { RevisionId } from './ids.ts';
-import { changeSchema, type Operation, operationSchema } from './operation.ts';
+import { revisionIdSchema } from './ids.ts';
+import { changeSchema, operationSchema, seqSchema } from './operation.ts';
 
 /** Most revisions a phone sends in one request; a longer outbox is sent in several. */
 export const MAX_BATCH_REVISIONS = 50;
@@ -9,7 +9,11 @@ export const MAX_BATCH_REVISIONS = 50;
 /** Most changes the server sends back in one page, and the page size when the phone asks for none. */
 export const MAX_CHANGES = 500;
 
-/** Revisions sent by a phone in one request, in the order they were made: the server writes them in that order, the last one arrived winning. */
+/**
+ * Revisions sent by a phone in one request, in the order they were made: the server writes them in that order, the last one arrived winning. The
+ * outbox sends its revisions in order, one request at a time, without merging one it has not seen acknowledged: an old revision arriving for the
+ * first time after a newer one would win.
+ */
 export const operationBatchSchema = z.strictObject({ operations: z.array(operationSchema).min(1).max(MAX_BATCH_REVISIONS) });
 export type OperationBatch = z.infer<typeof operationBatchSchema>;
 
@@ -71,20 +75,38 @@ export function pageFollowsQuery(query: ChangesQuery, page: ChangesResponse): bo
   return page.changes.length <= query.limit && (first === undefined ? page.cursor === query.since : first > query.since);
 }
 
+/** Why the server refused one revision of a batch; the other revisions of the batch are applied all the same. */
+export const rejectionReasonSchema = z.enum([
+  // The revision does not match `operationSchema`: unknown field, entry that does not add up, malformed title.
+  'invalid_operation',
+  // The payer, a line or the author is not a member of the group (`unknownMembers`).
+  'unknown_member',
+  // The operation id belongs to another group.
+  'operation_in_other_group',
+  // The revision id was already received with another content, or in another group.
+  'revision_conflict',
+]);
+export type RejectionReason = z.infer<typeof rejectionReasonSchema>;
+
 /**
- * Revisions of a batch the server has to write, in the order they arrived: a revision already received, or met earlier in the batch, is left out,
- * so that resending what the outbox is not sure arrived never writes a revision twice. A pre-sort only: two requests replaying the same revision at
- * once both find it new, so the server must also insert each revision under a unique `revisionId` and move the operation's current state only when
- * that insert took place, in the same write. Nor does it order revisions: an old revision arriving for the first time after a newer one wins, which
- * the outbox prevents by sending its revisions in order, one request at a time, without merging one it has not seen acknowledged.
+ * Outcome of one revision: `written` with the seq it got, `duplicate` when the same revision had already been received (a resend), or `rejected`
+ * with its reason. The outbox drops the revision in all three cases, so that no revision blocks the ones behind it.
  */
-export function newRevisions(batch: readonly Operation[], received: ReadonlySet<RevisionId>): Operation[] {
-  const seen = new Set(received);
-  return batch.filter((operation) => {
-    if (seen.has(operation.revisionId)) {
-      return false;
-    }
-    seen.add(operation.revisionId);
-    return true;
-  });
-}
+export const revisionResultSchema = z.discriminatedUnion('status', [
+  z.strictObject({ revisionId: revisionIdSchema, status: z.literal('written'), seq: seqSchema }),
+  z.strictObject({ revisionId: revisionIdSchema, status: z.literal('duplicate') }),
+  z.strictObject({ revisionId: revisionIdSchema, status: z.literal('rejected'), reason: rejectionReasonSchema }),
+]);
+export type RevisionResult = z.infer<typeof revisionResultSchema>;
+
+/** Answer to a batch: one result per revision sent, in the same order. */
+export const operationBatchResponseSchema = z.strictObject({ results: z.array(revisionResultSchema).min(1).max(MAX_BATCH_REVISIONS) });
+export type OperationBatchResponse = z.infer<typeof operationBatchResponseSchema>;
+
+/**
+ * Error of a whole request. `invalid_request`: a body or a query the server cannot read, a bug of the client; `group_not_found`: no group behind the
+ * link; `cursor_ahead`: the cursor is past the group's last change (the server's history was rebuilt), so the phone drops its copy of the group and
+ * reads again from 0; `unauthorized`: missing or wrong admin token.
+ */
+export const apiErrorSchema = z.strictObject({ error: z.enum(['invalid_request', 'group_not_found', 'cursor_ahead', 'unauthorized']) });
+export type ApiError = z.infer<typeof apiErrorSchema>;
