@@ -1,8 +1,11 @@
 import preset from '@la-pince/config/vitest';
 import { defineConfig, mergeConfig } from 'vitest/config';
 
+import viteConfig from './vite.config.ts';
+
+// The app's Vite plugins too: once Vite has run, Paraglide's output on disk points at modules that only its plugin serves.
 export default mergeConfig(
-  preset,
+  mergeConfig(viteConfig, preset),
   defineConfig({
     test: {
       include: ['src/**/*.test.{ts,tsx}'],
@@ -11,7 +14,7 @@ export default mergeConfig(
       coverage: {
         include: ['src/**/*.{ts,tsx}'],
         exclude: ['src/**/*.test.{ts,tsx}', 'src/test-setup.ts', 'src/main.tsx', 'src/i18n/paraglide/'],
-        // Pure functions of the model (amounts, shares, order of members): fully covered.
+        // Pure functions of the model: fully covered.
         thresholds: { 'src/model/**': { 100: true } },
       },
     },

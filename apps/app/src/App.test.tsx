@@ -45,7 +45,7 @@ describe('opening a group', () => {
     expect(screen.getByRole('heading', { name: 'Week-end' })).toBeDefined();
     expect(screen.getByText('Tu es Bruno')).toBeDefined();
 
-    await user.click(screen.getByRole('button', { name: 'Changer' }));
+    await user.click(screen.getByRole('button', { name: "Ce n'est pas moi" }));
     expect(screen.getByRole('button', { name: 'Bruno' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Chloé' }));
     expect(screen.getByText('Tu es Chloé')).toBeDefined();
@@ -68,7 +68,7 @@ describe('opening a group', () => {
   it('tells an unknown group, and offers to paste another link', async () => {
     const user = userEvent.setup();
     const location = renderApp(`/g/${'u'.repeat(40)}`);
-    expect((await screen.findByRole('alert')).textContent).toBe("Ce groupe n'existe pas, ou son lien a changé : demande le nouveau lien au groupe.");
+    expect((await screen.findByRole('alert')).textContent).toBe("Ce groupe n'existe pas, ou son lien a changé : demande le nouveau lien à un membre du groupe.");
     await user.click(screen.getByRole('link', { name: 'Ouvrir un autre lien' }));
     expect(location.history.at(-1)).toBe('/lien');
   });
@@ -96,13 +96,19 @@ describe('opening a group', () => {
     renderApp(`/g/${token}`, () => new Promise((resolve) => (answer = resolve)));
     cleanup();
     answer(json(group));
-    await Promise.resolve();
+    // A macrotask: the fetch, `json()` and `then()` all run before it.
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(localStorage.getItem('la-pince:last-group')).toBeNull();
   });
 
   it('tells a malformed link without calling the server', () => {
-    renderApp('/g/short', () => Promise.reject(new Error('the server is not called')));
+    const calls: string[] = [];
+    renderApp('/g/short', (url) => {
+      calls.push(url);
+      return new Promise(() => undefined);
+    });
     expect(screen.getByText('Ce lien est incomplet ou mal recopié.')).toBeDefined();
+    expect(calls).toStrictEqual([]);
   });
 });
 
