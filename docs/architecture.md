@@ -73,10 +73,10 @@ Une version et l'état courant de son opération s'écrivent dans un seul lot D1
 Chronologie d'un import (`tools/import-tricount`, lancé sur la machine du mainteneur) :
 
 1. L'outil lit le fichier d'export et le convertit (`convertTricount`) ; l'identifiant du groupe est celui du tricount, jamais son jeton de lien, qui n'est pas lu.
-2. Il crée ou met à jour le groupe par la route d'administration : titre, membres, et jeton du lien de La Pince, tiré au premier import et redonné ensuite pour garder le lien.
+2. Il crée ou met à jour le groupe par la route d'administration : titre, membres, et jeton du lien de La Pince, redonné à chaque import pour garder le lien ; un nouveau jeton, qui remplace le lien sur-le-champ, n'est tiré que sur demande explicite, et s'affiche avant tout appel au serveur, pour ne pas se perdre si l'import s'arrête.
 3. Il lit tous les changements du groupe depuis 0, puis n'envoie que ce qui diffère de l'export, des plus anciennes opérations aux plus récentes pour que `createdSeq` suive l'ordre de saisie : une opération nouvelle, modifiée ou supprimée puis remise reçoit une version, et une opération absente de l'export, créée dans La Pince comprise, est marquée supprimée. L'identifiant de version est le SHA-256 du groupe, du contenu et du `seq` de la version remplacée : un import identique n'envoie rien, et un retour à un état antérieur fait une nouvelle version au lieu d'être pris pour un renvoi.
 4. Il relit le groupe et s'arrête en erreur au moindre écart avec l'export : version refusée, opération en trop ou différente, solde d'un membre différent au centime du calcul fait par le cœur depuis l'export.
-5. Il affiche les totaux et le jeton du lien, dans le terminal seulement : qui a le jeton peut écrire dans le groupe.
+5. Il affiche les totaux. Le jeton du lien ne s'affiche que dans le terminal : qui l'a peut écrire dans le groupe.
 
 ## Outillage
 
