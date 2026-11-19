@@ -123,7 +123,7 @@ describe('sending a revision', () => {
   it('writes it, then reads the group again to show it as the server wrote it', async () => {
     const { server, store } = watch([]);
     await store.load();
-    expect(await store.send(expense('new', 'new-1'))).toStrictEqual({ ok: true });
+    expect(await store.send(expense('new', 'new-1'))).toStrictEqual({ ok: true, reread: true });
     expect(ids(store.getSnapshot())).toStrictEqual(['new']);
     expect(server.calls.slice(2).map((url) => url.replace(`/api/groups/${token}`, ''))).toStrictEqual(['/operations', '', '/changes?since=0']);
   });
@@ -147,8 +147,21 @@ describe('sending a revision', () => {
     open();
     await first;
     expect(ids(store.getSnapshot())).toStrictEqual([]);
-    expect(await sending).toStrictEqual({ ok: true });
+    expect(await sending).toStrictEqual({ ok: true, reread: true });
     expect(ids(store.getSnapshot())).toStrictEqual(['new']);
+  });
+
+  it('tells a revision written but not read back', async () => {
+    let written = false;
+    const { store } = watch([], {
+      answer: (url) => {
+        written ||= url.endsWith('/operations');
+        return written && url.includes('changes') ? Promise.reject(new TypeError('Failed to fetch')) : undefined;
+      },
+    });
+    await store.load();
+    expect(await store.send(expense('new', 'new-1'))).toStrictEqual({ ok: true, reread: false });
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'network' });
   });
 
   it('tells a refused revision or a failed request, without reading again', async () => {

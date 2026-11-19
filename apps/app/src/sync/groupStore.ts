@@ -17,7 +17,8 @@ export type GroupState =
 
 /** Why a revision was not written: the request failed, or the server refused the revision. */
 export type SendError = LoadError | RejectionReason;
-export type SendResult = { readonly ok: true } | { readonly ok: false; readonly error: SendError };
+/** `reread`: whether the group could be read again after the write, so that the screens show it; a revision written but not read back is still written. */
+export type SendResult = { readonly ok: true; readonly reread: boolean } | { readonly ok: false; readonly error: SendError };
 
 export interface GroupStore {
   readonly subscribe: (listener: () => void) => () => void;
@@ -114,7 +115,7 @@ export function createGroupStore(client: ApiClient, token: string): GroupStore {
       // A read that started before the write may have missed it: wait for it, then read again.
       await reading;
       await load();
-      return { ok: true };
+      return { ok: true, reread: state.status === 'ready' && state.readError === undefined };
     },
   };
 }

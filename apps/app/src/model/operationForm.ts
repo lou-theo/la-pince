@@ -135,7 +135,7 @@ export function editForm(operation: OperationView): FormState {
 }
 
 export type AmountError = 'required' | 'invalid' | 'zero' | 'mismatch';
-export type SplitError = 'none_checked' | 'no_amount' | 'same_member' | 'too_large';
+export type SplitError = 'none_checked' | 'no_amount' | 'same_member' | 'too_large' | 'several_receivers';
 
 /** What is wrong with the form, field by field; `amounts` lists the members whose typed amount cannot be read. */
 export interface FormErrors {
@@ -175,8 +175,11 @@ export function readEntry(state: FormState): Read<Entry> {
   }
   let lines: readonly object[] = [];
   if (state.kind === 'reimbursement') {
-    const receiver = state.checked[0];
-    if (receiver === undefined) {
+    const [receiver, ...others] = state.checked;
+    if (others.length > 0) {
+      // A reimbursement to several members, from another client: one total cannot say what each received.
+      errors.split = 'several_receivers';
+    } else if (receiver === undefined) {
       errors.split = 'none_checked';
     } else if (receiver === state.payer) {
       errors.split = 'same_member';

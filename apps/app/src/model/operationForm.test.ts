@@ -1,4 +1,4 @@
-import { type Change, changeSchema, memberIdSchema, operationIdSchema, revisionIdSchema } from '@la-pince/core';
+import { type Change, changeSchema, memberIdSchema, operationEffect, operationIdSchema, revisionIdSchema } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
 import { change } from '../testing/fake-server.ts';
@@ -24,6 +24,11 @@ const id = operationIdSchema.parse('op-1');
 const send = { revisionId: revisionIdSchema.parse('rev-1'), author: bruno };
 const apply = (state: FormState, ...actions: FormAction[]) => actions.reduce(formReducer, state);
 const expense = () => newExpense({ id, me: bruno, members: [alice, bruno, chloe], today: '2026-11-05' });
+/** Effect of the revision the form would send, computed as the server and every phone will. */
+const saved = (state: FormState) => {
+  const read = readForm(state, send);
+  return read.ok ? operationEffect(read.value) : undefined;
+};
 const view = (value: Change) => {
   const [operation] = liveOperations([value]);
   if (operation === undefined) {
@@ -63,10 +68,11 @@ describe('a new expense', () => {
   });
 
   it('previews each share as it will be saved, the leftover cent included', () => {
-    const state = apply(expense(), { type: 'amount', value: '10' });
-    const shares = previewEffect(state)?.shares.map((share) => share.amount);
-    expect(shares?.toSorted()).toStrictEqual([333, 333, 334]);
-    expect(shares?.reduce((sum, amount) => sum + amount, 0)).toBe(1_000);
+    const state = apply(expense(), { type: 'title', value: 'Courses' }, { type: 'amount', value: '10' });
+    const preview = previewEffect(state);
+    expect(preview?.shares.map((share) => share.amount).toSorted()).toStrictEqual([333, 333, 334]);
+    // The member who gets the leftover cent in the preview is the one charged by what is saved.
+    expect(preview).toStrictEqual(saved(state));
     expect(previewEffect(apply(state, { type: 'uncheckAll' }))).toBeUndefined();
   });
 
@@ -172,6 +178,10 @@ describe('a reimbursement', () => {
     });
   });
 
+  it('refuses one total for several receivers, which would move the money of all but one', () => {
+    expect(readEntry(apply(prefilled(), { type: 'toggle', member: chloe }))).toStrictEqual({ ok: false, errors: { split: 'several_receivers' } });
+  });
+
   it('needs someone to receive it other than who pays it', () => {
     expect(readEntry(apply(prefilled(), { type: 'receiver', member: bruno }))).toStrictEqual({ ok: false, errors: { split: 'same_member' } });
     expect(readEntry(newReimbursement({ id, title: 'R', today: '2026-11-05', from: bruno, to: undefined, amount: undefined }))).toStrictEqual({
@@ -231,7 +241,44 @@ describe('editForm', () => {
     const { effect } = view(current);
     const state = editForm(view(current));
     expect(state).toMatchObject({ mode: 'amounts', amount: '10,00', amounts: { m1: '1,00', m2: '3,00', m3: '6,00' } });
-    expect(previewEffect(state)?.shares).toStrictEqual(effect.shares);
+    expect(saved(state)?.shares).toStrictEqual(effect.shares);
+  });
+
+  it('keeps each share of unequal weights with a leftover cent, and of fixed amounts with their total, as imported', () => {
+    for (const entry of [
+      {
+        kind: 'expense',
+        payer: 'm2',
+        total: 1_001,
+        lines: [
+          { member: 'm1', weight: 1 },
+          { member: 'm2', weight: 1 },
+          { member: 'm3', weight: 3 },
+        ],
+      },
+      {
+        kind: 'expense',
+        payer: 'm2',
+        total: 1_000,
+        lines: [
+          { member: 'm1', weight: 1 },
+          { member: 'm3', weight: 2 },
+        ],
+      },
+      {
+        kind: 'expense',
+        payer: 'm1',
+        total: 4_500,
+        lines: [
+          { member: 'm1', amount: 1_000 },
+          { member: 'm2', amount: 2_000 },
+          { member: 'm3', amount: 1_500 },
+        ],
+      },
+    ]) {
+      const current = view(parse(entry));
+      expect(saved(apply(editForm(current), { type: 'title', value: 'Renamed' }))?.shares).toStrictEqual(current.effect.shares);
+    }
   });
 
   it('opens a reimbursement on the member who received it', () => {
