@@ -1,5 +1,6 @@
 // Template of the deployment config: copy it to `wrangler.production.jsonc` (ignored by git), fill in the id of your database, then deploy with
-// `pnpm --filter @la-pince/server run deploy`. Setup guide: docs/auto-hebergement.md. `wrangler.jsonc` stays the config of local runs and tests.
+// `pnpm --filter @la-pince/server run deploy`. Setup guide: docs/auto-hebergement.md. `wrangler.jsonc` stays the config of local runs and tests: keep
+// `compatibility_date` the same in both, so that the deployed Worker runs on the runtime the tests ran on.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "la-pince",
