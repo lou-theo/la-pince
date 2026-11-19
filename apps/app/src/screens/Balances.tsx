@@ -39,20 +39,24 @@ export function Balances({ view }: { readonly view: GroupView }): ReactNode {
           <p className={layout.muted}>{m.transfers_none()}</p>
         ) : (
           <ul className={styles.transfers}>
-            {suggested.map((transfer) => (
-              <li key={`${transfer.from}>${transfer.to}`} className={transfer.from === view.me || transfer.to === view.me ? styles.mine : undefined}>
-                <span>
-                  {m.transfer_line({ from: view.nameOf(transfer.from), amount: formatCents(transfer.amount), to: view.nameOf(transfer.to) })}
-                </span>
-                <Link
-                  className={layout.link}
-                  href={settleHref(transfer.from, transfer.to, transfer.amount)}
-                  aria-label={`${m.transfer_settle()} : ${m.transfer_line({ from: view.nameOf(transfer.from), amount: formatCents(transfer.amount), to: view.nameOf(transfer.to) })}`}
+            {suggested.map((transfer) => {
+              const line = m.transfer_line({ from: view.nameOf(transfer.from), amount: formatCents(transfer.amount), to: view.nameOf(transfer.to) });
+              return (
+                <li
+                  key={`${transfer.from}>${transfer.to}`}
+                  className={transfer.from === view.me || transfer.to === view.me ? styles.mine : undefined}
                 >
-                  {m.transfer_settle()}
-                </Link>
-              </li>
-            ))}
+                  <span>{line}</span>
+                  <Link
+                    className={layout.link}
+                    href={settleHref(transfer.from, transfer.to, transfer.amount)}
+                    aria-label={`${m.transfer_settle()} : ${line}`}
+                  >
+                    {m.transfer_settle_short()}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

@@ -11,11 +11,15 @@ import { deletionOf } from '../model/operationForm.ts';
 import type { SendError } from '../sync/groupStore.ts';
 import layout from './Layout.module.css';
 import styles from './Operations.module.css';
+import { useMounted } from './useMounted.ts';
 import { type GroupView, sharesInOrder, who } from './view.ts';
 
 /** One operation: its amount, who paid, and the share of each member involved, in the order members were added. */
 export function OperationDetail({ view, id }: { readonly view: GroupView; readonly id: string }): ReactNode {
   const splitTitle = useId();
+  const [, navigate] = useLocation();
+  // The detail outlives its deletion button, which goes as soon as the deletion is read back: it leads back to the list, unless the person left.
+  const mounted = useMounted();
   const operation = view.operations.find((candidate) => candidate.id === id);
   const back = (
     <Link className={layout.link} href="/">
@@ -61,22 +65,37 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
           </ul>
         </section>
       ) : null}
-      <div className={styles.actions}>
+      <div className={layout.actions}>
         <Link className={layout.button} href={`/operations/${operation.id}/modifier`}>
           {m.operation_edit()}
         </Link>
-        <Delete view={view} operation={operation} />
+        <Delete
+          view={view}
+          operation={operation}
+          onDeleted={() => {
+            if (mounted.current) {
+              navigate('/', { replace: true });
+            }
+          }}
+        />
       </div>
     </article>
   );
 }
 
 /** Deletion asks once more, since it reaches every phone of the group. */
-function Delete({ view, operation }: { readonly view: GroupView; readonly operation: OperationView }) {
+function Delete({ view, operation, onDeleted }: { readonly view: GroupView; readonly operation: OperationView; readonly onDeleted: () => void }) {
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<SendError>();
-  const [, navigate] = useLocation();
+  const [notReread, setNotReread] = useState(false);
+  if (notReread) {
+    return (
+      <p className={layout.error} role="alert">
+        {m.operation_deleted_not_read()}
+      </p>
+    );
+  }
   if (!asking) {
     return (
       <button
@@ -95,28 +114,32 @@ function Delete({ view, operation }: { readonly view: GroupView; readonly operat
     setError(undefined);
     const result = await view.send(deletionOf(operation, { revisionId: revisionIdSchema.parse(crypto.randomUUID()), author: view.me }));
     setSending(false);
-    if (result.ok) {
-      navigate('/', { replace: true });
-    } else {
+    if (!result.ok) {
       setError(result.error);
+    } else if (result.reread) {
+      onDeleted();
+    } else {
+      setNotReread(true);
     }
   };
   return (
     <div className={styles.confirm}>
       <p>{m.operation_delete_confirm({ title: operation.title })}</p>
-      <div className={styles.actions}>
+      <div className={layout.actions}>
         <button className={`${layout.button ?? ''} ${styles.danger ?? ''}`} type="button" disabled={sending} onClick={() => void confirm()}>
           {sending ? m.operation_deleting() : m.operation_delete_yes()}
         </button>
-        <button
-          className={layout.link}
-          type="button"
-          onClick={() => {
-            setAsking(false);
-          }}
-        >
-          {m.operation_delete_no()}
-        </button>
+        {sending ? null : (
+          <button
+            className={layout.link}
+            type="button"
+            onClick={() => {
+              setAsking(false);
+            }}
+          >
+            {m.operation_delete_no()}
+          </button>
+        )}
       </div>
       {error === undefined ? null : (
         <p className={layout.error} role="alert">

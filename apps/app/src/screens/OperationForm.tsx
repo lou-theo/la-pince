@@ -1,17 +1,28 @@
-import { type Member, type MemberId, revisionIdSchema } from '@la-pince/core';
-import { type ReactNode, type SubmitEvent, useId, useMemo, useReducer, useState } from 'react';
+import { type Effect, type Member, type MemberId, revisionIdSchema } from '@la-pince/core';
+import { type ReactNode, type SubmitEvent, useId, useMemo, useReducer, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
 import { sendErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { selectionOrder } from '../model/members.ts';
 import { formatCents } from '../model/money.ts';
-import { type FormErrors, formReducer, type FormState, previewEffect, readForm, typedCents, typedSum } from '../model/operationForm.ts';
+import {
+  type FormAction,
+  type FormErrors,
+  formReducer,
+  type FormState,
+  previewEffect,
+  readForm,
+  typedCents,
+  typedSum,
+} from '../model/operationForm.ts';
 import type { SendError } from '../sync/groupStore.ts';
 import layout from './Layout.module.css';
 import styles from './OperationForm.module.css';
+import { useMounted } from './useMounted.ts';
 import type { GroupView } from './view.ts';
 
+// Reads made only for their errors: this identifier is never sent.
 const draft = revisionIdSchema.parse('draft');
 
 interface OperationFormProps {
@@ -27,7 +38,10 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<SendError>();
+  const [notReread, setNotReread] = useState(false);
   const [, navigate] = useLocation();
+  const mounted = useMounted();
+  const formRef = useRef<HTMLFormElement>(null);
   const ids = { title: useId(), amount: useId(), date: useId(), payer: useId(), receiver: useId(), split: useId() };
 
   const members = useMemo(() => selectionOrder(view.members, view.me, view.operations), [view.members, view.me, view.operations]);
@@ -43,17 +57,31 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
     setSubmitted(true);
     // Each send is a new revision, its identifier drawn here.
     const operation = readForm(state, { revisionId: revisionIdSchema.parse(crypto.randomUUID()), author: view.me });
-    if (!operation.ok || sending) {
+    if (!operation.ok) {
+      // The messages appear under their fields, maybe out of sight on a phone: the first field in error takes the focus.
+      requestAnimationFrame(() => {
+        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+      });
+      return;
+    }
+    if (sending) {
       return;
     }
     setSending(true);
     setSendError(undefined);
+    setNotReread(false);
     const result = await view.send(operation.value);
+    if (!mounted.current) {
+      return;
+    }
     setSending(false);
-    if (result.ok) {
+    if (!result.ok) {
+      setSendError(result.error);
+    } else if (result.reread) {
       navigate(`/operations/${state.id}`, { replace: true });
     } else {
-      setSendError(result.error);
+      // Written but not read back: the detail would not know it yet. Saving again sends a revision of the same operation, never a duplicate.
+      setNotReread(true);
     }
   };
 
@@ -66,7 +94,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
       : m.form_new_expense();
 
   return (
-    <form className={styles.form} onSubmit={(event) => void save(event)} noValidate>
+    <form ref={formRef} className={styles.form} onSubmit={(event) => void save(event)} noValidate>
       <h2 className={layout.title}>{heading}</h2>
       <Field id={ids.title} label={m.form_title()} error={titleError(errors)}>
         <input
@@ -144,13 +172,21 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
           {sendErrorMessage(sendError)}
         </p>
       )}
-      <div className={styles.actions}>
+      {notReread ? (
+        <p className={layout.error} role="alert">
+          {m.form_saved_not_read()}
+        </p>
+      ) : null}
+      <div className={layout.actions}>
         <button className={layout.button} type="submit" disabled={sending}>
           {sending ? m.form_saving() : m.form_save()}
         </button>
-        <Link className={layout.link} href={back}>
-          {m.form_cancel()}
-        </Link>
+        {/* A send cannot be taken back: no way to cancel it. */}
+        {sending ? null : (
+          <Link className={layout.link} href={back}>
+            {m.form_cancel()}
+          </Link>
+        )}
       </div>
     </form>
   );
@@ -161,8 +197,8 @@ interface SplitProps {
   readonly members: readonly Member[];
   readonly state: FormState;
   readonly errors: FormErrors;
-  readonly preview: ReturnType<typeof previewEffect>;
-  readonly dispatch: (action: Parameters<typeof formReducer>[1]) => void;
+  readonly preview: Effect | undefined;
+  readonly dispatch: (action: FormAction) => void;
   readonly splitId: string;
 }
 
@@ -373,6 +409,7 @@ function splitError(errors: FormErrors, state: FormState): string | undefined {
     no_amount: m.form_error_no_amount,
     same_member: m.form_error_same_member,
     too_large: m.form_error_too_large,
+    several_receivers: m.form_reimbursement_several,
   };
   return errors.split === undefined ? undefined : messages[errors.split]();
 }

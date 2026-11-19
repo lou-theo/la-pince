@@ -13,14 +13,16 @@ import type { GroupView } from './view.ts';
 const newId = () => operationIdSchema.parse(crypto.randomUUID());
 
 export function NewExpense({ view }: { readonly view: GroupView }): ReactNode {
-  const [initial] = useState(() => newExpense({ id: newId(), me: view.me, members: view.memberOrder, today: localDay(new Date()) }));
+  const [initial] = useState(() =>
+    newExpense({ id: newId(), me: view.me, members: view.members.map((member) => member.id), today: localDay(new Date()) }),
+  );
   return <OperationForm view={view} initial={initial} editing={false} />;
 }
 
 /** A new reimbursement; `?de=&a=&montant=` prefill it from a suggested transfer, members unknown to the group being ignored. */
 export function NewReimbursement({ view }: { readonly view: GroupView }): ReactNode {
   const search = new URLSearchParams(useSearch());
-  const member = (key: string) => view.memberOrder.find((id) => id === search.get(key));
+  const member = (key: string) => view.members.find((candidate) => candidate.id === search.get(key))?.id;
   const amount = search.get('montant');
   const [initial] = useState(() =>
     newReimbursement({
@@ -48,6 +50,17 @@ export function EditOperation({ view, id }: { readonly view: GroupView; readonly
         <p className={layout.muted}>{m.operation_not_found()}</p>
         <Link className={layout.link} href="/">
           {m.operation_back()}
+        </Link>
+      </>
+    );
+  }
+  // The form gives a reimbursement a single receiver: saving one to several would move the money of the others.
+  if (operation.kind === 'reimbursement' && operation.effect.shares.length > 1) {
+    return (
+      <>
+        <p className={layout.muted}>{m.form_reimbursement_several()}</p>
+        <Link className={layout.link} href={`/operations/${operation.id}`}>
+          {m.form_cancel()}
         </Link>
       </>
     );

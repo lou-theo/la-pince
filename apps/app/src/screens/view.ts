@@ -12,7 +12,6 @@ export interface GroupView {
   readonly me: MemberId;
   readonly nameOf: (id: MemberId) => string;
   /** Members in the order they were added, which orders the lines of a split. */
-  readonly memberOrder: readonly MemberId[];
   readonly members: readonly Member[];
   /** Sends a revision of an operation, then reads the group again. */
   readonly send: (operation: Operation) => Promise<SendResult>;
@@ -21,8 +20,8 @@ export interface GroupView {
 /** Shares of an operation in the order members were added, a member missing from the group's list last. */
 export function sharesInOrder(view: GroupView, operation: OperationView): Share[] {
   const position = (member: MemberId) => {
-    const index = view.memberOrder.indexOf(member);
-    return index === -1 ? view.memberOrder.length : index;
+    const index = view.members.findIndex((candidate) => candidate.id === member);
+    return index === -1 ? view.members.length : index;
   };
   return operation.effect.shares.toSorted((a, b) => position(a.member) - position(b.member));
 }

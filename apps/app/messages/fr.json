@@ -49,6 +49,7 @@
   "operation_delete_no": "Annuler",
   "operation_deleting": "Suppression…",
   "transfer_settle": "Enregistrer ce remboursement",
+  "transfer_settle_short": "Enregistrer",
   "form_new_expense": "Nouvelle dépense",
   "form_edit_expense": "Modifier la dépense",
   "form_new_reimbursement": "Nouveau remboursement",
@@ -87,5 +88,8 @@
   "form_error_member_amount": "Montant illisible.",
   "error_unknown_member": "Un membre de cette opération n'est plus dans le groupe : recharge la page, puis réessaie.",
   "error_refused": "Le serveur a refusé cette opération : recharge la page, puis réessaie.",
+  "form_saved_not_read": "Enregistré, mais le groupe n'a pas pu être relu : relis-le avant de ressaisir quoi que ce soit.",
+  "operation_deleted_not_read": "Supprimé, mais le groupe n'a pas pu être relu.",
+  "form_reimbursement_several": "Ce remboursement va à plusieurs membres : il ne se modifie pas dans cette version, seulement se supprime.",
   "group_read_failed": "Le groupe n'a pas pu être relu : ce qui s'affiche date de la dernière lecture."
 }

@@ -101,10 +101,3 @@
   flex-basis: 100%;
   text-align: right;
 }
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
-}

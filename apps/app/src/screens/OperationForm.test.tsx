@@ -23,7 +23,7 @@ const euros = (amount: string) => `${amount}${nbsp}€`;
 const shown = (text: string) => text.replace(/\s+/g, ' ');
 
 /** Opens the group as Bruno on a fake server holding one expense of Alice, and records what the app posts. */
-async function openAsBruno(path = '', options: { down?: (url: string, init?: RequestInit) => boolean } = {}) {
+async function openAsBruno(path = '', options: { down?: (url: string, init?: RequestInit) => boolean; hold?: Promise<void>; more?: Change[] } = {}) {
   const changes: Change[] = [
     change({
       id: 'op-shopping',
@@ -37,6 +37,7 @@ async function openAsBruno(path = '', options: { down?: (url: string, init?: Req
       ],
     }),
   ];
+  changes.push(...(options.more ?? []));
   const server = fakeServer({ token, group, changes });
   const posted: unknown[] = [];
   const fetchFn: Fetch = (url, init) => {
@@ -45,6 +46,9 @@ async function openAsBruno(path = '', options: { down?: (url: string, init?: Req
     }
     if (init?.method === 'POST' && typeof init.body === 'string') {
       posted.push(...operationBatchSchema.parse(JSON.parse(init.body)).operations);
+      if (options.hold !== undefined) {
+        return options.hold.then(() => server.fetch(url, init));
+      }
     }
     return server.fetch(url, init);
   };
@@ -168,9 +172,9 @@ describe('adding an expense', () => {
     expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDefined();
   });
 
-  it('keeps the group shown when the read after the write fails, and offers to read it again', async () => {
+  it('says a revision written but not read back, stays on the form, and offers to read the group again', async () => {
     let written = false;
-    const { user } = await openAsBruno('/nouvelle-depense', {
+    const { user, location, posted } = await openAsBruno('/nouvelle-depense', {
       down: (url, init) => {
         if (init?.method === 'POST') {
           written = true;
@@ -182,14 +186,17 @@ describe('adding an expense', () => {
     await user.type(field('Titre'), 'Péage');
     await user.type(field('Montant'), '10');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain("Le groupe n'a pas pu être relu");
-    // Written but not read back yet: the detail does not know it.
-    expect(screen.getByText("Cette dépense n'existe pas, ou elle a été supprimée.")).toBeDefined();
+    expect(await screen.findByText("Enregistré, mais le groupe n'a pas pu être relu : relis-le avant de ressaisir quoi que ce soit.")).toBeDefined();
+    expect(at(location)).toBe('/nouvelle-depense');
+    // Saving again sends a revision of the same operation, never a second one.
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await screen.findByText("Enregistré, mais le groupe n'a pas pu être relu : relis-le avant de ressaisir quoi que ce soit.");
+    expect(new Set(posted.map((operation) => (operation as { id: string }).id)).size).toBe(1);
     written = false;
-    await user.click(within(alert).getByRole('button', { name: 'Réessayer' }));
-    expect(await screen.findByRole('heading', { name: 'Péage' })).toBeDefined();
-    expect(screen.queryByRole('alert')).toBeNull();
+    const banner = screen.getAllByRole('alert').find((alert) => alert.textContent.includes('date de la dernière lecture'));
+    await user.click(within(banner ?? document.body).getByRole('button', { name: 'Réessayer' }));
+    await user.click(screen.getByRole('link', { name: 'Dépenses' }));
+    expect(screen.getAllByRole('link', { name: /Péage/ })).toHaveLength(1);
   });
 });
 
@@ -204,7 +211,22 @@ describe('modifying and deleting', () => {
     await user.type(field('Titre'), 'Courses du samedi');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(await screen.findByRole('heading', { name: 'Courses du samedi' })).toBeDefined();
-    expect(posted).toMatchObject([{ id: 'op-shopping', title: 'Courses du samedi', author: 'm2' }]);
+    // Every share saved as it was.
+    expect(posted).toMatchObject([
+      {
+        id: 'op-shopping',
+        title: 'Courses du samedi',
+        author: 'm2',
+        entry: {
+          payer: 'm1',
+          lines: [
+            { member: 'm1', amount: 1_000 },
+            { member: 'm2', amount: 2_000 },
+            { member: 'm3', amount: 1_500 },
+          ],
+        },
+      },
+    ]);
   });
 
   it('deletes an operation after asking once more', async () => {
@@ -220,10 +242,95 @@ describe('modifying and deleting', () => {
   });
 });
 
+describe('a send under way', () => {
+  /** Holds every POST until `release` is called. */
+  const held = () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    return {
+      gate,
+      release: () => {
+        release();
+      },
+    };
+  };
+
+  it('sends once on a double click, and cannot be cancelled', async () => {
+    const { gate, release } = held();
+    const { user, posted } = await openAsBruno('/nouvelle-depense', { hold: gate });
+    await user.type(field('Titre'), 'Péage');
+    await user.type(field('Montant'), '10');
+    await user.dblClick(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(screen.getByRole('button', { name: 'Enregistrement…' })).toHaveProperty('disabled', true);
+    expect(screen.queryByRole('link', { name: 'Annuler' })).toBeNull();
+    release();
+    expect(await screen.findByRole('heading', { name: 'Péage' })).toBeDefined();
+    expect(posted).toHaveLength(1);
+  });
+
+  it('does not take back a person who left before the answer', async () => {
+    const { gate, release } = held();
+    const { user, location } = await openAsBruno('/nouvelle-depense', { hold: gate });
+    await user.type(field('Titre'), 'Péage');
+    await user.type(field('Montant'), '10');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.click(screen.getByRole('link', { name: 'Soldes' }));
+    release();
+    await screen.findAllByRole('link', { name: /Enregistrer ce remboursement/ });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(at(location)).toBe('/soldes');
+  });
+
+  it('deletes once on a double click', async () => {
+    const { gate, release } = held();
+    const { user, posted } = await openAsBruno('/operations/op-shopping', { hold: gate });
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    await user.dblClick(screen.getByRole('button', { name: 'Oui, supprimer' }));
+    expect(screen.queryByRole('button', { name: 'Annuler' })).toBeNull();
+    release();
+    expect(await screen.findByText("Aucune dépense pour l'instant.")).toBeDefined();
+    expect(posted).toHaveLength(1);
+  });
+});
+
 describe('modifying or deleting what is gone', () => {
+  it('does not open in the form a reimbursement to several members', async () => {
+    await openAsBruno('/operations/op-split/modifier', {
+      more: [
+        change({
+          id: 'op-split',
+          date: '2026-11-07',
+          payer: 'm2',
+          lines: [
+            ['m1', 300],
+            ['m3', 200],
+          ],
+          kind: 'reimbursement',
+        }),
+      ],
+    });
+    expect(
+      screen.getByText('Ce remboursement va à plusieurs membres : il ne se modifie pas dans cette version, seulement se supprime.'),
+    ).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Enregistrer' })).toBeNull();
+  });
+
   it('says so for the form of an unknown operation', async () => {
     await openAsBruno('/operations/op-nowhere/modifier');
     expect(screen.getByText("Cette dépense n'existe pas, ou elle a été supprimée.")).toBeDefined();
+  });
+
+  it('says a deletion written but not read back', async () => {
+    let written = false;
+    const { user } = await openAsBruno('/operations/op-shopping', {
+      down: (url, init) => {
+        written ||= init?.method === 'POST';
+        return init?.method !== 'POST' && written && url.includes('changes');
+      },
+    });
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
+    expect(await screen.findByText("Supprimé, mais le groupe n'a pas pu être relu.")).toBeDefined();
   });
 
   it('keeps the operation and tells a failed deletion', async () => {

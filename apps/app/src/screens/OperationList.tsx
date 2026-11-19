@@ -12,7 +12,7 @@ import { type GroupView, who } from './view.ts';
 /** The group's operations, the latest first, each with what it puts on me. */
 export function OperationList({ view }: { readonly view: GroupView }): ReactNode {
   const actions = (
-    <div className={styles.actions}>
+    <div className={layout.actions}>
       <Link className={layout.button} href="/nouvelle-depense">
         {m.operations_add_expense()}
       </Link>

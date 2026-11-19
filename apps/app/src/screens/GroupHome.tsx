@@ -63,7 +63,6 @@ export function GroupHome({ token, group, changes, readError, onRetry, send }: G
       const name = group.members.find((member) => member.id === id)?.name ?? id;
       return id === currentMember.id ? `${name} (${m.you()})` : name;
     },
-    memberOrder: group.members.map((member) => member.id),
     members: group.members,
     send,
   };
