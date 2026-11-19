@@ -3,7 +3,15 @@ import { describe, expect, it } from 'vitest';
 
 import { type OperationId, type RevisionId, revisionIdSchema } from './ids.ts';
 import { type Operation, operationSchema } from './operation.ts';
-import { changesQuerySchema, changesResponseSchema, MAX_BATCH_OPERATIONS, MAX_CHANGES, newRevisions, operationBatchSchema } from './sync.ts';
+import {
+  changesQuerySchema,
+  changesResponseSchema,
+  MAX_BATCH_REVISIONS,
+  MAX_CHANGES,
+  newRevisions,
+  operationBatchSchema,
+  pageFollowsQuery,
+} from './sync.ts';
 
 const revision = (id: string, revisionId: string, change: { total: number } | { deleted: true } = { total: 1000 }): Operation =>
   operationSchema.parse({
@@ -19,14 +27,14 @@ const received = (...revisionIds: string[]): Set<RevisionId> => new Set(revision
 const currentState = (written: readonly Operation[]): Map<OperationId, Operation> => new Map(written.map((operation) => [operation.id, operation]));
 
 describe('operationBatchSchema', () => {
-  it(`accepts from 1 to ${String(MAX_BATCH_OPERATIONS)} revisions, in the order sent`, () => {
-    const operations = Array.from({ length: MAX_BATCH_OPERATIONS }, (_, index) => revision(`op${String(index)}`, `rev${String(index)}`));
+  it(`accepts from 1 to ${String(MAX_BATCH_REVISIONS)} revisions, in the order sent`, () => {
+    const operations = Array.from({ length: MAX_BATCH_REVISIONS }, (_, index) => revision(`op${String(index)}`, `rev${String(index)}`));
     expect(operationBatchSchema.parse({ operations }).operations).toStrictEqual(operations);
   });
 
   it.each([
     ['an empty batch', { operations: [] }],
-    ['a batch over the limit', { operations: Array.from({ length: MAX_BATCH_OPERATIONS + 1 }, () => revision('op1', 'rev1')) }],
+    ['a batch over the limit', { operations: Array.from({ length: MAX_BATCH_REVISIONS + 1 }, () => revision('op1', 'rev1')) }],
     ['a batch with an invalid revision', { operations: [revision('op1', 'rev1'), { id: 'op2' }] }],
     ['an unknown field', { operations: [revision('op1', 'rev1')], since: 0 }],
   ])('rejects %s', (_, batch) => {
@@ -88,14 +96,29 @@ describe('changesResponseSchema', () => {
   ])('rejects %s', (_, page) => {
     expect(changesResponseSchema.safeParse(page).success).toBe(false);
   });
+
+  describe('pageFollowsQuery', () => {
+    const query = changesQuerySchema.parse({ since: '5', limit: '2' });
+    const page = (changes: ReturnType<typeof change>[], cursor: number) =>
+      changesResponseSchema.parse({ changes, cursor, hasMore: changes.length === 2 });
+
+    it.each([
+      ['changes after the cursor asked', page([change(6), change(9)], 9), true],
+      ['an empty page that gives the cursor back', page([], 5), true],
+      ['a change at the cursor asked, read already', page([change(5)], 5), false],
+      ['an empty page that moves the cursor back', page([], 0), false],
+      ['an empty page that moves the cursor ahead', page([], 8), false],
+      ['a page longer than asked', changesResponseSchema.parse({ changes: [change(6), change(7), change(8)], cursor: 8, hasMore: true }), false],
+    ])('answers %s: %s', (_, answered, expected) => {
+      expect(pageFollowsQuery(query, answered)).toBe(expected);
+    });
+  });
 });
 
 describe('newRevisions', () => {
-  it('keeps every revision of a new batch, in the order sent, the last one of an operation winning', () => {
+  it('keeps every revision of a new batch, in the order sent', () => {
     const batch = [revision('op1', 'rev1'), revision('op2', 'rev2'), revision('op1', 'rev3', { total: 2000 })];
-    const written = newRevisions(batch, received());
-    expect(written).toStrictEqual(batch);
-    expect(currentState(written).get(revision('op1', 'rev3').id)).toStrictEqual(revision('op1', 'rev3', { total: 2000 }));
+    expect(newRevisions(batch, received())).toStrictEqual(batch);
   });
 
   it('leaves out a replayed revision, so that it does not overwrite the newer one that arrived meanwhile', () => {
@@ -112,8 +135,8 @@ describe('newRevisions', () => {
     expect(currentState(written).get(revision('op1', 'rev1').id)).toStrictEqual(revision('op1', 'rev2', { deleted: true }));
   });
 
-  // Each phone's outbox sends its revisions in order and resends any of them in later batches, the network having lost the answer; the server must
-  // end in the state it would reach had each revision arrived once.
+  // The outbox sends its revisions in order and resends any of them in later batches, the network having lost the answer; batches handled one after
+  // the other (concurrent requests are the database's to serialise) must write each revision once, in the order it first arrived.
   const sends = fc
     .array(fc.record({ operation: fc.constantFrom('op1', 'op2', 'op3'), deleted: fc.boolean() }), { minLength: 1, maxLength: 20 })
     .map((changes) =>
@@ -123,11 +146,11 @@ describe('newRevisions', () => {
       fc.tuple(
         fc.constant(revisions),
         fc.array(fc.array(fc.nat({ max: revisions.length - 1 }), { maxLength: 5 }), { minLength: revisions.length, maxLength: revisions.length }),
-        fc.nat({ max: MAX_BATCH_OPERATIONS - 1 }),
+        fc.nat({ max: MAX_BATCH_REVISIONS - 1 }),
       ),
     );
 
-  it('reaches the same state whatever is replayed, as if each revision had arrived once', () => {
+  it('writes each revision once, in the order it first arrived, whatever is replayed', () => {
     fc.assert(
       fc.property(sends, ([revisions, replays, batchSize]) => {
         // Revision i is sent, followed by replays of revisions already sent; the stream is cut into batches.
@@ -144,7 +167,6 @@ describe('newRevisions', () => {
           }
         }
         expect(written).toStrictEqual(revisions);
-        expect(currentState(written)).toStrictEqual(currentState(revisions));
       }),
     );
   });
