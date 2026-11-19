@@ -3,9 +3,9 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { saveCurrentMember } from '../storage/device.ts';
 import type { Fetch } from '../sync/client.ts';
 import { change, fakeServer } from '../testing/fake-server.ts';
+import { rememberMember } from '../testing/groupDb.ts';
 import { renderApp } from '../testing/render.tsx';
 
 const token = 'demo-token-of-the-form-tests-0123456789';
@@ -52,7 +52,7 @@ async function openAsBruno(path = '', options: { down?: (url: string, init?: Req
     }
     return server.fetch(url, init);
   };
-  saveCurrentMember(token, 'm2');
+  await rememberMember(token, 'm2');
   const location = renderApp(`/g/${token}${path}`, fetchFn);
   await screen.findByText('Tu es Bruno');
   return { user: userEvent.setup(), location, posted, changes };

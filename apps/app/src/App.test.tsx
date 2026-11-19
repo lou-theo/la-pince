@@ -3,9 +3,9 @@ import { cleanup, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { saveCurrentMember } from './storage/device.ts';
 import type { Fetch } from './sync/client.ts';
 import { change, fakeServer, json } from './testing/fake-server.ts';
+import { rememberMember } from './testing/groupDb.ts';
 import { renderApp as renderWith } from './testing/render.tsx';
 
 const token = 'demo-token-of-the-app-tests-0123456789';
@@ -52,6 +52,18 @@ describe('opening a group', () => {
     const withoutAlice = groupResponseSchema.parse({ ...group, members: group.members.slice(1) });
     renderApp(`/g/${token}`, fakeServer({ token, group: withoutAlice }).fetch);
     expect(await screen.findByRole('heading', { name: 'Qui es-tu ?' })).toBeDefined();
+  });
+
+  it('opens without network on the copy kept from the last visit, telling the read that failed', async () => {
+    const user = userEvent.setup();
+    renderApp(`/g/${token}`);
+    await user.click(await screen.findByRole('button', { name: 'Chloé' }));
+    cleanup();
+
+    const location = renderApp('/', () => Promise.reject(new TypeError('Failed to fetch')));
+    expect(await screen.findByText('Tu es Chloé')).toBeDefined();
+    expect(location.history.at(-1)).toBe(`/g/${token}`);
+    expect(screen.getByRole('alert').textContent).toContain('Le serveur ne répond pas');
   });
 
   it('tells an unknown group, and offers to paste another link', async () => {
@@ -159,7 +171,7 @@ describe('a group as one of its members', () => {
 
   async function openAsBruno(path = `/g/${token}`, members = group.members) {
     const user = userEvent.setup();
-    saveCurrentMember(token, 'm2');
+    await rememberMember(token, 'm2');
     const location = renderApp(path, fakeServer({ token, group: { ...group, members }, changes, pageSize: 2 }).fetch);
     await screen.findByText('Tu es Bruno');
     return { user, location };
@@ -206,7 +218,7 @@ describe('a group as one of its members', () => {
   });
 
   it('shows the split of a reimbursement to several members', async () => {
-    saveCurrentMember(token, 'm2');
+    await rememberMember(token, 'm2');
     const split = change({
       id: 'op-split',
       date: '2026-11-07',
@@ -257,7 +269,7 @@ describe('a group as one of its members', () => {
 
   it('tells an empty group, settled', async () => {
     const user = userEvent.setup();
-    saveCurrentMember(token, 'm2');
+    await rememberMember(token, 'm2');
     renderApp(`/g/${token}`);
     expect(await screen.findByText("Aucune dépense pour l'instant.")).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Soldes' }));

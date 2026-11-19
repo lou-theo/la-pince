@@ -1,20 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { readCurrentMember, readLastGroup, saveCurrentMember, saveLastGroup } from './device.ts';
+import { readLastGroup, saveLastGroup } from './device.ts';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('device storage', () => {
-  it('remembers the last group, and who I am in each group apart', () => {
+  it('remembers the last group', () => {
+    expect(readLastGroup()).toBeUndefined();
     saveLastGroup('token-a');
-    saveCurrentMember('token-a', 'm1');
-    saveCurrentMember('token-b', 'm2');
     expect(readLastGroup()).toBe('token-a');
-    expect(readCurrentMember('token-a')).toBe('m1');
-    expect(readCurrentMember('token-b')).toBe('m2');
-    expect(readCurrentMember('token-c')).toBeUndefined();
   });
 
   it('forgets rather than fails when the browser refuses storage', () => {

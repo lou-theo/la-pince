@@ -72,9 +72,10 @@ function GroupLoader({ token }: { readonly token: string }) {
     case 'ready':
       return (
         <GroupHome
-          token={token}
           group={state.group}
           changes={state.changes}
+          currentMember={state.currentMember}
+          onChooseMember={store.chooseMember}
           readError={state.readError}
           onRetry={() => void store.load()}
           send={store.send}

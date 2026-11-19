@@ -1,5 +1,15 @@
-import { type Change, type Cursor, cursorSchema, type GroupResponse, type Operation, type OperationId, type RejectionReason } from '@la-pince/core';
+import {
+  type Change,
+  type Cursor,
+  cursorSchema,
+  type GroupResponse,
+  type MemberId,
+  type Operation,
+  type OperationId,
+  type RejectionReason,
+} from '@la-pince/core';
 
+import { askPersistentStorage, type CompleteRead, type GroupDb, openGroupDb } from '../storage/groupDb.ts';
 import type { ApiClient, LoadError } from './client.ts';
 
 export type GroupState =
@@ -11,6 +21,8 @@ export type GroupState =
       /** Current revision of each operation, deleted ones included, read up to a page with `hasMore: false`. */
       readonly changes: ReadonlyMap<OperationId, Change>;
       readonly cursor: Cursor;
+      /** Who I am, as chosen on this phone; the screens check it is still a member. */
+      readonly currentMember: MemberId | undefined;
       /** Why the last read failed, the group shown being the last one read in full; cleared by the next read that succeeds. */
       readonly readError?: LoadError;
     };
@@ -23,22 +35,33 @@ export type SendResult = { readonly ok: true; readonly reread: boolean } | { rea
 export interface GroupStore {
   readonly subscribe: (listener: () => void) => () => void;
   readonly getSnapshot: () => GroupState;
-  /** Reads the group and every change since the last read; a call during a read waits for that read. */
+  /**
+   * Reads the group and every change since the last read; a call during a read waits for that read. The first call shows the copy kept on this
+   * phone, if any, before asking the server.
+   */
   readonly load: () => Promise<void>;
   /** Sends one revision, then reads the group again so that the screens show it as the server wrote it. */
   readonly send: (operation: Operation) => Promise<SendResult>;
+  /** Remembers who I am on this phone. */
+  readonly chooseMember: (member: MemberId) => void;
 }
 
 const start = cursorSchema.parse(0);
 
 /**
- * The group of one link, kept in memory and read by the screens through `useSyncExternalStore`. A read is published only once complete (a page with
- * `hasMore: false`): balances computed from part of the changes would leave operations out.
+ * The group of one link, read by the screens through `useSyncExternalStore` and kept on the phone by `openDb`. A read is published and saved only
+ * once complete (a page with `hasMore: false`): balances computed from part of the changes would leave operations out. Without storage (refused,
+ * private browsing), the group lives in memory only.
  */
-export function createGroupStore(client: ApiClient, token: string): GroupStore {
+export function createGroupStore(client: ApiClient, token: string, openDb: () => Promise<GroupDb> = () => openGroupDb(token)): GroupStore {
   let state: GroupState = { status: 'loading' };
   const listeners = new Set<() => void>();
   let reading: Promise<void> | undefined;
+  let currentMember: MemberId | undefined;
+  let persistenceAsked = false;
+  const db = openDb().catch(() => undefined);
+  // Opened and read once, before the first read from the server.
+  let restored: Promise<void> | undefined;
 
   const publish = (next: GroupState) => {
     state = next;
@@ -47,32 +70,74 @@ export function createGroupStore(client: ApiClient, token: string): GroupStore {
     }
   };
 
+  async function restore(): Promise<void> {
+    const opened = await db;
+    const [copy, member] = await Promise.all([opened?.loadCopy(), opened?.loadCurrentMember()]).catch(() => [undefined, undefined] as const);
+    currentMember = member;
+    if (copy !== undefined) {
+      publish({ status: 'ready', ...copy, currentMember });
+    }
+  }
+
+  async function save(completed: CompleteRead): Promise<GroupState> {
+    // Built once the saves are done, for who I am may have been chosen meanwhile.
+    const inMemory = (): GroupState => ({
+      status: 'ready',
+      group: completed.group,
+      changes: completed.known,
+      cursor: completed.cursor,
+      currentMember,
+    });
+    const opened = await db;
+    if (opened === undefined) {
+      return inMemory();
+    }
+    try {
+      const saved = await opened.saveRead(completed);
+      if (!persistenceAsked) {
+        persistenceAsked = true;
+        void askPersistentStorage().catch(() => undefined);
+      }
+      return { status: 'ready', ...saved, currentMember };
+    } catch {
+      // Not saved (storage full, database closed by a newer version of the app, until the app reloads): the read still shows, and the next save
+      // that finds the stored copy short of where it started writes the whole copy.
+      return inMemory();
+    }
+  }
+
   async function read(): Promise<GroupState> {
+    await (restored ??= restore());
     const group = await client.fetchGroup(token);
     if (!group.ok) {
       return { status: 'error', error: group.error };
     }
-    let changes = new Map(state.status === 'ready' ? state.changes : []);
-    let cursor = state.status === 'ready' ? state.cursor : start;
-    let restarted = false;
+    let known = new Map(state.status === 'ready' ? state.changes : []);
+    let since = state.status === 'ready' ? state.cursor : start;
+    let reset = false;
+    let cursor = since;
+    const changes: Change[] = [];
     for (;;) {
       const page = await client.fetchChanges(token, cursor);
       if (!page.ok) {
         // The server's history was rebuilt behind our cursor: drop the copy and read it all again, once.
-        if (page.error === 'cursor_ahead' && !restarted) {
-          restarted = true;
-          changes = new Map();
+        if (page.error === 'cursor_ahead' && since !== start) {
+          known = new Map();
+          since = start;
+          reset = true;
           cursor = start;
+          changes.length = 0;
           continue;
         }
         return { status: 'error', error: page.error === 'cursor_ahead' ? 'unexpected' : page.error };
       }
       for (const change of page.value.changes) {
-        changes.set(change.id, change);
+        changes.push(change);
+        known.set(change.id, change);
       }
       cursor = page.value.cursor;
       if (!page.value.hasMore) {
-        return { status: 'ready', group: group.value, changes, cursor };
+        return save({ group: group.value, since, changes, cursor, known, reset });
       }
     }
   }
@@ -116,6 +181,13 @@ export function createGroupStore(client: ApiClient, token: string): GroupStore {
       await reading;
       await load();
       return { ok: true, reread: state.status === 'ready' && state.readError === undefined };
+    },
+    chooseMember(member) {
+      currentMember = member;
+      if (state.status === 'ready') {
+        publish({ ...state, currentMember });
+      }
+      void db.then((opened) => opened?.saveCurrentMember(member)).catch(() => undefined);
     },
   };
 }
