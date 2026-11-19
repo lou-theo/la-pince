@@ -130,11 +130,15 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
         let saved = cursor;
         let savedGroup = group;
         const mergeable = !reset && previous.success && previous.data.cursor >= since;
-        // A change another window saved past where this read started, which this read, checked by the server from the same point, brought older or
-        // not at all, belongs to a history the server no longer has (database restored after that window read it).
+        // A change another window saved past where this read started, which this read, checked by the server from the same point, brought older, as
+        // another revision under the same seq, or not at all, belongs to a history the server no longer has (database restored after that window
+        // read it).
+        const fromLostHistory = (stored: Change) => {
+          const read = known.get(stored.id);
+          return read === undefined || read.seq < stored.seq || (read.seq === stored.seq && read.revisionId !== stored.revisionId);
+        };
         const diverged =
-          mergeable &&
-          (await operations.getAll()).some((stored) => stored.seq > since && stored.seq <= cursor && (known.get(stored.id)?.seq ?? 0) < stored.seq);
+          mergeable && (await operations.getAll()).some((stored) => stored.seq > since && stored.seq <= cursor && fromLostHistory(stored));
         if (!mergeable || diverged) {
           // No copy, one that misses changes before the read started (an earlier save failed), or one from a lost history: the window's whole copy
           // replaces it.

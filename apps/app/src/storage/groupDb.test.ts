@@ -121,6 +121,23 @@ describe('openGroupDb', () => {
     expect(copy.cursor).toBe(next.seq);
   });
 
+  it('replaces the copy too when the lost history wrote the same operation under the same seq, with another revision', async () => {
+    const a = change({ id: 'a', date: '2026-11-01' });
+    const lost = change({ id: 'x', date: '2026-11-02', title: 'Lost' });
+    // Written again after the restore, as an import does: same operation, same seq, another revision and content.
+    const rewritten = { ...change({ id: 'x', date: '2026-11-02', title: 'Rewritten' }), seq: lost.seq, createdSeq: lost.seq };
+    const next = change({ id: 'y', date: '2026-11-03' });
+    const db = await openGroupDb(token);
+    await db.saveRead(readOf(0, [a]));
+    await db.saveRead(readOf(a.seq, [lost], [a]));
+    const copy = await db.saveRead(readOf(a.seq, [rewritten, next], [a]));
+    expect(titles(copy)).toStrictEqual([
+      ['a', 'Opération a'],
+      ['x', 'Rewritten'],
+      ['y', 'Opération y'],
+    ]);
+  });
+
   it('keeps the previous copy whole when a save fails halfway', async () => {
     const db = await openGroupDb(token);
     const a = change({ id: 'a', date: '2026-11-01' });
