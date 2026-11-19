@@ -57,6 +57,8 @@ export interface GroupStore {
   readonly chooseMember: (member: MemberId) => void;
 }
 
+type PassResult = 'empty' | 'sent' | 'failed';
+
 const start = cursorSchema.parse(0);
 const SYNC_INTERVAL = 30_000;
 const FIRST_RETRY = 1_000;
@@ -78,6 +80,9 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
   const db = openDb().catch(() => undefined);
   // Opened and read once, before the first read from the server.
   let restored: Promise<void> | undefined;
+  const restoreOnce = () => (restored ??= restore());
+  // Whether the last read published was also saved on the phone.
+  let lastReadSaved = false;
   let flushing: Promise<boolean> | undefined;
   // Counts the calls of `flush`, so that one that comes during a pass makes it run again.
   let flushRequests = 0;
@@ -122,11 +127,13 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       currentMember,
     });
     const opened = await db;
+    lastReadSaved = false;
     if (opened === undefined) {
       return inMemory();
     }
     try {
       const saved = await opened.saveRead(completed);
+      lastReadSaved = true;
       if (!persistenceAsked) {
         persistenceAsked = true;
         void askPersistentStorage().catch(() => undefined);
@@ -140,7 +147,7 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
   }
 
   async function read(): Promise<GroupState> {
-    await (restored ??= restore());
+    await restoreOnce();
     const group = await client.fetchGroup(token);
     if (!group.ok) {
       return { status: 'error', error: group.error };
@@ -204,16 +211,20 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
   /**
    * Sends the outbox by batches, in the order of entry, one request at a time and without merging revisions of one operation: an old revision
    * arriving after a newer one would win. Each revision leaves the outbox once answered: refused ones at once, without notice (decision 37);
-   * written ones and resends once a read has brought the server's copy, so that the operation never disappears from the screen in between. Gives
-   * whether the outbox is empty, and whether that took a read.
+   * written ones and resends once a read made after the send has brought the server's copy, and saved it on the phone, so that the operation never
+   * disappears from the screen in between, nor from the copy the app opens on. Gives whether the outbox is empty, and whether that took a read.
    */
-  async function pass(): Promise<'empty' | 'sent' | 'failed'> {
+  async function pass(): Promise<PassResult> {
     const opened = await db;
     let sent = false;
     for (;;) {
       if (opened !== undefined) {
         // Read again under the lock: another window may have sent part of it.
-        outbox = await opened.loadOutbox();
+        const stored = await opened.loadOutbox();
+        if (outbox.some((entry) => !stored.some((kept) => kept.key === entry.key))) {
+          await showStoredCopy();
+        }
+        outbox = stored;
         publishOutbox();
       }
       const batch = outbox.slice(0, MAX_BATCH_REVISIONS);
@@ -231,8 +242,8 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       // A read that started before the send may have missed it: wait for it, then read again.
       await reading;
       await load();
-      if (state.status !== 'ready' || state.readError !== undefined) {
-        // Written but not read back: sent again next time, the server answering `duplicate`.
+      if (state.status !== 'ready' || state.readError !== undefined || (opened !== undefined && !lastReadSaved)) {
+        // Written but not read back, or not saved: sent again next time, the server answering `duplicate`.
         return 'failed';
       }
       await removeFromOutbox(batch.map((entry) => entry.key));
@@ -240,8 +251,19 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
     }
   }
 
+  /**
+   * The window that sent part of the outbox saved the server's copy holding it before taking it out: shown here too, so that the operation never
+   * leaves the screen, even when this window cannot read the server.
+   */
+  async function showStoredCopy(): Promise<void> {
+    const copy = await (await db)?.loadCopy().catch(() => undefined);
+    if (copy !== undefined && state.status === 'ready' && copy.cursor >= state.cursor) {
+      publish({ ...state, ...copy });
+    }
+  }
+
   /** One sender for every window of the group: the lock of its database, held for a whole pass. */
-  async function exclusive(run: () => Promise<'empty' | 'sent' | 'failed'>) {
+  async function exclusive(run: () => Promise<PassResult>) {
     const opened = await db;
     // Missing from older browsers (Safari before 15.4), null in test environments, though the DOM types declare it.
     const locks = navigator.locks as LockManager | null | undefined;
@@ -285,7 +307,7 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
   }
 
   async function sync(): Promise<void> {
-    await (restored ??= restore());
+    await restoreOnce();
     if (!(await flush())) {
       await load();
     }

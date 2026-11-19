@@ -143,11 +143,22 @@ describe('the outbox', () => {
   const failed = () => Promise.reject(new TypeError('Failed to fetch'));
 
   /** A store whose server can be cut off, recording each batch it receives and the most requests it had to answer at once. */
-  function outboxWatch(changes: Change[], options: { token?: string; openDb?: () => Promise<GroupDb>; refuse?: boolean } = {}) {
+  function outboxWatch(
+    changes: Change[],
+    options: { token?: string; openDb?: () => Promise<GroupDb>; refuse?: (revisionId: string) => boolean } = {},
+  ) {
     const link = options.token ?? token;
     const server = fakeServer({ token: link, group, changes });
     const batches: string[][] = [];
-    const network = { up: true, inFlight: 0, mostInFlight: 0, failReads: false };
+    const network: {
+      up: boolean;
+      inFlight: number;
+      mostInFlight: number;
+      failReads: boolean;
+      // An answer to every batch instead of the server's, and a promise that holds back the answer to each read of the changes.
+      postAnswer?: () => Response;
+      readGate?: Promise<void>;
+    } = { up: true, inFlight: 0, mostInFlight: 0, failReads: false };
     const fetchFn: Fetch = async (url, init) => {
       if (!network.up || (network.failReads && init?.method !== 'POST')) {
         return failed();
@@ -155,12 +166,33 @@ describe('the outbox', () => {
       network.inFlight += 1;
       network.mostInFlight = Math.max(network.mostInFlight, network.inFlight);
       try {
+        const gate = network.readGate;
+        if (url.includes('/changes') && gate !== undefined) {
+          // Answered as the server stands now, delivered once the gate opens.
+          const answer = await server.fetch(url, init);
+          await gate;
+          return answer;
+        }
         if (init?.method === 'POST' && typeof init.body === 'string') {
           const { operations } = operationBatchSchema.parse(JSON.parse(init.body));
           batches.push(operations.map((operation) => operation.revisionId));
-          if (options.refuse === true) {
-            const results = operations.map((operation) => ({ revisionId: operation.revisionId, status: 'rejected', reason: 'unknown_member' }));
-            return json({ results });
+          if (network.postAnswer !== undefined) {
+            return network.postAnswer();
+          }
+          const refused = operations.filter((operation) => options.refuse?.(operation.revisionId) === true);
+          if (refused.length > 0) {
+            // The server writes the others and answers each revision in the order sent.
+            const accepted = operations.filter((operation) => !refused.includes(operation));
+            const written =
+              accepted.length === 0 ? json({ results: [] }) : await server.fetch(url, { ...init, body: JSON.stringify({ operations: accepted }) });
+            const { results } = (await written.json()) as { results: { revisionId: string }[] };
+            return json({
+              results: operations.map((operation) =>
+                refused.includes(operation)
+                  ? { revisionId: operation.revisionId, status: 'rejected', reason: 'unknown_member' }
+                  : results.find((result) => result.revisionId === operation.revisionId),
+              ),
+            });
           }
         }
         // An answer that takes a turn of the event loop, so that overlapping requests would show.
@@ -227,7 +259,7 @@ describe('the outbox', () => {
   });
 
   it('drops a refused revision without notice, the operation going back to the server copy', async () => {
-    const { store } = outboxWatch([change({ id: 'a', date: '2026-11-01' })], { refuse: true });
+    const { store } = outboxWatch([change({ id: 'a', date: '2026-11-01' })], { refuse: () => true });
     await store.load();
     await store.enqueue(expense('a', 'a-2', 'm1', 999));
     await store.sync();
@@ -243,11 +275,125 @@ describe('the outbox', () => {
     await store.enqueue(expense('new', 'new-1'));
     await store.sync();
     expect(shown(store.getSnapshot())).toMatchObject({ outbox: ['new-1'] });
+    // A duplicate not read back stays as well.
+    await store.sync();
+    expect(shown(store.getSnapshot())).toMatchObject({ outbox: ['new-1'] });
     network.failReads = false;
     await store.sync();
     expect(shown(store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['new'] });
-    expect(batches).toStrictEqual([['new-1'], ['new-1']]);
+    expect(batches).toStrictEqual([['new-1'], ['new-1'], ['new-1']]);
     expect(changes).toHaveLength(1);
+  });
+
+  it('drops only the refused revisions of a batch at once, the others waiting for a read', async () => {
+    const { store, network } = outboxWatch([], { refuse: (revisionId) => revisionId === 'b-1' });
+    await store.load();
+    network.up = false;
+    for (const id of ['a', 'b', 'c']) {
+      await store.enqueue(expense(id, `${id}-1`));
+    }
+    await store.sync();
+    network.up = true;
+    network.failReads = true;
+    await store.sync();
+    expect(shown(store.getSnapshot())).toMatchObject({ outbox: ['a-1', 'c-1'] });
+    network.failReads = false;
+    await store.sync();
+    expect(shown(store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['a', 'c'] });
+  });
+
+  it('keeps the outbox when the server fails or answers outside the contract', async () => {
+    const { store, network, changes } = outboxWatch([]);
+    await store.load();
+    await store.enqueue(expense('new', 'new-1'));
+    for (const answer of [() => json({ error: 'internal' }, 500), () => json({ results: [] })]) {
+      network.postAnswer = answer;
+      await store.sync();
+      expect(shown(store.getSnapshot())).toStrictEqual({ outbox: ['new-1'], changes: [] });
+    }
+    delete network.postAnswer;
+    await store.sync();
+    expect(shown(store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['new'] });
+    expect(changes).toHaveLength(1);
+  });
+
+  it('reads again after sending when a read was already running, so that the operation stays on screen throughout', async () => {
+    const { store, batches, network } = outboxWatch([]);
+    await store.load();
+    const states: GroupState[] = [];
+    store.subscribe(() => states.push(store.getSnapshot()));
+    let open: () => void = () => undefined;
+    network.readGate = new Promise((resolve) => {
+      open = resolve;
+    });
+    const reading = store.sync();
+    // The read of the changes is on its way when the revision is entered.
+    await vi.waitFor(() => {
+      expect(network.inFlight).toBe(1);
+    });
+    await store.enqueue(expense('new', 'new-1'));
+    await vi.waitFor(() => {
+      expect(batches).toHaveLength(1);
+    });
+    delete network.readGate;
+    open();
+    await reading;
+    await vi.waitFor(() => {
+      expect(shown(store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['new'] });
+    });
+    const queuedAt = states.findIndex((state) => shown(state) !== 'loading' && state.status === 'ready' && state.outbox.length > 0);
+    for (const state of states.slice(queuedAt)) {
+      expect(state.status === 'ready' && (state.changes.has(operationIdSchema.parse('new')) || state.outbox.length > 0)).toBe(true);
+    }
+  });
+
+  it('sends a revision entered while a pass ends, without waiting for the next wake', async () => {
+    const real = await openGroupDb(token);
+    let loads = 0;
+    const db: GroupDb = {
+      ...real,
+      async loadOutbox() {
+        const queued = await real.loadOutbox();
+        loads += 1;
+        // The first read is the restore at opening, the second the start of the pass that sends `first`.
+        if (loads === 3) {
+          // Entered after the outbox was read for the last time in this pass.
+          await store.enqueue(expense('late', 'late-1'));
+        }
+        return queued;
+      },
+    };
+    const { store, batches } = outboxWatch([], { openDb: () => Promise.resolve(db) });
+    await store.load();
+    await store.enqueue(expense('first', 'first-1'));
+    await vi.waitFor(() => {
+      expect(batches).toStrictEqual([['first-1'], ['late-1']]);
+    });
+  });
+
+  it('keeps an accepted revision until the copy that holds it is saved on the phone', async () => {
+    const real = await openGroupDb(token);
+    const unsaved: GroupDb = { ...real, saveRead: () => Promise.reject(new DOMException('full', 'QuotaExceededError')) };
+    const first = outboxWatch([], { openDb: () => Promise.resolve(unsaved) });
+    await first.store.load();
+    await first.store.enqueue(expense('new', 'new-1'));
+    await first.store.sync();
+    expect(shown(first.store.getSnapshot())).toStrictEqual({ outbox: ['new-1'], changes: ['new'] });
+    // What the app would open on without network: no copy, but the revision still queued.
+    expect(await real.loadCopy()).toBeUndefined();
+    expect((await real.loadOutbox()).map((entry) => entry.operation.revisionId)).toStrictEqual(['new-1']);
+  });
+
+  it('keeps on screen what another window sent, even when this window cannot read the server', async () => {
+    const a = outboxWatch([]);
+    const b = outboxWatch(a.changes);
+    await Promise.all([a.store.load(), b.store.load()]);
+    b.network.up = false;
+    await b.store.enqueue(expense('from-b', 'from-b-1'));
+    await a.store.sync();
+    expect(shown(a.store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['from-b'] });
+    await b.store.sync();
+    expect(shown(b.store.getSnapshot())).toStrictEqual({ outbox: [], changes: ['from-b'] });
   });
 
   it('lets one window at a time send, so that two windows never send the same revision twice', async () => {
@@ -258,12 +404,14 @@ describe('the outbox', () => {
       const b = outboxWatch(a.changes);
       await Promise.all([a.store.load(), b.store.load()]);
       a.network.up = false;
+      b.network.up = false;
       for (const index of [1, 2, 3]) {
-        await a.store.enqueue(expense(`op-${String(index)}`, `rev-${String(index)}`));
+        await (index === 2 ? b : a).store.enqueue(expense(`op-${String(index)}`, `rev-${String(index)}`));
       }
       a.network.up = true;
+      b.network.up = true;
       await Promise.all([a.store.sync(), b.store.sync()]);
-      expect([...a.batches, ...b.batches].flat()).toStrictEqual(['rev-1', 'rev-2', 'rev-3']);
+      expect([...a.batches, ...b.batches].flat().sort()).toStrictEqual(['rev-1', 'rev-2', 'rev-3']);
       expect(lock.names).toContain(lock.names[0]);
       expect(lock.names.every((name) => /^la-pince-group-[0-9a-f]{64}-outbox$/.test(name))).toBe(true);
       await b.store.load();
@@ -328,6 +476,14 @@ describe('waking the sync', () => {
     const server = fakeServer({ token, group, changes: [] });
     const posts: number[] = [];
     const reads = () => server.calls.filter((url) => url.includes('changes')).length;
+    const expense = (revisionId: string) =>
+      operationSchema.parse({
+        id: revisionId,
+        revisionId,
+        title: 'Courses',
+        date: '2026-11-05',
+        entry: { version: 1, kind: 'expense', payer: 'm1', lines: [{ member: 'm1', amount: 500 }] },
+      });
     const store = createGroupStore(
       createApiClient((url, init) => {
         if (init?.method === 'POST') {
@@ -358,15 +514,7 @@ describe('waking the sync', () => {
 
     up = false;
     const started = Date.now();
-    await store.enqueue(
-      operationSchema.parse({
-        id: 'new',
-        revisionId: 'new-1',
-        title: 'Courses',
-        date: '2026-11-05',
-        entry: { version: 1, kind: 'expense', payer: 'm1', lines: [{ member: 'm1', amount: 500 }] },
-      }),
-    );
+    await store.enqueue(expense('new-1'));
     // Tried at once, then after 1 s, 2 s and 4 s more.
     await vi.advanceTimersByTimeAsync(7_000);
     expect(posts.map((at) => at - started)).toStrictEqual([0, 1_000, 3_000, 7_000]);
@@ -374,11 +522,29 @@ describe('waking the sync', () => {
     await vi.advanceTimersByTimeAsync(8_000);
     expect(store.getSnapshot()).toMatchObject({ status: 'ready', outbox: [] });
 
+    // In the background, neither the 30 s wake nor the event of a hidden page reads.
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    const hiddenReads = reads();
+    await vi.advanceTimersByTimeAsync(30_000);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reads()).toBe(hiddenReads);
+    Reflect.deleteProperty(document, 'visibilityState');
+
+    // The wait starts again from 1 s after a success; stopping cancels the retry pending.
+    up = false;
+    const again = Date.now();
+    posts.length = 0;
+    await store.enqueue(expense('new-2'));
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(posts.map((at) => at - again)).toStrictEqual([0, 1_000]);
     stop();
+    up = true;
     const before = server.calls.length;
     window.dispatchEvent(new Event('online'));
     await vi.advanceTimersByTimeAsync(60_000);
     expect(server.calls).toHaveLength(before);
+    expect(posts).toHaveLength(2);
   });
 });
 
