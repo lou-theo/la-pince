@@ -1,10 +1,9 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { groupLink } from '../model/link.ts';
-import styles from './GroupHome.module.css';
 import layout from './Layout.module.css';
-import field from './PasteLink.module.css';
+import styles from './ShareLink.module.css';
 
 type Outcome = 'copied' | 'manual';
 
@@ -14,26 +13,40 @@ type Outcome = 'copied' | 'manual';
  */
 export function ShareLink({ token, title }: { readonly token: string; readonly title: string }): ReactNode {
   const [outcome, setOutcome] = useState<Outcome | undefined>(undefined);
+  // A second press while the sheet is open is refused by the browser (InvalidStateError), which must not fall back to a copy.
+  const busy = useRef(false);
   const link = groupLink(window.location.origin, token);
 
   async function share() {
+    if (busy.current) {
+      return;
+    }
+    busy.current = true;
     setOutcome(undefined);
+    try {
+      setOutcome(await deliver());
+    } finally {
+      busy.current = false;
+    }
+  }
+
+  async function deliver(): Promise<Outcome | undefined> {
     if (typeof navigator.share === 'function') {
       try {
         await navigator.share({ title, text: m.share_text({ title }), url: link });
-        return;
+        return undefined;
       } catch (error) {
         // Closing the sheet is a choice, not a failure; any other refusal (no user gesture left, sharing blocked) falls back to the copy.
         if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
+          return undefined;
         }
       }
     }
     try {
       await navigator.clipboard.writeText(link);
-      setOutcome('copied');
+      return 'copied';
     } catch {
-      setOutcome('manual');
+      return 'manual';
     }
   }
 
@@ -42,23 +55,21 @@ export function ShareLink({ token, title }: { readonly token: string; readonly t
       <button className={layout.link} type="button" onClick={() => void share()}>
         {m.share_link()}
       </button>
-      {outcome === 'copied' ? (
-        <p role="status" className={layout.muted}>
-          {m.share_copied()}
-        </p>
-      ) : null}
+      {/* Always rendered, only its text changing: a live region inserted already filled is announced unevenly, VoiceOver included. */}
+      <p className={layout.muted} aria-live="polite">
+        {outcome === 'copied' ? m.share_copied() : outcome === 'manual' ? m.share_manual() : null}
+      </p>
       {outcome === 'manual' ? (
-        <label className={styles.shareManual}>
-          {m.share_manual()}
-          <input
-            className={field.input}
-            readOnly
-            value={link}
-            onFocus={(event) => {
-              event.currentTarget.select();
-            }}
-          />
-        </label>
+        <input
+          className={styles.input}
+          aria-label={m.share_manual()}
+          readOnly
+          value={link}
+          onFocus={(event) => {
+            // `select()` leaves nothing selected on iOS Safari.
+            event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
+          }}
+        />
       ) : null}
     </div>
   );

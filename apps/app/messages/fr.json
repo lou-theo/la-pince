@@ -100,6 +100,6 @@
   "moment_other_day": "le {day} à {time}",
   "share_link": "Partager le lien du groupe",
   "share_text": "Le groupe « {title} » sur La Pince :",
-  "share_copied": "Lien copié : colle-le à qui doit rejoindre le groupe.",
-  "share_manual": "Copie ce lien et envoie-le à qui doit rejoindre le groupe :"
+  "share_copied": "Lien copié : colle-le dans un message aux personnes à inviter.",
+  "share_manual": "Copie ce lien et envoie-le aux personnes à inviter :"
 }

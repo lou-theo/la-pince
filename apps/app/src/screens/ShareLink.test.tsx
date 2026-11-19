@@ -9,9 +9,17 @@ import { renderApp } from '../testing/render.tsx';
 const token = 'demo-token-of-the-share-tests-0123456789';
 const group = groupResponseSchema.parse({ title: 'Week-end', members: [{ id: 'm1', name: 'Alice' }] });
 const link = `${window.location.origin}/g/${token}`;
+const copied = 'Lien copié : colle-le dans un message aux personnes à inviter.';
+const manual = 'Copie ce lien et envoie-le aux personnes à inviter :';
 
 /** Replaces what the browser offers for sharing, `undefined` standing for a browser without it. */
-function browserOffers({ share, writeText }: { share?: (data: ShareData) => Promise<void>; writeText?: (text: string) => Promise<void> }) {
+function browserOffers({
+  share,
+  writeText,
+}: {
+  share?: ((data: ShareData) => Promise<void>) | undefined;
+  writeText?: ((text: string) => Promise<void>) | undefined;
+}) {
   Object.defineProperty(navigator, 'share', { value: share, configurable: true });
   Object.defineProperty(navigator, 'clipboard', { value: writeText === undefined ? undefined : { writeText }, configurable: true });
 }
@@ -55,18 +63,43 @@ describe('sharing the group link', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('copies the link when the browser has no share sheet, or refuses it', async () => {
+  it.each([
+    ['has no share sheet', undefined],
+    ['refuses the sheet', () => Promise.reject(new DOMException('no gesture', 'NotAllowedError'))],
+  ])('copies the link when the browser %s', async (_case, sheet) => {
     const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
-    browserOffers({ share: () => Promise.reject(new DOMException('no gesture', 'NotAllowedError')), writeText });
+    browserOffers({ share: sheet, writeText });
     await openAndShare();
-    expect(await screen.findByText('Lien copié : colle-le à qui doit rejoindre le groupe.')).toBeDefined();
+    expect(await screen.findByText(copied)).toBeDefined();
     expect(writeText).toHaveBeenCalledWith(link);
+  });
+
+  it('ignores a second press while the sheet is open, instead of copying the link', async () => {
+    let close: () => void = () => undefined;
+    const sheet = vi.fn<(data: ShareData) => Promise<void>>(
+      () =>
+        new Promise((_resolve, reject) => {
+          close = () => {
+            reject(new DOMException('closed', 'AbortError'));
+          };
+        }),
+    );
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
+    browserOffers({ share: sheet, writeText });
+    await openAndShare();
+    fireEvent.click(screen.getByRole('button', { name: 'Partager le lien du groupe' }));
+    close();
+    // Lets the refused promise settle before checking that nothing followed.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(sheet).toHaveBeenCalledTimes(1);
+    expect(writeText).not.toHaveBeenCalled();
   });
 
   it('shows the link to copy by hand when the clipboard is out of reach too', async () => {
     browserOffers({});
     await openAndShare();
-    const field = await screen.findByRole('textbox', { name: 'Copie ce lien et envoie-le à qui doit rejoindre le groupe :' });
+    const field = await screen.findByRole('textbox', { name: manual });
     expect((field as HTMLInputElement).value).toBe(link);
+    expect(screen.getByText(manual)).toBeDefined();
   });
 });
