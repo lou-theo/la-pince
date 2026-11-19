@@ -320,3 +320,33 @@ describe('GET /api/groups/:token/changes', () => {
     expect(await errorOf(await server.fetch(`/api/groups/${'z'.repeat(32)}/changes`))).toStrictEqual([404, 'group_not_found']);
   });
 });
+
+// This server has no push keys: an instance that has not set notifications up. The routes with keys are tested in `api-notifications.test.ts`.
+describe('notifications on an instance without push keys', () => {
+  const subscription = { endpoint: 'https://fcm.googleapis.com/fcm/send/phone1', keys: { p256dh: `B${'a'.repeat(86)}`, auth: 'b'.repeat(22) } };
+
+  it('answers notifications_disabled to the key, a subscription and a test, and still writes the revisions', async () => {
+    const { token } = await newGroup();
+    expect(await errorOf(await server.fetch('/api/notifications/key'))).toStrictEqual([404, 'notifications_disabled']);
+    const subscribe = await server.fetch(`/api/groups/${token}/subscription`, {
+      method: 'PUT',
+      body: JSON.stringify({ member: 'alice', subscription }),
+    });
+    expect(await errorOf(subscribe)).toStrictEqual([404, 'notifications_disabled']);
+    const test = await server.fetch(`/api/groups/${token}/subscription/test`, {
+      method: 'POST',
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+    });
+    expect(await errorOf(test)).toStrictEqual([404, 'notifications_disabled']);
+    expect((await send(token, [{ ...expense('nokeys1', 'nokeys1-r1'), author: 'alice' }])).map((result) => result.status)).toStrictEqual(['written']);
+  });
+
+  it('still stops a subscription', async () => {
+    const { token } = await newGroup();
+    const response = await server.fetch(`/api/groups/${token}/subscription`, {
+      method: 'DELETE',
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+    });
+    expect(response.status).toBe(204);
+  });
+});

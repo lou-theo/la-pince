@@ -3,6 +3,12 @@
   "name": "la-pince",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-01",
+  // One message per phone to notify, sent by the request that wrote the revisions and read one at a time, so that the encryption of each
+  // stays within the CPU time of one invocation whatever the size of the group.
+  "queues": {
+    "producers": [{ "binding": "NOTIFICATIONS", "queue": "la-pince-notifications" }],
+    "consumers": [{ "queue": "la-pince-notifications", "max_batch_size": 1, "max_batch_timeout": 0 }],
+  },
   "d1_databases": [
     {
       "binding": "DB",
