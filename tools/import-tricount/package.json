@@ -1,0 +1,22 @@
+{
+  "name": "@la-pince/import-tricount",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/bin.ts",
+    "typecheck": "tsc --project tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@la-pince/core": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@la-pince/config": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

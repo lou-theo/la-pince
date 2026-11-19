@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - tools/*
 
 # Les hooks git sont installés par le script prepare de la racine, pas par le script d'installation de lefthook.
 # esbuild et workerd trouvent leur binaire dans leur paquet de plateforme ; leur script d'installation ne fait que le vérifier.
@@ -12,6 +13,7 @@ allowBuilds:
 catalog:
   '@cloudflare/workers-types': 5.20261117.1
   '@eslint/js': 10.0.1
+  '@types/node': 24.19.2
   '@vitest/coverage-v8': 5.1.0
   '@vitest/eslint-plugin': 1.6.28
   drizzle-kit: 0.31.11
