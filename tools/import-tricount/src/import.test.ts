@@ -74,6 +74,33 @@ describe('importTricount', () => {
     );
   });
 
+  it('finishes an import stopped between two batches when run again, operations keeping the order they were entered', async () => {
+    const { data, token } = newCorpus();
+    let posts = 0;
+    const cut: Fetch = async (url, init) => {
+      if (init?.method === 'POST' && ++posts > 2) {
+        throw new TypeError('network lost');
+      }
+      return fetch(url, init);
+    };
+    await expect(run(data, token, { fetch: cut })).rejects.toThrow('network lost');
+    expect(await run(data, token)).toMatchObject({ written: 150, deleted: 0, spent: 960_980, reimbursed: 102_416 });
+    const read = await changes(token);
+    expect(read.toSorted((a, b) => a.createdSeq - b.createdSeq).map((change) => change.id)).toStrictEqual(
+      convertTricount(data)
+        .operations.map((operation) => operation.id)
+        .toReversed(),
+    );
+  });
+
+  it('counts once the revisions two imports of the same export send at the same time', async () => {
+    const { data, token } = newCorpus();
+    await run(data, token);
+    registryOf(data).all_registry_entry.shift();
+    const reports = await Promise.all([run(data, token), run(data, token)]);
+    expect(reports.map((report) => report.written).reduce((sum, written) => sum + written)).toBe(1);
+  });
+
   it('writes no revision when the same export is imported again', async () => {
     const { data, token } = newCorpus();
     await run(data, token);

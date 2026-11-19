@@ -126,7 +126,7 @@ export async function importTricount(options: ImportOptions): Promise<ImportRepo
     if (rejected.length > 0) {
       throw new ImportError(`revisions rejected by the server: ${rejected.join(', ')}`);
     }
-    // A revision already written by an import stopped midway comes back as a duplicate.
+    // A revision another import of the same export sent meanwhile comes back as a duplicate.
     written += results.filter((result) => result.status === 'written').length;
   }
 

@@ -10,7 +10,7 @@ export interface CliOptions {
   readonly print: (line: string) => void;
 }
 
-const euros = (cents: number) => `${(cents / 100).toLocaleString('en', { minimumFractionDigits: 2 })} €`;
+const euros = (cents: number) => `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`;
 
 // 32 random bytes: far beyond guessing, and within the 32 to 128 characters of the link token.
 const newToken = () => Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
@@ -22,19 +22,29 @@ const newToken = () => Buffer.from(crypto.getRandomValues(new Uint8Array(32))).t
 export async function run({ args, env, print }: CliOptions): Promise<number> {
   const [path] = args;
   const adminToken = env.ADMIN_TOKEN;
-  if (path === undefined || adminToken === undefined || adminToken === '') {
-    print('usage: ADMIN_TOKEN=… [LA_PINCE_URL=…] [LA_PINCE_GROUP_TOKEN=…] pnpm start <tricount export.json>');
+  const given = env.LA_PINCE_GROUP_TOKEN;
+  const hasToken = given !== undefined && given !== '';
+  // A new link token replaces the group's link at once: only on demand, so that a forgotten variable never breaks the link the group uses.
+  if (path === undefined || adminToken === undefined || adminToken === '' || hasToken === (env.LA_PINCE_NEW_LINK === '1')) {
+    print('usage: ADMIN_TOKEN=… [LA_PINCE_URL=…] (LA_PINCE_GROUP_TOKEN=… | LA_PINCE_NEW_LINK=1) pnpm start <tricount export.json>');
     return 2;
   }
   const serverUrl = env.LA_PINCE_URL ?? 'http://localhost:8787';
-  const given = env.LA_PINCE_GROUP_TOKEN;
-  const token = given === undefined || given === '' ? newToken() : given;
+  let data: unknown;
   try {
-    const report = await importTricount({ data: JSON.parse(await readFile(path, 'utf8')), serverUrl, adminToken, token });
+    data = JSON.parse(await readFile(path, 'utf8'));
+  } catch (error) {
+    print(`import stopped: cannot read ${path}: ${(error as Error).message}`);
+    return 1;
+  }
+  const token = hasToken ? given : newToken();
+  // Printed before any call: the server may hold it even if the import stops.
+  print(`link token, to keep out of any file (LA_PINCE_GROUP_TOKEN for the next import): ${token}`);
+  print(`group: ${new URL(`/api/groups/${token}`, serverUrl).href}`);
+  try {
+    const report = await importTricount({ data, serverUrl, adminToken, token });
     print(`${report.title}: ${String(report.written)} revisions written, ${String(report.deleted)} of them deletions`);
     print(`spent ${euros(report.spent)}, reimbursed ${euros(report.reimbursed)}, balances equal to the export's to the cent`);
-    print(`link token, to keep out of any file (LA_PINCE_GROUP_TOKEN for the next import): ${token}`);
-    print(`group: ${new URL(`/api/groups/${token}`, serverUrl).href}`);
     return 0;
   } catch (error) {
     if (error instanceof ImportError || error instanceof ZodError) {

@@ -30,38 +30,42 @@ const cli = async (args: string[], env: Record<string, string>) => {
 };
 
 describe('run', () => {
-  it('imports the export file and prints the totals and the link of the group, under a new link token', async () => {
-    const { code, lines } = await cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_URL });
+  it('imports the export file under a new link token printed first, then the totals; the same token next time keeps the link', async () => {
+    const { code, lines } = await cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_URL, LA_PINCE_NEW_LINK: '1' });
     expect(code).toBe(0);
-    expect(lines.slice(0, 2)).toStrictEqual([
+    const token = /: ([\w-]{43})$/.exec(lines[0] ?? '')?.[1];
+    expect(lines.slice(1)).toStrictEqual([
+      `group: ${LA_PINCE_URL}api/groups/${String(token)}`,
       'Groupe de démo: 250 revisions written, 0 of them deletions',
-      "spent 9,609.80 €, reimbursed 1,024.16 €, balances equal to the export's to the cent",
+      "spent 9 609,80 €, reimbursed 1 024,16 €, balances equal to the export's to the cent",
     ]);
-    const token = /: ([\w-]{43})$/.exec(lines[2] ?? '')?.[1];
-    expect(lines[3]).toBe(`group: ${LA_PINCE_URL}api/groups/${String(token)}`);
-    // The same link token next time keeps the link, and an identical export writes nothing.
     const again = await cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_URL, LA_PINCE_GROUP_TOKEN: String(token) });
-    expect(again.lines[0]).toBe('Groupe de démo: 0 revisions written, 0 of them deletions');
+    expect(again.lines.slice(0, 3)).toStrictEqual([...lines.slice(0, 2), 'Groupe de démo: 0 revisions written, 0 of them deletions']);
   });
 
-  it('prints its usage without an export file or an admin token', async () => {
-    expect((await cli([], { ADMIN_TOKEN })).code).toBe(2);
-    expect((await cli([corpusPath], { ADMIN_TOKEN: '' })).code).toBe(2);
+  it('prints its usage without an export file, an admin token, or a choice between the link token and a new one', async () => {
+    expect((await cli([], { ADMIN_TOKEN, LA_PINCE_NEW_LINK: '1' })).code).toBe(2);
+    expect((await cli([corpusPath], { ADMIN_TOKEN: '', LA_PINCE_NEW_LINK: '1' })).code).toBe(2);
+    expect((await cli([corpusPath], { ADMIN_TOKEN })).code).toBe(2);
+    expect((await cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_GROUP_TOKEN: 'y'.repeat(32), LA_PINCE_NEW_LINK: '1' })).code).toBe(2);
   });
 
-  it('stops with an exit code on an export it cannot convert, or a refusal of the server', async () => {
+  it('stops with an exit code on a file it cannot read, an export it cannot convert, or a refusal of the server', async () => {
+    // Without LA_PINCE_URL, the server of `wrangler dev`, never reached here.
+    expect(await cli(['/nonexistent/export.json'], { ADMIN_TOKEN, LA_PINCE_NEW_LINK: '1' })).toStrictEqual({
+      code: 1,
+      lines: [expect.stringMatching(/^import stopped: cannot read \/nonexistent\/export.json: ENOENT/) as string],
+    });
     const path = join(await mkdtemp(join(tmpdir(), 'import-tricount-')), 'export.json');
     await writeFile(path, '{"Response": []}');
-    const invalid = await cli([path], { ADMIN_TOKEN, LA_PINCE_URL });
-    expect(invalid.code).toBe(1);
-    expect(invalid.lines[0]).toMatch(/^import stopped: /);
-    expect((await cli([corpusPath], { ADMIN_TOKEN: 'wrong', LA_PINCE_URL })).lines).toStrictEqual([
-      expect.stringMatching(/^import stopped: PUT \/api\/admin\/groups\/[\w-]+: 401/) as string,
-    ]);
+    const invalid = await cli([path], { ADMIN_TOKEN, LA_PINCE_URL, LA_PINCE_NEW_LINK: '1' });
+    expect([invalid.code, invalid.lines[2]]).toStrictEqual([1, expect.stringMatching(/^import stopped: /) as string]);
+    expect((await cli([corpusPath], { ADMIN_TOKEN: 'wrong', LA_PINCE_URL, LA_PINCE_NEW_LINK: '1' })).lines[2]).toMatch(
+      /^import stopped: PUT \/api\/admin\/groups\/[\w-]+: 401/,
+    );
   });
 
-  it('lets an unexpected error through, before calling any server', async () => {
-    // Without LA_PINCE_URL, the server of `wrangler dev`, never reached here.
-    await expect(cli(['/nonexistent/export.json'], { ADMIN_TOKEN })).rejects.toThrow(/ENOENT/);
+  it('lets an unexpected error through, here a server that does not answer', async () => {
+    await expect(cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_URL: 'http://127.0.0.1:9/', LA_PINCE_NEW_LINK: '1' })).rejects.toThrow(TypeError);
   });
 });
