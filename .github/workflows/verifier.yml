@@ -1,4 +1,5 @@
 # Safety net: replays the check lefthook runs before every push. The `verifier` job is required by the branch rule on main.
+# The `deployer` job then publishes, on main only, the instance whose secrets are set (docs/auto-hebergement.md, decision 43).
 name: Vérifier
 
 on:
@@ -11,7 +12,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A run on main in progress is never cut short, its deployment may be applying migrations; one still waiting gives way to a newer one, which holds its code.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verifier:
@@ -33,3 +35,63 @@ jobs:
       # End to end (decision 35 f): the app built with its service worker, in Chromium and WebKit, against the Worker on a local D1.
       - run: pnpm --filter @la-pince/e2e exec playwright install --with-deps chromium webkit
       - run: pnpm e2e
+
+  deployer:
+    name: deployer
+    needs: verifier
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # A build and a deployment, without the tests of `verifier`; generous, so as never to cut migrations short.
+    timeout-minutes: 20
+    # Holds the secrets; the guide restricts it to main (docs/auto-hebergement.md). Without them every step is skipped, so a fork is not affected.
+    environment: production
+    steps:
+      - id: go
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_PRODUCTION_JSONC_BASE64: ${{ secrets.WRANGLER_PRODUCTION_JSONC_BASE64 }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$WRANGLER_PRODUCTION_JSONC_BASE64" ]; then
+            echo "::notice::No deployment: the secrets of the production environment are not set."
+          # An older run, re-run or picked up late, would put older code on a database already migrated further.
+          elif ! head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha); then
+            exit 1
+          elif [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::No deployment: main has moved on, its own run deploys it."
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.go.outputs.deploy == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.go.outputs.deploy == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - if: steps.go.outputs.deploy == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      # The secrets reach only the two steps that need them, not the install nor the actions.
+      - if: steps.go.outputs.deploy == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.go.outputs.deploy == 'true'
+        env:
+          WRANGLER_PRODUCTION_JSONC_BASE64: ${{ secrets.WRANGLER_PRODUCTION_JSONC_BASE64 }}
+        run: printf '%s' "$WRANGLER_PRODUCTION_JSONC_BASE64" | base64 -d > apps/server/wrangler.production.jsonc
+      - if: steps.go.outputs.deploy == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # The logs of a public repo are public, and Wrangler prints the instance's address and its database id (decision 40): its output is kept
+        # out of them, and shown on failure only, without addresses, ids nor quoted names (custom domain, subdomain).
+        run: |
+          status=0
+          pnpm --filter @la-pince/server run deploy > "$RUNNER_TEMP/deploy.log" 2>&1 || status=$?
+          if [ "$status" -ne 0 ]; then
+            sed -E 's#https?://[^[:space:]"]+#<url>#g; s#[A-Za-z0-9.-]+\.workers\.dev#<host>#g; s/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/<id>/g; $1; s/"[^"]*"/"<…>"/g' "$RUNNER_TEMP/deploy.log"
+            exit "$status"
+          fi
+          echo "Instance deployed."

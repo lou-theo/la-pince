@@ -53,6 +53,27 @@ pnpm --filter @la-pince/server run deploy
 
 Pour mettre à jour l'instance : `git pull`, `pnpm install`, puis comparer sa config au modèle, qui a pu changer (`diff apps/server/wrangler.production.example.jsonc apps/server/wrangler.production.jsonc` ne doit montrer que l'identifiant de la base), reporter les changements, et relancer le déploiement.
 
+### Déployer à chaque fusion sur `main` (facultatif)
+
+Sur un repo GitHub à soi (un fork, par exemple, dont les workflows sont à activer d'abord dans l'onglet Actions), la CI peut déployer l'instance après chaque arrivée sur `main`, une fois les tests et les tests de bout en bout passés : c'est le job `deployer` de `.github/workflows/verifier.yml`. Il lit trois secrets de l'environnement GitHub `production` et ne fait rien tant qu'ils manquent. Aucune validation n'est demandée : ce qui arrive sur `main` est en ligne quelques minutes après, migrations de la base comprises ; en cas de problème, la base se restaure par la section Sauvegarde.
+
+1. Créer l'environnement `production`, réservé à `main` pour qu'aucune autre branche ne lise ses secrets (Settings, Environments, New environment, puis Deployment branches and tags, Selected branches and tags, `main`), ou en ligne de commande, `<compte>/<repo>` étant le repo GitHub :
+
+   ```sh
+   gh api -X PUT repos/<compte>/<repo>/environments/production -F 'deployment_branch_policy[protected_branches]=false' -F 'deployment_branch_policy[custom_branch_policies]=true'
+   gh api -X POST repos/<compte>/<repo>/environments/production/deployment-branch-policies -f name=main
+   ```
+
+2. Y poser les secrets : le jeton d'API de la section 2 (« D1: Edit » et « Workers Scripts: Edit »), l'identifiant du compte, et le contenu de `apps/server/wrangler.production.jsonc` encodé en base64, sur une seule ligne, pour que GitHub ne masque pas chacune de ses lignes dans les journaux. `gh secret set` sans valeur demande de la coller, sans l'afficher :
+
+   ```sh
+   gh secret set CLOUDFLARE_API_TOKEN --env production -R <compte>/<repo>
+   gh secret set CLOUDFLARE_ACCOUNT_ID --env production -R <compte>/<repo>
+   base64 < apps/server/wrangler.production.jsonc | gh secret set WRANGLER_PRODUCTION_JSONC_BASE64 --env production -R <compte>/<repo>
+   ```
+
+Le déploiement suivant part à la prochaine arrivée sur `main`. Son résultat est dans l'onglet Actions du repo, sans la sortie de Wrangler : les journaux d'un repo public sont publics, et elle contient l'adresse de l'instance ; en cas d'échec, elle s'affiche sans adresses ni identifiants. Un déploiement ne part que si son commit est encore le dernier de `main`, pour qu'un ancien passage relancé ne remette pas un code plus ancien sur une base déjà migrée. Quand le modèle de config change (comparaison ci-dessus), reposer `WRANGLER_PRODUCTION_JSONC_BASE64` avec la config à jour. Si les migrations passent mais que la publication du Worker échoue, l'ancien code tourne sur la nouvelle base jusqu'au déploiement suivant : relancer le job `deployer` du dernier passage sur `main`.
+
 ## 5. Poser le secret d'administration
 
 La route d'administration, qui crée et remplace un groupe à l'import, refuse tout tant que son secret n'est pas posé. Le générer, le garder dans un gestionnaire de mots de passe, puis le donner à Cloudflare :
@@ -85,6 +106,8 @@ D1 garde de quoi restaurer la base à la minute près sur les 7 derniers jours (
 pnpm --filter @la-pince/server exec wrangler d1 time-travel info la-pince --config wrangler.production.jsonc
 pnpm --filter @la-pince/server exec wrangler d1 time-travel restore la-pince --timestamp=<date ISO 8601> --config wrangler.production.jsonc
 ```
+
+Après une fusion qui a abîmé la base, avec le déploiement automatique : annuler d'abord la PR fautive sur `main` (revert), puis restaurer , sans relancer entre-temps de passage qui contient encore la migration : la restauration efface aussi la trace de son passage, et tout déploiement de ce code la rejouerait.
 
 Au-delà de 7 jours, rien n'est gardé : exporter la base de temps en temps et garder le fichier hors de Cloudflare.
 

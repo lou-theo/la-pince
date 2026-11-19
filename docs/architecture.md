@@ -102,7 +102,7 @@ Chronologie d'un import (`tools/import-tricount`, lancé sur la machine du maint
 - pnpm avec catalogue de versions (une version par dépendance pour tout le repo) ; Node et pnpm épinglés (`.node-version`, `packageManager`) ; pas d'orchestrateur de monorepo tant que `pnpm --recursive` suffit.
 - TypeScript strict ; le code se lit en source, sans étape de build entre paquets (Vite et Wrangler compilent à la livraison) ; seuls les textes de l'app sont générés (`pnpm generate`).
 - ESLint avec les règles strictes et typées de typescript-eslint, plus des règles choisies pour le projet, et pour l'app les règles strictes et typées d'eslint-plugin-react-x et celles d'eslint-plugin-react-hooks ; Prettier en largeur 150.
-- `pnpm verifier` (textes compilés, format, lint, typecheck, tests) tourne avant chaque push par lefthook ; GitHub Actions le rejoue sur chaque PR, puis `pnpm e2e` (navigateurs installés par la CI, d'où son absence du hook), dans le job `verifier`, requis pour fusionner dans `main`.
+- `pnpm verifier` (textes compilés, format, lint, typecheck, tests) tourne avant chaque push par lefthook ; GitHub Actions le rejoue sur chaque PR, puis `pnpm e2e` (navigateurs installés par la CI, d'où son absence du hook), dans le job `verifier`, requis pour fusionner dans `main`. Sur `main`, le job `deployer` publie ensuite l'instance dont les secrets sont posés (décision 43).
 
 ## Tests
 
