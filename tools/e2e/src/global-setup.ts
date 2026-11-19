@@ -6,5 +6,6 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   const stack = await startStack(groups);
   process.env.E2E_APP_URL = stack.appUrl;
   process.env.E2E_DIST = stack.dist;
+  process.env.E2E_RESTORE_URL = stack.restoreUrl;
   return stack.close;
 }
