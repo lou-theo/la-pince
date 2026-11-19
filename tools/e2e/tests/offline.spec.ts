@@ -55,7 +55,8 @@ test('an expense entered offline, after a restart without network, reaches anoth
   await synced(page);
   expect(await balances(page)).toStrictEqual(entered);
 
-  // The second browser first shows its own copy, then the server's: a slow network keeps that order, which a single read would mistake for a lost expense.
+  // After a reload the second browser shows its own copy before the server's answer; the delay makes that window certain, so a single read would fail
+  // here and the poll waits for the server.
   await other.route('**/api/groups/**', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1_500));
     await route.continue();
