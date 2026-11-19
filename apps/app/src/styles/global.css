@@ -7,6 +7,7 @@
   --color-accent: #c2410c;
   --color-accent-text: #ffffff;
   --color-danger: #b91c1c;
+  --color-positive: #15803d;
   --radius: 0.75rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -29,6 +30,7 @@
     --color-accent: #fb923c;
     --color-accent-text: #1c1917;
     --color-danger: #f87171;
+    --color-positive: #4ade80;
   }
 }
 
@@ -59,6 +61,7 @@ input {
 
 h1,
 h2,
+h3,
 p {
   margin: 0;
 }

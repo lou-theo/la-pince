@@ -18,6 +18,9 @@ export interface Screen {
 
 const settle = (page: Page) => page.waitForLoadState('networkidle');
 
+const operationLink = 'main a[href*="/operations/"]';
+const balancesTab = 'nav a[href$="/soldes"]';
+
 const chooseFirstMember = async (page: Page, demo: Demo): Promise<void> => {
   await page.goto(`${demo.appUrl}/g/${demo.token}`);
   await page.getByRole('list').getByRole('button').first().click();
@@ -42,7 +45,35 @@ export const screens: readonly Screen[] = [
       await page.getByRole('list').waitFor();
     },
   },
-  { name: 'groupe', label: 'Groupe', reach: chooseFirstMember },
+  { name: 'groupe', label: 'Groupe, ses dépenses', reach: chooseFirstMember },
+  {
+    name: 'depense',
+    label: 'Une dépense',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(operationLink).first().click();
+      await page.locator('article').waitFor();
+    },
+  },
+  {
+    name: 'soldes',
+    label: 'Soldes',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(balancesTab).click();
+      await page.locator('section').first().waitFor();
+    },
+  },
+  {
+    name: 'remboursements-suggeres',
+    label: 'Remboursements suggérés',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(balancesTab).click();
+      // Below the balances, out of the first screen.
+      await page.locator('main section').last().scrollIntoViewIfNeeded();
+    },
+  },
   {
     name: 'groupe-introuvable',
     label: 'Groupe introuvable',
@@ -62,7 +93,7 @@ export const screens: readonly Screen[] = [
   },
 ];
 
-/** Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group. */
+/** Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, then the balances. */
 export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.goto(`${demo.appUrl}/lien`);
   await page.waitForTimeout(600);
@@ -74,4 +105,8 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.getByRole('list').getByRole('button').first().click();
   await settle(page);
   await page.waitForTimeout(1500);
+  await page.locator(operationLink).first().click();
+  await page.waitForTimeout(1500);
+  await page.locator(balancesTab).click();
+  await page.waitForTimeout(2000);
 }

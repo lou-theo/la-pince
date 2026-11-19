@@ -1,12 +1,14 @@
-import { type ApiError, groupResponseSchema } from '@la-pince/core';
-import { cleanup, render, screen } from '@testing-library/react';
+import { groupResponseSchema } from '@la-pince/core';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 
 import { App } from './App.tsx';
+import { saveCurrentMember } from './storage/device.ts';
 import { createApiClient, type Fetch } from './sync/client.ts';
+import { change, fakeServer, json } from './testing/fake-server.ts';
 
 const token = 'demo-token-of-the-app-tests-0123456789';
 const group = groupResponseSchema.parse({
@@ -18,10 +20,7 @@ const group = groupResponseSchema.parse({
   ],
 });
 
-// Fake transport: the server's answers, built through the schemas of the core.
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-const server: Fetch = (url) =>
-  Promise.resolve(url === `/api/groups/${token}` ? json(group) : json({ error: 'group_not_found' } satisfies ApiError, 404));
+const server = fakeServer({ token, group }).fetch;
 
 function renderApp(path: string, fetchFn: Fetch = server) {
   const location = memoryLocation({ path, record: true });
@@ -61,7 +60,7 @@ describe('opening a group', () => {
     expect(await screen.findByText('Tu es Alice')).toBeDefined();
 
     const withoutAlice = groupResponseSchema.parse({ ...group, members: group.members.slice(1) });
-    renderApp(`/g/${token}`, () => Promise.resolve(json(withoutAlice)));
+    renderApp(`/g/${token}`, fakeServer({ token, group: withoutAlice }).fetch);
     expect(await screen.findByRole('heading', { name: 'Qui es-tu ?' })).toBeDefined();
   });
 
@@ -93,12 +92,14 @@ describe('opening a group', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeDefined();
   });
 
-  it('drops the answer of a group left before it arrived', async () => {
-    let answer: (response: Response) => void = () => undefined;
-    renderApp(`/g/${token}`, () => new Promise((resolve) => (answer = resolve)));
+  it('remembers nothing of a group left before its read ended', async () => {
+    // The server answers every call, group and changes, only once the screen is gone.
+    let open: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    renderApp(`/g/${token}`, (url, init) => gate.then(() => server(url, init)));
     cleanup();
-    answer(json(group));
-    // A macrotask: the fetch, `json()` and `then()` all run before it.
+    open();
+    // A macrotask: both answers and their `then()` run before it.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(localStorage.getItem('la-pince:last-group')).toBeNull();
   });
@@ -142,5 +143,134 @@ describe('without a link', () => {
   it('says so for an unknown page', () => {
     renderApp('/nowhere');
     expect(screen.getByText("Cette page n'existe pas.")).toBeDefined();
+  });
+});
+
+describe('a group as one of its members', () => {
+  // Bruno pays the toll for Alice only, Alice the shopping for all three, Chloé pays Alice back; one operation was deleted.
+  const changes = [
+    change({
+      id: 'op-shopping',
+      date: '2026-11-05',
+      title: 'Courses',
+      payer: 'm1',
+      lines: [
+        ['m1', 1_000],
+        ['m2', 2_000],
+        ['m3', 1_500],
+      ],
+      author: 'm1',
+    }),
+    change({ id: 'op-toll', date: '2026-11-06', title: 'Péage', payer: 'm2', lines: [['m1', 700]] }),
+    change({ id: 'op-payback', date: '2026-11-07', title: 'Virement', payer: 'm3', lines: [['m1', 500]], kind: 'reimbursement' }),
+    change({ id: 'op-gone', date: '2026-11-08', title: 'Doublon', payer: 'm2', lines: [['m2', 900]] }),
+    change({ id: 'op-gone', date: '2026-11-08', deleted: true }),
+  ];
+
+  async function openAsBruno(path = `/g/${token}`, members = group.members) {
+    const user = userEvent.setup();
+    saveCurrentMember(token, 'm2');
+    const location = renderApp(path, fakeServer({ token, group: { ...group, members }, changes, pageSize: 2 }).fetch);
+    await screen.findByText('Tu es Bruno');
+    return { user, location };
+  }
+
+  it('lists the operations, the latest first, with my share of each', async () => {
+    await openAsBruno();
+    const rows = screen.getAllByRole('listitem').map((row) => [...row.querySelectorAll('span span')].map((span) => span.textContent));
+    expect(rows).toStrictEqual([
+      ['Virement', '7 nov. 2026 · Chloé a remboursé Alice', '5,00\u00a0€', 'Remboursement'],
+      ['Péage', '6 nov. 2026 · Payé par Bruno (toi)', '7,00\u00a0€', 'Pas concerné'],
+      ['Courses', '5 nov. 2026 · Payé par Alice', '45,00\u00a0€', 'Ta part 20,00\u00a0€'],
+    ]);
+    expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('shows an operation with the share of each member, in the order they were added', async () => {
+    // Members added in another order than their identifiers, which order the shares of an effect.
+    const { user, location } = await openAsBruno(`/g/${token}`, group.members.toReversed());
+    await user.click(screen.getByRole('link', { name: /Courses/ }));
+    expect(location.history.at(-1)).toBe(`/g/${token}/operations/op-shopping`);
+    expect(screen.getByRole('heading', { name: 'Courses' })).toBeDefined();
+    expect(screen.getByText('jeudi 5 novembre 2026')).toBeDefined();
+    expect(screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === 'Montant 45,00\u00a0€')).toBeDefined();
+    expect(screen.getByText('Payé par Alice')).toBeDefined();
+    expect(screen.getByText('Saisi par Alice')).toBeDefined();
+    const split = within(screen.getByRole('region', { name: 'Répartition' }));
+    expect(split.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
+      'Chloé15,00\u00a0€',
+      'Bruno (toi)20,00\u00a0€',
+      'Alice10,00\u00a0€',
+    ]);
+    // The detail belongs to the list of operations.
+    expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
+
+    await user.click(screen.getByRole('link', { name: 'Retour aux dépenses' }));
+    expect(location.history.at(-1)).toBe(`/g/${token}/`);
+  });
+
+  it('shows a reimbursement without a split', async () => {
+    await openAsBruno(`/g/${token}/operations/op-payback`);
+    expect(screen.getByText('Chloé a remboursé Alice')).toBeDefined();
+    expect(screen.queryByRole('region', { name: 'Répartition' })).toBeNull();
+  });
+
+  it('shows the split of a reimbursement to several members', async () => {
+    saveCurrentMember(token, 'm2');
+    const split = change({
+      id: 'op-split',
+      date: '2026-11-07',
+      payer: 'm2',
+      lines: [
+        ['m1', 300],
+        ['m3', 200],
+      ],
+      kind: 'reimbursement',
+    });
+    // Chloé added before Alice: both the title line and the split follow the group's order.
+    const members = group.members.toReversed();
+    renderApp(`/g/${token}/operations/op-split`, fakeServer({ token, group: { ...group, members }, changes: [split] }).fetch);
+    expect(await screen.findByText('Bruno (toi) a remboursé Chloé, Alice')).toBeDefined();
+    const lines = within(screen.getByRole('region', { name: 'Répartition' }));
+    expect(lines.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual(['Chloé2,00\u00a0€', 'Alice3,00\u00a0€']);
+  });
+
+  it('says so for a deleted or unknown operation', async () => {
+    await openAsBruno(`/g/${token}/operations/op-gone`);
+    expect(screen.getByText("Cette dépense n'existe pas, ou elle a été supprimée.")).toBeDefined();
+    cleanup();
+    await openAsBruno(`/g/${token}/operations/op-nowhere`);
+    expect(screen.getByText("Cette dépense n'existe pas, ou elle a été supprimée.")).toBeDefined();
+  });
+
+  it('shows the balances, the largest first, and the transfers that settle them', async () => {
+    const { user, location } = await openAsBruno();
+    await user.click(screen.getByRole('link', { name: 'Soldes' }));
+    expect(location.history.at(-1)).toBe(`/g/${token}/soldes`);
+    expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
+    const balances = within(screen.getByRole('region', { name: 'Soldes' }));
+    expect(balances.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
+      'Alice+23,00\u00a0€',
+      'Chloé-10,00\u00a0€',
+      'Bruno (toi)-13,00\u00a0€',
+    ]);
+    cleanup();
+    // The same screen with a trailing slash keeps its tab.
+    await openAsBruno(`/g/${token}/soldes/`);
+    expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
+    const transfers = within(screen.getByRole('region', { name: 'Remboursements suggérés' }));
+    expect(transfers.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
+      'Chloé doit 10,00\u00a0€ à Alice',
+      'Bruno (toi) doit 13,00\u00a0€ à Alice',
+    ]);
+  });
+
+  it('tells an empty group, settled', async () => {
+    const user = userEvent.setup();
+    saveCurrentMember(token, 'm2');
+    renderApp(`/g/${token}`);
+    expect(await screen.findByText("Aucune dépense pour l'instant.")).toBeDefined();
+    await user.click(screen.getByRole('link', { name: 'Soldes' }));
+    expect(screen.getByText("Tout le monde est à l'équilibre.")).toBeDefined();
   });
 });
