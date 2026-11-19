@@ -92,6 +92,18 @@ describe('opening a group', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeDefined();
   });
 
+  it('remembers nothing of a group left before its read ended', async () => {
+    // The server answers every call, group and changes, only once the screen is gone.
+    let open: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    renderApp(`/g/${token}`, (url, init) => gate.then(() => server(url, init)));
+    cleanup();
+    open();
+    // A macrotask: both answers and their `then()` run before it.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(localStorage.getItem('la-pince:last-group')).toBeNull();
+  });
+
   it('tells a malformed link without calling the server', () => {
     const calls: string[] = [];
     renderApp('/g/short', (url) => {
@@ -204,23 +216,23 @@ describe('a group as one of its members', () => {
   });
 
   it('shows the split of a reimbursement to several members', async () => {
-    changes.push(
-      change({
-        id: 'op-split',
-        date: '2026-11-07',
-        payer: 'm2',
-        lines: [
-          ['m1', 300],
-          ['m3', 200],
-        ],
-        kind: 'reimbursement',
-      }),
-    );
-    await openAsBruno(`/g/${token}/operations/op-split`);
-    changes.pop();
-    expect(screen.getByText('Bruno (toi) a remboursé Alice, Chloé')).toBeDefined();
-    const split = within(screen.getByRole('region', { name: 'Répartition' }));
-    expect(split.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual(['Alice3,00\u00a0€', 'Chloé2,00\u00a0€']);
+    saveCurrentMember(token, 'm2');
+    const split = change({
+      id: 'op-split',
+      date: '2026-11-07',
+      payer: 'm2',
+      lines: [
+        ['m1', 300],
+        ['m3', 200],
+      ],
+      kind: 'reimbursement',
+    });
+    // Chloé added before Alice: both the title line and the split follow the group's order.
+    const members = group.members.toReversed();
+    renderApp(`/g/${token}/operations/op-split`, fakeServer({ token, group: { ...group, members }, changes: [split] }).fetch);
+    expect(await screen.findByText('Bruno (toi) a remboursé Chloé, Alice')).toBeDefined();
+    const lines = within(screen.getByRole('region', { name: 'Répartition' }));
+    expect(lines.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual(['Chloé2,00\u00a0€', 'Alice3,00\u00a0€']);
   });
 
   it('says so for a deleted or unknown operation', async () => {

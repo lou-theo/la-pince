@@ -1,4 +1,3 @@
-import type { MemberId } from '@la-pince/core';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'wouter';
 
@@ -7,7 +6,7 @@ import { formatDay } from '../model/dates.ts';
 import { formatCents } from '../model/money.ts';
 import layout from './Layout.module.css';
 import styles from './Operations.module.css';
-import { type GroupView, who } from './view.ts';
+import { type GroupView, sharesInOrder, who } from './view.ts';
 
 /** One operation: its amount, who paid, and the share of each member involved, in the order members were added. */
 export function OperationDetail({ view, id }: { readonly view: GroupView; readonly id: string }): ReactNode {
@@ -26,12 +25,7 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
       </>
     );
   }
-  const position = (member: MemberId) => {
-    const index = view.memberOrder.indexOf(member);
-    // A member missing from the group's list comes last.
-    return index === -1 ? view.memberOrder.length : index;
-  };
-  const shares = operation.effect.shares.toSorted((a, b) => position(a.member) - position(b.member));
+  const shares = sharesInOrder(view, operation);
   return (
     <article className={styles.detail}>
       {back}

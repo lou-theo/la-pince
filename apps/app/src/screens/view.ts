@@ -1,4 +1,4 @@
-import type { MemberId, SuggestedTransfer } from '@la-pince/core';
+import type { MemberId, Share, SuggestedTransfer } from '@la-pince/core';
 
 import { m } from '../i18n/paraglide/messages.js';
 import type { BalanceLine, OperationView } from '../model/group.ts';
@@ -14,12 +14,22 @@ export interface GroupView {
   readonly memberOrder: readonly MemberId[];
 }
 
+/** Shares of an operation in the order members were added, a member missing from the group's list last. */
+export function sharesInOrder(view: GroupView, operation: OperationView): Share[] {
+  const position = (member: MemberId) => {
+    const index = view.memberOrder.indexOf(member);
+    return index === -1 ? view.memberOrder.length : index;
+  };
+  return operation.effect.shares.toSorted((a, b) => position(a.member) - position(b.member));
+}
+
 /** Who paid an expense, or who reimbursed whom. */
 export function who(view: GroupView, operation: OperationView): string {
-  const { payer, shares } = operation.effect;
+  const { payer } = operation.effect;
   if (operation.kind === 'reimbursement') {
     // A reimbursement's lines are the members who received it, a single one from Tricount.
-    return m.operation_reimbursed({ from: view.nameOf(payer), to: shares.map((share) => view.nameOf(share.member)).join(', ') });
+    const to = sharesInOrder(view, operation).map((share) => view.nameOf(share.member));
+    return m.operation_reimbursed({ from: view.nameOf(payer), to: to.join(', ') });
   }
   return m.operation_paid_by({ name: view.nameOf(payer) });
 }
