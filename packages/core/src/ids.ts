@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-// Room for a UUID (36 characters) or a Tricount identifier, and a bound on what a sent operation makes the server store.
-const MAX_ID_LENGTH = 64;
-const idSchema = z.string().min(1).max(MAX_ID_LENGTH);
+// ASCII letters, digits, `-` and `_`, as in a UUID or a Tricount identifier, 64 at most: an identifier must come back from storage unchanged, since
+// it seeds the leftover cent and orders members, which a lone surrogate replaced on the way to UTF-8 would not; the length bounds what the server stores.
+const idSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 
 /** Identifier of a member, created on the phone that adds the member. */
 export const memberIdSchema = idSchema.brand('MemberId');

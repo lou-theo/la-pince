@@ -3,14 +3,18 @@ import { z } from 'zod';
 import { computeEffect, type Effect } from './effect.ts';
 import { entrySchema } from './entry.ts';
 import { type MemberId, memberIdSchema, operationIdSchema, revisionIdSchema } from './ids.ts';
+import { textSchema } from './text.ts';
 
-// Far above Tricount's longest title in the group's history, and a bound on what a sent operation makes the server store.
+// Far above the longest title of the group's history (41 characters); bounds what a sent operation makes the server store.
 const MAX_TITLE_LENGTH = 100;
+
+/** Title of an operation, shared with the Tricount conversion so that an import never sends a title the server rejects. */
+export const operationTitleSchema = textSchema(MAX_TITLE_LENGTH);
 
 const revisionFields = {
   id: operationIdSchema,
   revisionId: revisionIdSchema,
-  title: z.string().min(1).max(MAX_TITLE_LENGTH),
+  title: operationTitleSchema,
   /** Calendar day, `YYYY-MM-DD`, as the person entered it; never a time, which would move the day with the time zone. */
   date: z.iso.date(),
   /** The member who entered this revision (“who I am” on the phone that sent it), when known. */
@@ -27,11 +31,11 @@ const deletionSchema = z.strictObject({ ...revisionFields, deleted: z.literal(tr
 export const operationSchema = z.union([entryRevisionSchema, deletionSchema]);
 export type Operation = z.infer<typeof operationSchema>;
 
-// Counter of the change that wrote the revision, given by the server; a new revision of the operation gets a new, larger one.
-const seq = z.int().positive();
+// Given by the server to each revision it writes, from a counter that only grows: a new revision of the operation gets a larger one.
+const seqSchema = z.int().positive();
 
-/** Current revision of an operation as the server sends it back, with `seq`, the counter of the change that wrote it. */
-export const changeSchema = z.union([entryRevisionSchema.extend({ seq }), deletionSchema.extend({ seq })]);
+/** Current revision of an operation as the server sends it back. */
+export const changeSchema = z.union([entryRevisionSchema.extend({ seq: seqSchema }), deletionSchema.extend({ seq: seqSchema })]);
 export type Change = z.infer<typeof changeSchema>;
 
 /** Effect of the operation on the accounts, computed from its entry as on every phone; none for a deleted operation. */

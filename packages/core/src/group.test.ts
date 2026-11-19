@@ -20,6 +20,7 @@ describe('groupResponseSchema', () => {
     ['a member listed twice', { ...group, members: [...group.members, { id: 'alice', name: 'Alice again' }] }],
     ['a member without a name', { ...group, members: [{ id: 'alice', name: '' }] }],
     ['a name over 50 characters', { ...group, members: [{ id: 'alice', name: 'a'.repeat(51) }] }],
+    ['a name with a lone surrogate', { ...group, members: [{ id: 'alice', name: 'Ali\uD800' }] }],
     ['an empty title', { ...group, title: '' }],
     ['a title over 100 characters', { ...group, title: 'a'.repeat(101) }],
     ['an unknown field', { ...group, token: 'secret' }],

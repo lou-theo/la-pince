@@ -41,6 +41,10 @@ describe('operationSchema', () => {
     ['a title over 100 characters', { ...expense, title: 'a'.repeat(101) }],
     ['an empty revision id', { ...expense, revisionId: '' }],
     ['an id over 64 characters', { ...expense, id: 'a'.repeat(65) }],
+    // Stored in UTF-8, a lone surrogate would come back as U+FFFD: another id, another leftover cent.
+    ['an id with a lone surrogate', { ...expense, id: 'op\uD800' }],
+    ['an id with a space', { ...expense, revisionId: 'rev 1' }],
+    ['a title with a lone surrogate', { ...expense, title: 'Dinner \uDC00' }],
     ['an author that is not an id', { ...expense, author: 42 }],
   ])('rejects %s', (_, operation) => {
     expect(operationSchema.safeParse(operation).success).toBe(false);
@@ -62,8 +66,16 @@ describe('operationEffect', () => {
     expect(
       operationEffect(operation)
         ?.shares.map((share) => share.amount)
-        .toSorted(),
+        .toSorted((a, b) => a - b),
     ).toStrictEqual([500, 501]);
+  });
+
+  it('keeps the leftover cent on the same member from one revision to the next', () => {
+    // rev1 and rev2 would give the extra cent to different members if the revision, not the operation, seeded it.
+    const revisions = ['rev1', 'rev2'].map((revisionId) => operationSchema.parse({ ...expense, revisionId, entry: { ...entry, total: 1001 } }));
+    const [first, second] = revisions.map(operationEffect);
+    expect(first).toBeDefined();
+    expect(second).toStrictEqual(first);
   });
 
   it('gives a deleted operation no effect', () => {
@@ -73,7 +85,7 @@ describe('operationEffect', () => {
   const members = ['alice', 'bob', 'carol', 'dave', 'eve'];
   const operations = fc
     .record({
-      id: fc.string({ minLength: 1, maxLength: 64 }),
+      id: fc.stringMatching(/^[A-Za-z0-9_-]{1,64}$/),
       total: fc.integer({ min: 1, max: 100_000_000 }),
       involved: fc.uniqueArray(fc.constantFrom(...members), { minLength: 1 }),
       payer: fc.constantFrom(...members),
@@ -88,10 +100,12 @@ describe('operationEffect', () => {
       }),
     );
 
-  it('gives the same effect once the operation has travelled between phone and server', () => {
+  it('gives the same effect once the operation has travelled between phone and server and been stored in UTF-8', () => {
     fc.assert(
       fc.property(operations, (operation) => {
-        const received = operationSchema.parse(JSON.parse(JSON.stringify(operation)));
+        // Through UTF-8 and back, as storage does; encodeURIComponent throws on a string UTF-8 cannot carry.
+        const stored = decodeURIComponent(encodeURIComponent(JSON.stringify(operation)));
+        const received = operationSchema.parse(JSON.parse(stored));
         expect(operationEffect(received)).toStrictEqual(operationEffect(operation));
       }),
     );
