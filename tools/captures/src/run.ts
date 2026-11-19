@@ -118,8 +118,8 @@ export async function captures({ before, out: outOption, print }: Options): Prom
       print(`version before: ${before} (${sha}), checked out and installed in ${checkout}`);
       // Forgets the worktrees of an interrupted run, whose folders are gone.
       await git(root, 'worktree', 'prune');
-      await git(root, 'worktree', 'add', '--detach', checkout, sha);
       try {
+        await git(root, 'worktree', 'add', '--detach', checkout, sha);
         await exec('pnpm', ['install', '--frozen-lockfile', '--prefer-offline'], { cwd: checkout });
         const stack = await startStack(checkout);
         const dir = join(out, 'avant');
@@ -134,8 +134,9 @@ export async function captures({ before, out: outOption, print }: Options): Prom
           }
         }
       } finally {
-        await git(root, 'worktree', 'remove', '--force', checkout);
+        // Still registered if `worktree add` failed: prune forgets it once its folder is gone.
         await rm(checkout, { recursive: true, force: true });
+        await git(root, 'worktree', 'prune');
       }
     }
 
