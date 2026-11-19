@@ -1,0 +1,43 @@
+# Daily copy of the instance's D1 database, beyond the 7 days of Time Travel (docs/auto-hebergement.md, section Sauvegarde).
+# A model: it runs from a private repo of its own, copied there as .github/workflows/sauvegarde.yml, never from the public repo of the code.
+name: Sauvegarde
+
+on:
+  # 03:17 in Paris in winter: off the round hour, which GitHub delays the most; an export blocks the database while it runs.
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sauvegarde
+
+jobs:
+  sauvegarde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          D1_DATABASE: ${{ vars.D1_DATABASE || 'la-pince' }}
+        # Wrangler prints a download link to the export, valid one hour: its output stays out of the logs, shown on failure without links.
+        run: |
+          status=0
+          npx --yes wrangler@4.164.0 d1 export "$D1_DATABASE" --remote --output=la-pince.sql > "$RUNNER_TEMP/export.log" 2>&1 || status=$?
+          if [ "$status" -ne 0 ]; then
+            sed -E 's#https?://[^[:space:]"]+#<url>#g' "$RUNNER_TEMP/export.log"
+            exit "$status"
+          fi
+      # The export is identical as long as the database does not change: a day without change leaves no commit.
+      - run: |
+          git add la-pince.sql
+          if git diff --cached --quiet; then
+            echo "Database unchanged, nothing to commit."
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -q -m "Sauvegarde du $(date -u +%F)"
+          git push -q
