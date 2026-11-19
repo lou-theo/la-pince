@@ -10,7 +10,7 @@ export default defineConfig({
     paraglideVitePlugin({ project: './project.inlang', outdir: './src/i18n/paraglide', strategy: ['baseLocale'] }),
     VitePWA({
       registerType: 'autoUpdate',
-      // The shell only: API answers are never cached until the offline step brings the local copy of the group.
+      // The shell only: API answers are never cached.
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png}'],
         navigateFallback: 'index.html',

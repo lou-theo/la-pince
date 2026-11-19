@@ -37,6 +37,7 @@ export function PasteLink(): ReactNode {
           type="url"
           inputMode="url"
           autoComplete="off"
+          placeholder={m.home_link_placeholder()}
           value={text}
           aria-invalid={invalid}
           aria-describedby={invalid ? errorId : undefined}

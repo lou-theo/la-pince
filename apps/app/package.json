@@ -13,8 +13,7 @@
     "@la-pince/core": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "wouter": "catalog:",
-    "zod": "catalog:"
+    "wouter": "catalog:"
   },
   "devDependencies": {
     "@inlang/paraglide-js": "catalog:",

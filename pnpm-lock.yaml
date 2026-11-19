@@ -155,9 +155,6 @@ importers:
       wouter:
         specifier: 'catalog:'
         version: 3.13.0(react@19.3.1)
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.7
     devDependencies:
       '@inlang/paraglide-js':
         specifier: 'catalog:'

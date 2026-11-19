@@ -1,4 +1,4 @@
-// What this phone remembers between visits, until the offline step brings IndexedDB. Storage may be unavailable (private browsing, blocked site
+// What this phone remembers between visits. Storage may be unavailable (private browsing, blocked site
 // data): the app then asks again rather than failing.
 
 const lastGroupKey = 'la-pince:last-group';

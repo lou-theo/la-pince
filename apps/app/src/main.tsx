@@ -12,6 +12,6 @@ if (root === null) {
 }
 createRoot(root).render(
   <StrictMode>
-    <App client={createApiClient((url, init) => fetch(url, init))} />
+    <App client={createApiClient(fetch)} />
   </StrictMode>,
 );

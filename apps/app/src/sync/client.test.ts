@@ -1,4 +1,4 @@
-import { type ApiError, type GroupResponse, groupResponseSchema } from '@la-pince/core';
+import { type ApiError, groupResponseSchema } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
 import { createApiClient, type Fetch } from './client.ts';
@@ -10,7 +10,7 @@ const group = groupResponseSchema.parse({
     { id: 'm1', name: 'Alice' },
     { id: 'm2', name: 'Bruno' },
   ],
-} satisfies { title: string; members: { id: string; name: string }[] });
+});
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -19,7 +19,7 @@ describe('fetchGroup', () => {
     const urls: string[] = [];
     const fetchFn: Fetch = (url) => {
       urls.push(url);
-      return Promise.resolve(json(group satisfies GroupResponse));
+      return Promise.resolve(json(group));
     };
     expect(await createApiClient(fetchFn).fetchGroup(token)).toStrictEqual({ ok: true, group });
     expect(urls).toStrictEqual([`/api/groups/${token}`]);
