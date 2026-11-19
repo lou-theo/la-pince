@@ -1,5 +1,5 @@
 import { type ApiError, type Change, groupResponseSchema, memberIdSchema, operationSchema } from '@la-pince/core';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { type GroupDb, openGroupDb } from '../storage/groupDb.ts';
 import { change, fakeServer, json } from '../testing/fake-server.ts';
@@ -191,6 +191,10 @@ describe('sending a revision', () => {
 });
 
 describe('the copy kept on the phone', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   const down = (url: string) => (url.startsWith('/api/') ? Promise.reject(new TypeError('Failed to fetch')) : undefined);
 
   it('opens without network on the last complete read, who I am included, and tells the read that failed', async () => {
@@ -267,13 +271,54 @@ describe('the copy kept on the phone', () => {
   it('asks once that the browser keep its storage, after the first save', async () => {
     const persist = vi.fn(() => Promise.resolve(true));
     vi.stubGlobal('navigator', { storage: { persisted: () => Promise.resolve(false), persist } });
-    try {
-      const { store } = watch([]);
-      await store.load();
-      await store.load();
-      expect(persist).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.unstubAllGlobals();
-    }
+    const { store } = watch([]);
+    await store.load();
+    await store.load();
+    expect(persist).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves the whole copy once a save succeeds after one that failed, so that nothing read meanwhile goes missing', async () => {
+    const changes = [change({ id: 'a', date: '2026-11-01' })];
+    const real = await openGroupDb(token);
+    let failing = false;
+    const flaky: GroupDb = {
+      ...real,
+      saveRead: (read) => (failing ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : real.saveRead(read)),
+    };
+    const { store } = watch(changes, { openDb: () => Promise.resolve(flaky) });
+    await store.load();
+    changes.push(change({ id: 'b', date: '2026-11-02' }));
+    failing = true;
+    await store.load();
+    changes.push(change({ id: 'c', date: '2026-11-03' }));
+    failing = false;
+    await store.load();
+    expect(ids(store.getSnapshot())).toStrictEqual(['a', 'b', 'c']);
+
+    const offline = watch(changes, { answer: down });
+    await offline.store.load();
+    expect(ids(offline.store.getSnapshot())).toStrictEqual(['a', 'b', 'c']);
+  });
+
+  it('keeps the copy a second window saved further when the first read of another window is saved late', async () => {
+    const changes = [change({ id: 'a', date: '2026-11-01' })];
+    let open: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    const real = await openGroupDb(token);
+    const late: GroupDb = { ...real, saveRead: (read) => gate.then(() => real.saveRead(read)) };
+    const first = watch(changes, { openDb: () => Promise.resolve(late) });
+    const firstLoad = first.store.load();
+    await vi.waitFor(() => {
+      expect(first.server.calls).toHaveLength(2);
+    });
+    changes.push(change({ id: 'b', date: '2026-11-02' }));
+    const second = watch(changes);
+    await second.store.load();
+    open();
+    await firstLoad;
+    changes.push(change({ id: 'c', date: '2026-11-03' }));
+    await second.store.load();
+    expect(ids(second.store.getSnapshot())).toStrictEqual(['a', 'b', 'c']);
+    expect(ids(first.store.getSnapshot())).toStrictEqual(['a', 'b']);
   });
 });

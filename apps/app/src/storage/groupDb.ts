@@ -20,17 +20,22 @@ export interface GroupCopy {
   readonly cursor: Cursor;
 }
 
-/** A read ended by a page with `hasMore: false`, to save: the changes it brought, and whether it started from 0 and so replaces the whole copy. */
+/** A read ended by a page with `hasMore: false`, to save. */
 export interface CompleteRead {
   readonly group: GroupResponse;
+  /** The cursor the read started from, and the changes it brought since. */
+  readonly since: Cursor;
   readonly changes: readonly Change[];
   readonly cursor: Cursor;
-  readonly fromStart: boolean;
+  /** The whole copy the window holds once the read is applied: every change up to `cursor`. */
+  readonly known: ReadonlyMap<OperationId, Change>;
+  /** The server's history was rebuilt (`cursor_ahead`): what is stored may hold operations the server no longer has. */
+  readonly reset: boolean;
 }
 
 /** The copy of one group kept on this phone, so that the app opens without network. */
 export interface GroupDb {
-  /** The last complete read, or nothing before the first one or when what is stored no longer matches the schemas of the core. */
+  /** The last complete read, or nothing before the first one; a copy that no longer matches the schemas of the core is dropped. */
   readonly loadCopy: () => Promise<GroupCopy | undefined>;
   /** Saves a complete read in one transaction, then gives the copy as stored, which another window of the same group may have moved further. */
   readonly saveRead: (read: CompleteRead) => Promise<GroupCopy>;
@@ -75,48 +80,66 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
 
   return {
     async loadCopy() {
-      const transaction = db.transaction(['operations', 'meta']);
-      const [stored, operations] = await Promise.all([transaction.objectStore('meta').get('read'), transaction.objectStore('operations').getAll()]);
+      const transaction = db.transaction(['operations', 'meta'], 'readwrite');
+      const meta = transaction.objectStore('meta');
+      const operations = transaction.objectStore('operations');
+      const [stored, records] = await Promise.all([meta.get('read'), operations.getAll()]);
       const read = storedReadSchema.safeParse(stored);
-      if (!read.success) {
-        return undefined;
-      }
       const changes = new Map<OperationId, Change>();
-      for (const operation of operations) {
-        const parsed = changeSchema.safeParse(operation);
-        if (!parsed.success) {
-          return undefined;
+      for (const record of records) {
+        const parsed = changeSchema.safeParse(record);
+        if (parsed.success) {
+          changes.set(parsed.data.id, parsed.data);
         }
-        changes.set(parsed.data.id, parsed.data);
       }
-      return { group: read.data.group, changes, cursor: read.data.cursor };
+      if (read.success && changes.size === records.length) {
+        await transaction.done;
+        return { group: read.data.group, changes, cursor: read.data.cursor };
+      }
+      // Dropped, so that the next save, finding no copy, writes a whole one instead of merging into records it cannot read.
+      await Promise.all([meta.delete('read'), operations.clear()]);
+      await transaction.done;
+      return undefined;
     },
 
-    async saveRead({ group, changes, cursor, fromStart }) {
+    async saveRead({ group, since, changes, cursor, known, reset }) {
       const transaction = db.transaction(['operations', 'meta'], 'readwrite');
       const operations = transaction.objectStore('operations');
       const meta = transaction.objectStore('meta');
-      let saved = cursor;
-      if (fromStart) {
-        await operations.clear();
-      } else {
-        // Another window may have saved a later read: keep the most recent revision of each operation, and the furthest cursor, so that the copy
-        // stays every change up to its cursor.
+      try {
         const previous = storedReadSchema.safeParse(await meta.get('read'));
-        if (previous.success && previous.data.cursor > cursor) {
-          saved = previous.data.cursor;
+        let saved = cursor;
+        if (reset || !previous.success || previous.data.cursor < since) {
+          // No copy, or one that misses changes before the read started (an earlier save failed): the window's whole copy replaces it.
+          await operations.clear();
+          for (const change of known.values()) {
+            await operations.put(change);
+          }
+        } else {
+          // The stored copy holds every change up to its cursor, at or past where the read started, and another window may have saved it further:
+          // keep the most recent revision of each operation and the furthest cursor, so that the copy still holds every change up to its cursor.
+          saved = previous.data.cursor > cursor ? previous.data.cursor : cursor;
+          for (const change of changes) {
+            const current = await operations.get(change.id);
+            if (current === undefined || current.seq < change.seq) {
+              await operations.put(change);
+            }
+          }
         }
-      }
-      for (const change of changes) {
-        const current = fromStart ? undefined : await operations.get(change.id);
-        if (current === undefined || current.seq < change.seq) {
-          await operations.put(change);
+        await meta.put({ group, cursor: saved, readAt: Date.now() } satisfies z.input<typeof storedReadSchema>, 'read');
+        const all = await operations.getAll();
+        await transaction.done;
+        return { group, changes: new Map(all.map((change) => [change.id, change])), cursor: saved };
+      } catch (error) {
+        // A request that throws (a value the browser cannot store) does not abort the transaction by itself: what was written before would stay.
+        void transaction.done.catch(() => undefined);
+        try {
+          transaction.abort();
+        } catch {
+          // Already ended: it failed on its own (storage full at commit), nothing was written.
         }
+        throw error;
       }
-      await meta.put({ group, cursor: saved, readAt: Date.now() } satisfies z.input<typeof storedReadSchema>, 'read');
-      const all = await operations.getAll();
-      await transaction.done;
-      return { group, changes: new Map(all.map((change) => [change.id, change])), cursor: saved };
     },
 
     async loadCurrentMember() {

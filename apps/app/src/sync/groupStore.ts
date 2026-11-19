@@ -80,14 +80,17 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
   }
 
   async function save(completed: CompleteRead): Promise<GroupState> {
-    const memory = new Map(completed.fromStart || state.status !== 'ready' ? [] : state.changes);
-    for (const change of completed.changes) {
-      memory.set(change.id, change);
-    }
-    const inMemory: GroupState = { status: 'ready', group: completed.group, changes: memory, cursor: completed.cursor, currentMember };
+    // Built once the saves are done, for who I am may have been chosen meanwhile.
+    const inMemory = (): GroupState => ({
+      status: 'ready',
+      group: completed.group,
+      changes: completed.known,
+      cursor: completed.cursor,
+      currentMember,
+    });
     const opened = await db;
     if (opened === undefined) {
-      return inMemory;
+      return inMemory();
     }
     try {
       const saved = await opened.saveRead(completed);
@@ -97,8 +100,9 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       }
       return { status: 'ready', ...saved, currentMember };
     } catch {
-      // Not saved (storage full, database closed by a newer version of the app): the read still shows, and the next one saves again.
-      return inMemory;
+      // Not saved (storage full, database closed by a newer version of the app, until the app reloads): the read still shows, and the next save
+      // writes the whole copy, the stored one missing what this read brought.
+      return inMemory();
     }
   }
 
@@ -108,25 +112,32 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
     if (!group.ok) {
       return { status: 'error', error: group.error };
     }
-    let cursor = state.status === 'ready' ? state.cursor : start;
-    let fromStart = cursor === start;
-    let changes: Change[] = [];
+    let known = new Map(state.status === 'ready' ? state.changes : []);
+    let since = state.status === 'ready' ? state.cursor : start;
+    let reset = false;
+    let cursor = since;
+    const changes: Change[] = [];
     for (;;) {
       const page = await client.fetchChanges(token, cursor);
       if (!page.ok) {
         // The server's history was rebuilt behind our cursor: drop the copy and read it all again, once.
-        if (page.error === 'cursor_ahead' && !fromStart) {
-          fromStart = true;
-          changes = [];
+        if (page.error === 'cursor_ahead' && since !== start) {
+          known = new Map();
+          since = start;
+          reset = true;
           cursor = start;
+          changes.length = 0;
           continue;
         }
         return { status: 'error', error: page.error === 'cursor_ahead' ? 'unexpected' : page.error };
       }
-      changes.push(...page.value.changes);
+      for (const change of page.value.changes) {
+        changes.push(change);
+        known.set(change.id, change);
+      }
       cursor = page.value.cursor;
       if (!page.value.hasMore) {
-        return save({ group: group.value, changes, cursor, fromStart });
+        return save({ group: group.value, since, changes, cursor, known, reset });
       }
     }
   }
