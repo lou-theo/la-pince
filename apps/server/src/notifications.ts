@@ -241,7 +241,8 @@ async function deliver(
       vapid,
     );
   } catch (error) {
-    // A phone key that is not a point of P-256, which the subscription's schema cannot check: it would fail again on every try.
+    // A phone key that is not a point of P-256, which the subscription's schema cannot check, or broken VAPID keys: it would fail again on
+    // every try.
     return { outcome: 'invalid', message, error: String(error) };
   }
   let response: Response;
