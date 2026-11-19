@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 import { type Cents, enteredAmountSchema } from './amount.ts';
 import { type Entry, entrySchema } from './entry.ts';
+import { groupTitleSchema, memberNameSchema } from './group.ts';
 import { type MemberId, memberIdSchema, type OperationId, operationIdSchema } from './ids.ts';
+import { operationTitleSchema } from './operation.ts';
 
 // Tricount writes money spent as a negative amount with two decimals (“-10.20”), and a zero share unsigned or not; a positive amount is an
 // income, which La Pince does not model.
@@ -37,7 +39,7 @@ function wrappedMembership<T extends z.ZodType>(membership: T) {
 
 const membershipRefSchema = wrappedMembership(z.object({ uuid: memberIdSchema })).transform((membership): MemberId => membership.uuid);
 
-const memberSchema = wrappedMembership(z.object({ uuid: memberIdSchema, alias: z.object({ display_name: z.string().min(1) }) }));
+const memberSchema = wrappedMembership(z.object({ uuid: memberIdSchema, alias: z.object({ display_name: memberNameSchema }) }));
 
 const allocationSchema = z.object({ membership: membershipRefSchema, amount: tricountCentsSchema });
 
@@ -57,7 +59,7 @@ const registryEntrySchema = z
     uuid: operationIdSchema,
     status: z.literal('ACTIVE'),
     amount: tricountCentsSchema,
-    description: z.string(),
+    description: operationTitleSchema,
     // NORMAL is an expense, BALANCE a reimbursement from the owner to the one other member allocated the amount.
     type_transaction: z.enum(['NORMAL', 'BALANCE']),
     membership_owned: membershipRefSchema,
@@ -106,7 +108,7 @@ const tricountExportSchema = z.object({
     z.object({
       Registry: z
         .object({
-          title: z.string(),
+          title: groupTitleSchema,
           memberships: z.array(memberSchema),
           all_registry_entry: z.array(z.object({ RegistryEntry: registryEntrySchema })),
         })

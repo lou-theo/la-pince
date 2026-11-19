@@ -14,7 +14,7 @@ PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cl
 
 ## Carte du repo
 
-- `packages/core` : calcul, types, validation (schémas zod de toute donnée entrante), conversion Tricount ; ne dépend d'aucun autre paquet du repo. `fixtures/tricount-demo.json` : corpus anonymisé, seule donnée issue du vrai groupe admise dans le repo.
+- `packages/core` : calcul, types, validation (schémas zod de toute donnée entrante), contrat de synchronisation, conversion Tricount ; ne dépend d'aucun autre paquet du repo. `fixtures/tricount-demo.json` : corpus anonymisé, seule donnée issue du vrai groupe admise dans le repo.
 - `packages/config` : configs partagées (tsconfig de base, ESLint, Prettier, preset Vitest).
 - `docs/cadrage/` : cadrage du projet (besoin, décisions, plan) ; `docs/cadrage/essais/` garde des essais jetables, hors lint et format.
 - À venir, créés avec leur premier code : `apps/app` (PWA React), `apps/server` (Worker Hono et Drizzle), `tools/import-tricount` (script local d'import).

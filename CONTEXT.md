@@ -19,4 +19,8 @@ Chaque terme du domaine est défini une fois ici ; les docs et l'interface l'emp
 - **Remboursement suggéré** (`SuggestedTransfer`) : virement proposé entre deux membres pour ramener les soldes à zéro ; pas une opération tant qu'il n'est pas enregistré.
 - **Centimes** (`Cents`) : unité de tous les montants, en entiers ; un montant saisi en euros est converti à l'entrée et jamais arrondi.
 - **File d'envoi** (`outbox`) : opérations saisies sur le téléphone en attente d'envoi au serveur, rejouables sans doublon.
-- **Version** d'une opération (`revision`) : chaque état envoyé d'une opération, gardé par le serveur ; la dernière arrivée au serveur fait foi.
+- **Version** d'une opération (`revision`) : chaque état envoyé d'une opération, gardé par le serveur ; la dernière arrivée au serveur fait foi ; le contrat de synchronisation la nomme `Operation` (`operationSchema`), seule forme sous laquelle une opération circule.
+- **Auteur** d'une version (`author`) : le membre « qui je suis » du téléphone qui l'a envoyée, quand il est connu ; il doit être membre du groupe.
+- **Opération supprimée** (`deleted`) : version qui marque l'opération comme supprimée au lieu de l'effacer, pour que la suppression atteigne les autres téléphones ; elle n'a plus d'effet.
+- **Curseur** (`cursor`) : position d'un téléphone dans l'historique des changements du serveur, la valeur du compteur (`seq`) du dernier changement reçu ; il ne fait que croître.
+- **Changement** (`Change`) : version courante d'une opération telle que la lecture la rend, avec son `seq`, la valeur du compteur du serveur quand il l'a écrite.

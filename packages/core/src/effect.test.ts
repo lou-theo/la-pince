@@ -153,7 +153,7 @@ describe('computeEffect', () => {
       const fixed = generated.reduce((sum, line) => sum + ('amount' in line ? line.amount : 0), 0);
       return { lines: generated, entry: entry(generated, generated.some((line) => 'weight' in line) ? fixed + extra : undefined) };
     });
-  const operationIds = fc.string({ minLength: 1 }).map(id);
+  const operationIds = fc.stringMatching(/^[A-Za-z0-9_-]{1,64}$/).map(id);
 
   it('always splits the whole total into positive whole cents, one share per member at most', () => {
     fc.assert(

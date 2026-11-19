@@ -4,6 +4,8 @@ import { ZodError } from 'zod';
 import corpus from '../fixtures/tricount-demo.json' with { type: 'json' };
 import { computeBalances } from './balances.ts';
 import { computeEffect } from './effect.ts';
+import { groupResponseSchema } from './group.ts';
+import { operationSchema, unknownMembers } from './operation.ts';
 import { suggestTransfers } from './transfers.ts';
 import { convertTricount } from './tricount.ts';
 
@@ -112,10 +114,19 @@ describe('convertTricount', () => {
     ['a deleted operation', [{ status: 'DELETED' }], '"status"'],
     ['a day that does not exist', [{ date: '2026-02-30 12:00:00.000000' }], 'invalid_date'],
     ['a date without a time', [{ date: '2026-11-16' }], 'invalid_date'],
+    // Bounds of the sync contract, so that an import never fails halfway through its batches.
+    ['an empty description', [{ description: '' }], '"description"'],
+    ['a description over 100 characters', [{ description: 'a'.repeat(101) }], '"description"'],
   ])('rejects %s', (_, operations, issue) => {
     const convert = () => convertTricount(exportOf(operations));
     expect(convert).toThrow(ZodError);
     expect(convert).toThrow(issue);
+  });
+
+  it('rejects a member name or a group title the sync contract would reject', () => {
+    expect(() => convertTricount(exportOf([], { members: ['alice', 'b'.repeat(51)] }))).toThrow('"display_name"');
+    const untitled: unknown = JSON.parse(JSON.stringify(exportOf([])).replace('"title":"Trip"', '"title":""'));
+    expect(() => convertTricount(untitled)).toThrow('"title"');
   });
 
   it('rejects a member listed twice', () => {
@@ -152,6 +163,15 @@ describe('demo corpus', () => {
 
   it('keeps every member and operation', () => {
     expect([group.members.length, group.operations.length]).toStrictEqual([13, 250]);
+  });
+
+  it('gives a group and operations the sync contract accepts', () => {
+    expect(groupResponseSchema.safeParse({ title: group.title, members: group.members }).success).toBe(true);
+    const members = new Set(group.members.map((groupMember) => groupMember.id));
+    for (const operation of group.operations) {
+      const sent = operationSchema.parse({ ...operation, revisionId: `${operation.id}-1` });
+      expect(unknownMembers(sent, members)).toStrictEqual([]);
+    }
   });
 
   it('finds 9 609,80 € spent, as the Tricount app shows, and 1 024,16 € reimbursed', () => {
