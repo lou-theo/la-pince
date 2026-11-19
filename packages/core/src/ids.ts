@@ -1,12 +1,20 @@
 import { z } from 'zod';
 
+// Room for a UUID (36 characters) or a Tricount identifier, and a bound on what a sent operation makes the server store.
+const MAX_ID_LENGTH = 64;
+const idSchema = z.string().min(1).max(MAX_ID_LENGTH);
+
 /** Identifier of a member, created on the phone that adds the member. */
-export const memberIdSchema = z.string().min(1).brand('MemberId');
+export const memberIdSchema = idSchema.brand('MemberId');
 export type MemberId = z.infer<typeof memberIdSchema>;
 
 /** Identifier of an operation, created on the phone that enters it, so that a replayed send never creates a duplicate. */
-export const operationIdSchema = z.string().min(1).brand('OperationId');
+export const operationIdSchema = idSchema.brand('OperationId');
 export type OperationId = z.infer<typeof operationIdSchema>;
+
+/** Identifier of a revision of an operation, created on the phone with each change, so that a replayed send never writes a revision twice. */
+export const revisionIdSchema = idSchema.brand('RevisionId');
+export type RevisionId = z.infer<typeof revisionIdSchema>;
 
 /**
  * Orders identifiers by UTF-16 code units. Phone and server must order members the same way for the leftover cent to go to the same member,
