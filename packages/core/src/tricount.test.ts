@@ -156,7 +156,7 @@ describe('convertTricount', () => {
   });
 });
 
-// Anonymised export of the group's tricount on 16/11/2026: members renamed, titles invented, identifiers replaced; dates, amounts and splits kept.
+// Anonymised export of the group's tricount on 19/11/2026: members renamed, titles invented, identifiers replaced; dates, amounts and splits kept.
 describe('demo corpus', () => {
   const group = convertTricount(corpus);
   const effects = group.operations.map((operation) => computeEffect(operation.id, operation.entry));
@@ -164,7 +164,7 @@ describe('demo corpus', () => {
   const names = new Map(group.members.map(({ id, name }) => [id, name]));
 
   it('keeps every member and operation', () => {
-    expect([group.members.length, group.operations.length]).toStrictEqual([13, 250]);
+    expect([group.members.length, group.operations.length]).toStrictEqual([13, 253]);
   });
 
   it('gives a group and operations the sync contract accepts', () => {
@@ -176,10 +176,10 @@ describe('demo corpus', () => {
     }
   });
 
-  it('finds 9 609,80 € spent, as the Tricount app shows, and 1 024,16 € reimbursed', () => {
+  it('finds 9 756,29 € spent and 1 105,25 € reimbursed', () => {
     const total = (countsAsSpending: boolean) =>
       effects.filter((effect) => effect.countsAsSpending === countsAsSpending).reduce((sum, effect) => sum + effect.total, 0);
-    expect([total(true), total(false)]).toStrictEqual([960_980, 102_416]);
+    expect([total(true), total(false)]).toStrictEqual([975_629, 110_525]);
   });
 
   it('gives every operation the payer and the shares of the export, to the cent', () => {
@@ -206,17 +206,17 @@ describe('demo corpus', () => {
     // debited their allocation.
     const byName = Object.fromEntries([...balances].map(([id, balance]) => [names.get(id) ?? id, balance]));
     expect(byName).toStrictEqual({
-      Agathe: 4224,
-      Basile: 1637,
+      Agathe: 0,
+      Basile: 6850,
       Capucine: -3597,
-      Désiré: -9608,
-      Eulalie: 1190,
-      Firmin: 1035,
+      Désiré: -1499,
+      Eulalie: -575,
+      Firmin: -907,
       Gaspard: 1,
-      Honorine: -1564,
-      Isidore: 4402,
+      Honorine: -3390,
+      Isidore: 2602,
       Joséphine: 3548,
-      Léandre: 210,
+      Léandre: -1555,
       Mélusine: -1,
       Octave: -1477,
     });
