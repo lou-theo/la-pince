@@ -107,10 +107,51 @@ pnpm --filter @la-pince/server exec wrangler d1 time-travel info la-pince --conf
 pnpm --filter @la-pince/server exec wrangler d1 time-travel restore la-pince --timestamp=<date ISO 8601> --config wrangler.production.jsonc
 ```
 
-Après une fusion qui a abîmé la base, avec le déploiement automatique : annuler d'abord la PR fautive sur `main` (revert), puis restaurer , sans relancer entre-temps de passage qui contient encore la migration : la restauration efface aussi la trace de son passage, et tout déploiement de ce code la rejouerait.
+Après une fusion qui a abîmé la base, avec le déploiement automatique : annuler d'abord la PR fautive sur `main` (revert), puis restaurer, sans relancer entre-temps de passage qui contient encore la migration : la restauration efface aussi la trace de son passage, et tout déploiement de ce code la rejouerait.
 
-Au-delà de 7 jours, rien n'est gardé : exporter la base de temps en temps et garder le fichier hors de Cloudflare.
+### Copie quotidienne, au-delà de 7 jours
+
+Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi de la perte du compte doit vivre ailleurs. `tools/sauvegarde/sauvegarde.yml` est une tâche planifiée GitHub qui exporte la base chaque nuit et commite le fichier SQL dans un repo privé, seulement s'il a changé : l'historique du repo donne la base à toute date passée. Le fichier est en clair : les liens des groupes n'y sont que hachés, il ne donne accès à aucun groupe, mais il contient les noms, les titres et les montants de tous les groupes de l'instance. Elle tient dans les minutes gratuites de GitHub Actions pour un repo privé ; l'export bloque la base le temps qu'il tourne, quelques secondes pour un groupe.
+
+1. Créer un jeton d'API réservé à la sauvegarde, pour que GitHub ne garde pas celui du déploiement : My Profile, API Tokens, Create Token, Custom token, permission Account, D1, Edit (l'export est refusé en lecture seule) ; le récapitulatif doit montrer « D1: Edit » seul.
+2. Créer le repo privé à côté du dossier du code, pas dedans, et y mettre la tâche (`<compte>` étant son compte GitHub) :
+
+   ```sh
+   cd ..
+   gh repo create <compte>/la-pince-sauvegardes --private --clone
+   mkdir -p la-pince-sauvegardes/.github/workflows
+   cp la-pince/tools/sauvegarde/sauvegarde.yml la-pince-sauvegardes/.github/workflows/
+   git -C la-pince-sauvegardes add .github && git -C la-pince-sauvegardes commit -m "Tâche de sauvegarde" && git -C la-pince-sauvegardes push -u origin HEAD
+   cd la-pince
+   ```
+
+3. Y poser le jeton et l'identifiant du compte (section 2) ; une base qui ne s'appelle pas `la-pince` se nomme en plus par la variable `D1_DATABASE` (dernière commande) :
+
+   ```sh
+   gh secret set CLOUDFLARE_API_TOKEN -R <compte>/la-pince-sauvegardes
+   gh secret set CLOUDFLARE_ACCOUNT_ID -R <compte>/la-pince-sauvegardes
+   gh variable set D1_DATABASE --body <nom de la base> -R <compte>/la-pince-sauvegardes
+   ```
+
+4. Lancer une première copie sans attendre la nuit, suivre son passage (`gh run watch` le propose quelques secondes après le lancement, le temps que GitHub le crée), puis vérifier que `la-pince.sql` est arrivé dans le repo :
+
+   ```sh
+   gh workflow run sauvegarde.yml -R <compte>/la-pince-sauvegardes
+   gh run watch -R <compte>/la-pince-sauvegardes
+   git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql
+   ```
+
+GitHub prévient par mail d'une copie en échec la personne qui a poussé la tâche, selon ses réglages de notifications. Une tâche planifiée peut partir en retard, ou plus rarement sauter un jour, quand GitHub est chargé.
+
+### Restaurer une copie
+
+Une copie se rejoue dans une base neuve, vers laquelle l'instance bascule ensuite ; l'ancienne reste intacte tant qu'on ne la supprime pas. Les copies sont commitées par GitHub : rapatrier d'abord l'historique, puis choisir `<commit>`, celui de la copie voulue. Le fichier extrait contient tous les groupes en clair : il va dans `temp/`, que git ignore, jamais ailleurs dans le dossier du code.
 
 ```sh
-pnpm --filter @la-pince/server exec wrangler d1 export la-pince --remote --output="$PWD/la-pince-$(date +%F).sql" --config wrangler.production.jsonc
+git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql
+mkdir -p temp && git -C ../la-pince-sauvegardes show <commit>:la-pince.sql > "$PWD/temp/la-pince-restauree.sql"
+pnpm --filter @la-pince/server exec wrangler d1 create la-pince-restauree --jurisdiction=eu --update-config=false
+pnpm --filter @la-pince/server exec wrangler d1 execute la-pince-restauree --remote --file="$PWD/temp/la-pince-restauree.sql"
 ```
+
+Puis, dans `apps/server/wrangler.production.jsonc`, remplacer seulement `database_id` par celui de la base neuve (donné par `d1 create`), en gardant `database_name` à `la-pince` : le déploiement et les commandes Time Travel trouvent la base par ce nom dans la config, et viseraient sinon l'ancienne base ou échoueraient ; redéployer (section 4, et reposer `WRANGLER_PRODUCTION_JSONC_BASE64` si la CI déploie), et donner `la-pince-restauree` à la variable `D1_DATABASE` du repo de sauvegarde. Les téléphones voient que la base a changé et relisent leur groupe en entier ; ce qui a été saisi après la copie est perdu, sauf ce qui attendait encore dans la file d'envoi d'un téléphone.

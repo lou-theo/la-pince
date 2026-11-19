@@ -20,6 +20,7 @@ PWA open source de partage de dépenses pour un groupe d'amis, que chaque groupe
 - `apps/server` : Worker Hono, D1 par Drizzle ; schéma dans `src/schema.ts`, migrations générées dans `drizzle/` (jamais écrites à la main), tests de l'API dans workerd ; `wrangler.jsonc` est la config du local et des tests, `wrangler.production.example.jsonc` le modèle de la config d'une instance déployée, copié dans `wrangler.production.jsonc`, ignoré par git et jamais committé.
 - `tools/import-tricount` : script local qui importe un export Tricount dans un serveur par son API et relit les soldes ; lancé sous Node, sans étape de build.
 - `tools/captures` : captures des écrans sur le groupe de démo (planches avant/après, GIF d'un parcours), mode d'emploi dans le skill `.claude/skills/captures`.
+- `tools/sauvegarde` : modèle de la tâche planifiée GitHub qui copie la base chaque nuit dans un repo privé à soi (`docs/auto-hebergement.md`, section Sauvegarde).
 - `tools/e2e` : tests de bout en bout (Playwright, Chromium et WebKit) et budgets de performance, sur l'app construite et le Worker local, groupes de démo tirés du corpus.
 - `docs/cadrage/` : cadrage du projet (besoin, décisions, plan) ; `docs/cadrage/essais/` garde des essais jetables, hors lint et format.
 
