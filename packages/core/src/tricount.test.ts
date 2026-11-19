@@ -17,6 +17,7 @@ const exportOf = (operations: Record<string, unknown>[], { members = ['alice', '
   Response: [
     {
       Registry: {
+        uuid: 'trip',
         title: 'Trip',
         memberships: members.map((uuid) => ({ RegistryMembershipNonUser: { uuid, alias: { display_name: uuid.toUpperCase() } } })),
         all_registry_entry: operations.map((operation, index) => ({
@@ -46,6 +47,7 @@ describe('convertTricount', () => {
       }),
     );
     expect(group).toStrictEqual({
+      id: 'trip',
       title: 'Trip',
       members: [
         { id: 'alice', name: 'ALICE' },

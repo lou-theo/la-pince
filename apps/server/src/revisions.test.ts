@@ -11,7 +11,7 @@ import {
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import { type BatchContext, canonicalJson, decideRevisions, type StoredRevision } from './revisions.ts';
+import { type BatchContext, decideRevisions, type StoredRevision } from './revisions.ts';
 
 const trip = groupIdSchema.parse('trip');
 const other = groupIdSchema.parse('other');
@@ -49,13 +49,6 @@ const context = ({
 
 const statuses = (decisions: ReturnType<typeof decideRevisions>) =>
   decisions.map((decision) => (decision.status === 'rejected' ? `rejected:${decision.reason}` : decision.status));
-
-describe('canonicalJson', () => {
-  it('gives the same text whatever the order of the fields, keeping the order of arrays', () => {
-    expect(canonicalJson({ b: 1, a: { d: [2, 1], c: null } })).toBe(canonicalJson({ a: { c: null, d: [2, 1] }, b: 1 }));
-    expect(canonicalJson({ a: [1, 2] })).not.toBe(canonicalJson({ a: [2, 1] }));
-  });
-});
 
 describe('decideRevisions', () => {
   it('writes new revisions in the order sent', () => {
