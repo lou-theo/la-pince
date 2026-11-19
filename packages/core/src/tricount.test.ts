@@ -123,6 +123,12 @@ describe('convertTricount', () => {
     expect(convert).toThrow(issue);
   });
 
+  it('rejects a member name or a group title the sync contract would reject', () => {
+    expect(() => convertTricount(exportOf([], { members: ['alice', 'b'.repeat(51)] }))).toThrow('"display_name"');
+    const untitled: unknown = JSON.parse(JSON.stringify(exportOf([])).replace('"title":"Trip"', '"title":""'));
+    expect(() => convertTricount(untitled)).toThrow('"title"');
+  });
+
   it('rejects a member listed twice', () => {
     expect(() => convertTricount(exportOf([], { members: ['alice', 'alice'] }))).toThrow('duplicate_member');
   });
