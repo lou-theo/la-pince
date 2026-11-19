@@ -35,12 +35,21 @@ describe('run', () => {
     expect(code).toBe(0);
     const token = /: ([\w-]{43})$/.exec(lines[0] ?? '')?.[1];
     expect(lines.slice(1)).toStrictEqual([
-      `group: ${LA_PINCE_URL}api/groups/${String(token)}`,
+      `group: http://localhost:5173/g/${String(token)}`,
       'Groupe de démo: 250 revisions written, 0 of them deletions',
       "spent 9 609,80 €, reimbursed 1 024,16 €, balances equal to the export's to the cent",
     ]);
-    const again = await cli([corpusPath], { ADMIN_TOKEN, LA_PINCE_URL, LA_PINCE_GROUP_TOKEN: String(token) });
-    expect(again.lines.slice(0, 3)).toStrictEqual([...lines.slice(0, 2), 'Groupe de démo: 0 revisions written, 0 of them deletions']);
+    const again = await cli([corpusPath], {
+      ADMIN_TOKEN,
+      LA_PINCE_URL,
+      LA_PINCE_APP_URL: 'https://la-pince.example',
+      LA_PINCE_GROUP_TOKEN: String(token),
+    });
+    expect(again.lines.slice(0, 3)).toStrictEqual([
+      lines[0],
+      `group: https://la-pince.example/g/${String(token)}`,
+      'Groupe de démo: 0 revisions written, 0 of them deletions',
+    ]);
   });
 
   it('prints its usage without an export file, an admin token, or a choice between the link token and a new one', async () => {
