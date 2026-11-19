@@ -41,8 +41,8 @@ jobs:
     needs: verifier
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    # A build and a deployment, without the tests of `verifier`.
-    timeout-minutes: 10
+    # A build and a deployment, without the tests of `verifier`; generous, so as never to cut migrations short.
+    timeout-minutes: 20
     # Holds the secrets; the guide restricts it to main (docs/auto-hebergement.md). Without them every step is skipped, so a fork is not affected.
     environment: production
     steps:
@@ -56,7 +56,9 @@ jobs:
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$WRANGLER_PRODUCTION_JSONC_BASE64" ]; then
             echo "::notice::No deployment: the secrets of the production environment are not set."
           # An older run, re-run or picked up late, would put older code on a database already migrated further.
-          elif [ "$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)" != "$GITHUB_SHA" ]; then
+          elif ! head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha); then
+            exit 1
+          elif [ "$head" != "$GITHUB_SHA" ]; then
             echo "::notice::No deployment: main has moved on, its own run deploys it."
           else
             echo "deploy=true" >> "$GITHUB_OUTPUT"
@@ -84,12 +86,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         # The logs of a public repo are public, and Wrangler prints the instance's address and its database id (decision 40): its output is kept
-        # out of them, and shown on failure only, without addresses or ids.
+        # out of them, and shown on failure only, without addresses, ids nor quoted names (custom domain, subdomain).
         run: |
           status=0
           pnpm --filter @la-pince/server run deploy > "$RUNNER_TEMP/deploy.log" 2>&1 || status=$?
           if [ "$status" -ne 0 ]; then
-            sed -E 's#https?://[^[:space:]"]+#<url>#g; s#[A-Za-z0-9.-]+\.workers\.dev#<host>#g; s/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/<id>/g; s/[0-9a-f]{32}/<id>/g' "$RUNNER_TEMP/deploy.log"
+            sed -E 's#https?://[^[:space:]"]+#<url>#g; s#[A-Za-z0-9.-]+\.workers\.dev#<host>#g; s/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/<id>/g; $1; s/"[^"]*"/"<…>"/g' "$RUNNER_TEMP/deploy.log"
             exit "$status"
           fi
           echo "Instance deployed."

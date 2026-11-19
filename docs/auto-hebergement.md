@@ -107,7 +107,7 @@ pnpm --filter @la-pince/server exec wrangler d1 time-travel info la-pince --conf
 pnpm --filter @la-pince/server exec wrangler d1 time-travel restore la-pince --timestamp=<date ISO 8601> --config wrangler.production.jsonc
 ```
 
-Après une fusion qui a abîmé la base, avec le déploiement automatique : annuler d'abord la PR fautive sur `main` (revert), puis restaurer ; dans l'ordre inverse, le déploiement suivant rejouerait la migration, la restauration ayant aussi effacé la trace de son passage.
+Après une fusion qui a abîmé la base, avec le déploiement automatique : annuler d'abord la PR fautive sur `main` (revert), puis restaurer , sans relancer entre-temps de passage qui contient encore la migration : la restauration efface aussi la trace de son passage, et tout déploiement de ce code la rejouerait.
 
 Au-delà de 7 jours, rien n'est gardé : exporter la base de temps en temps et garder le fichier hors de Cloudflare.
 
