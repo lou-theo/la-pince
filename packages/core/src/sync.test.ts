@@ -42,11 +42,19 @@ describe('changesQuerySchema', () => {
     expect(changesQuerySchema.parse({})).toStrictEqual({ since: 0, limit: MAX_CHANGES });
   });
 
-  it('reads the cursor and the page size from the query strings, ignoring other parameters', () => {
-    expect(changesQuerySchema.parse({ since: '42', limit: '10', cache: '1' })).toStrictEqual({ since: 42, limit: 10 });
+  it('reads the cursor, its revision and the page size from the query strings, ignoring other parameters', () => {
+    expect(changesQuerySchema.parse({ since: '42', revision: 'rev1', limit: '10', cache: '1' })).toStrictEqual({
+      since: 42,
+      revision: 'rev1',
+      limit: 10,
+    });
   });
 
   it.each([
+    ['a cursor past 0 without its revision', { since: '42' }],
+    ['a revision without a cursor', { revision: 'rev1' }],
+    ['a revision with the cursor 0', { since: '0', revision: 'rev1' }],
+    ['a malformed revision', { since: '42', revision: 'rev 1' }],
     ['a negative cursor', { since: '-1' }],
     ['a cursor in exponent notation', { since: '1e3' }],
     ['a hexadecimal cursor', { since: '0x10' }],
@@ -96,7 +104,7 @@ describe('changesResponseSchema', () => {
   });
 
   describe('pageFollowsQuery', () => {
-    const query = changesQuerySchema.parse({ since: '5', limit: '2' });
+    const query = changesQuerySchema.parse({ since: '5', revision: 'rev5', limit: '2' });
     const page = (changes: ReturnType<typeof change>[], cursor: number) =>
       changesResponseSchema.parse({ changes, cursor, hasMore: changes.length === 2 });
 
@@ -138,7 +146,7 @@ describe('operationBatchResponseSchema', () => {
 
 describe('apiErrorSchema', () => {
   it('accepts a known error and nothing else', () => {
-    expect(apiErrorSchema.parse({ error: 'cursor_ahead' })).toStrictEqual({ error: 'cursor_ahead' });
+    expect(apiErrorSchema.parse({ error: 'unknown_cursor' })).toStrictEqual({ error: 'unknown_cursor' });
     expect(apiErrorSchema.safeParse({ error: 'teapot' }).success).toBe(false);
   });
 });

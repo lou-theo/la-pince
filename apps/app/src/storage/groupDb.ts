@@ -38,7 +38,7 @@ export interface CompleteRead {
   readonly cursor: Cursor;
   /** The whole copy the window holds once the read is applied: every change up to `cursor`. */
   readonly known: ReadonlyMap<OperationId, Change>;
-  /** The server's history was rebuilt (`cursor_ahead`): what is stored may hold operations the server no longer has. */
+  /** The read started again from 0 (`unknown_cursor`, or a copy without the change at its cursor): what is stored may hold operations the server no longer has. */
   readonly reset: boolean;
 }
 

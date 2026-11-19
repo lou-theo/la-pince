@@ -1,6 +1,7 @@
 import {
   apiErrorSchema,
   changesQuerySchema,
+  type ChangesResponse,
   changesResponseSchema,
   groupResponseSchema,
   operationBatchResponseSchema,
@@ -66,6 +67,13 @@ const read = async (token: string, query: Record<string, string> = {}) => {
   expect(pageFollowsQuery(changesQuerySchema.parse(query), page)).toBe(true);
   return page;
 };
+
+// Query of the next read after a page, as a phone sends it: the cursor and the revision received at it.
+const after = (page: ChangesResponse, limit?: string) => ({
+  since: String(page.cursor),
+  revision: page.changes.at(-1)?.revisionId ?? '',
+  ...(limit === undefined ? {} : { limit }),
+});
 
 const errorOf = async (response: Awaited<ReturnType<typeof server.fetch>>) => [response.status, apiErrorSchema.parse(await response.json()).error];
 
@@ -261,22 +269,54 @@ describe('GET /api/groups/:token/changes', () => {
       Array.from({ length: 5 }, (_, index) => expense(`j${String(index)}`, `j${String(index)}-r1`)),
     );
     const first = await read(token, { limit: '2' });
-    const second = await read(token, { since: String(first.cursor), limit: '2' });
-    const third = await read(token, { since: String(second.cursor), limit: '2' });
+    const second = await read(token, after(first, '2'));
+    const third = await read(token, after(second, '2'));
     expect([first.hasMore, second.hasMore, third.hasMore]).toStrictEqual([true, true, false]);
     expect([...first.changes, ...second.changes, ...third.changes].map((change) => change.id)).toStrictEqual(['j0', 'j1', 'j2', 'j3', 'j4']);
-    expect(await read(token, { since: String(third.cursor) })).toStrictEqual({ changes: [], cursor: third.cursor, hasMore: false });
+    expect(await read(token, after(third))).toStrictEqual({ changes: [], cursor: third.cursor, hasMore: false });
   });
 
-  it('answers cursor_ahead for a cursor past the last change of the group', async () => {
+  const changesAt = (token: string, since: number, revision: string) =>
+    server.fetch(`/api/groups/${token}/changes?${new URLSearchParams({ since: String(since), revision }).toString()}`);
+
+  it('answers unknown_cursor for a cursor past the last change, or whose revision is not the group’s at that seq', async () => {
     const { token } = await newGroup();
-    expect(await read(token)).toStrictEqual({ changes: [], cursor: 0, hasMore: false });
-    expect(await errorOf(await server.fetch(`/api/groups/${token}/changes?since=1`))).toStrictEqual([409, 'cursor_ahead']);
+    const other = await newGroup();
+    await send(token, [expense('m1', 'm1-r1')]);
+    await send(other.token, [expense('m2', 'm2-r1')]);
+    const page = await read(token);
+    expect(await errorOf(await changesAt(token, page.cursor + 1_000, 'm1-r1'))).toStrictEqual([409, 'unknown_cursor']);
+    expect(await errorOf(await changesAt(token, page.cursor, 'm2-r1'))).toStrictEqual([409, 'unknown_cursor']);
+    const theOther = await read(other.token);
+    // The right seq and revision, but read through the link of another group.
+    expect(await errorOf(await changesAt(token, theOther.cursor, 'm2-r1'))).toStrictEqual([409, 'unknown_cursor']);
+  });
+
+  it('answers unknown_cursor once the database is restored before the cursor, its seq gone or given to another revision', async () => {
+    const { token } = await newGroup();
+    await send(token, [expense('n1', 'n1-r1')]);
+    const before = await read(token);
+    await send(token, [expense('n2', 'n2-r1')]);
+    const seen = await read(token, after(before));
+    expect(seen.changes.map((change) => change.id)).toStrictEqual(['n2']);
+    // What a restore to the point before `l2` leaves: the revision and the operation gone, the counter back, as SQLite keeps it in the database.
+    const { DB } = await server.getWorker<Env>().getEnv();
+    await DB.batch([
+      DB.prepare('DELETE FROM operations WHERE id = ?').bind('n2'),
+      DB.prepare('DELETE FROM revisions WHERE seq = ?').bind(seen.cursor),
+      DB.prepare("UPDATE sqlite_sequence SET seq = ? WHERE name = 'revisions'").bind(seen.cursor - 1),
+    ]);
+    expect(await errorOf(await changesAt(token, seen.cursor, 'n2-r1'))).toStrictEqual([409, 'unknown_cursor']);
+    expect(await send(token, [expense('n3', 'n3-r1')])).toStrictEqual([{ revisionId: 'n3-r1', status: 'written', seq: seen.cursor }]);
+    expect(await errorOf(await changesAt(token, seen.cursor, 'n2-r1'))).toStrictEqual([409, 'unknown_cursor']);
+    // A phone that read `l3` after the restore goes on reading.
+    expect(await read(token, after(await read(token, after(before))))).toStrictEqual({ changes: [], cursor: seen.cursor, hasMore: false });
   });
 
   it('refuses a query it cannot read, and an unknown link', async () => {
     const { token } = await newGroup();
     expect(await errorOf(await server.fetch(`/api/groups/${token}/changes?since=1e3`))).toStrictEqual([400, 'invalid_request']);
+    expect(await errorOf(await server.fetch(`/api/groups/${token}/changes?since=1`))).toStrictEqual([400, 'invalid_request']);
     expect(await errorOf(await server.fetch(`/api/groups/${'z'.repeat(32)}/changes`))).toStrictEqual([404, 'group_not_found']);
   });
 });

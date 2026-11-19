@@ -80,9 +80,11 @@ export async function importTricount(options: ImportOptions): Promise<ImportRepo
   });
   const readAll = async (): Promise<Map<OperationId, Change>> => {
     const current = new Map<OperationId, Change>();
+    let revision: string | undefined;
     for (let since = 0, hasMore = true; hasMore;) {
-      const query = changesQuerySchema.parse({ since: String(since) });
-      const page = changesResponseSchema.parse(await call(`/api/groups/${options.token}/changes?since=${String(since)}`));
+      const params = { since: String(since), ...(revision === undefined ? {} : { revision }) };
+      const query = changesQuerySchema.parse(params);
+      const page = changesResponseSchema.parse(await call(`/api/groups/${options.token}/changes?${new URLSearchParams(params).toString()}`));
       if (!pageFollowsQuery(query, page)) {
         throw new ImportError(`page read from ${String(since)} does not follow its query`);
       }
@@ -90,6 +92,7 @@ export async function importTricount(options: ImportOptions): Promise<ImportRepo
         current.set(change.id, change);
       }
       ({ cursor: since, hasMore } = page);
+      revision = page.changes.at(-1)?.revisionId ?? revision;
     }
     return current;
   };

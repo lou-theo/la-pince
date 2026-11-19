@@ -11,12 +11,12 @@ import {
   type OperationBatchResponse,
   revisionIdSchema,
 } from '@la-pince/core';
-import { and, asc, eq, gt, max } from 'drizzle-orm';
+import { and, asc, eq, gt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { type Context, Hono } from 'hono';
 import { z } from 'zod';
 
-import { groups, members, operations } from './schema.ts';
+import { groups, members, operations, revisions } from './schema.ts';
 import { applyBatch } from './store.ts';
 
 export interface Env {
@@ -82,13 +82,16 @@ app.get('/api/groups/:token/changes', async (context) => {
     return apiError(context, 'group_not_found', 404);
   }
   const db = drizzle(context.env.DB);
-  const { since, limit } = query.data;
-  const [last] = await db
-    .select({ seq: max(operations.seq) })
-    .from(operations)
-    .where(eq(operations.groupId, groupId));
-  if (since > (last?.seq ?? 0)) {
-    return apiError(context, 'cursor_ahead', 409);
+  const { since, revision, limit } = query.data;
+  if (revision !== undefined) {
+    // After a restore, the seq of the cursor may be gone, or given again to another revision.
+    const [atCursor] = await db
+      .select({ seq: revisions.seq })
+      .from(revisions)
+      .where(and(eq(revisions.seq, since), eq(revisions.revisionId, revision), eq(revisions.groupId, groupId)));
+    if (atCursor === undefined) {
+      return apiError(context, 'unknown_cursor', 409);
+    }
   }
   // One row more than asked tells whether another page is waiting.
   const rows = await db
