@@ -139,6 +139,9 @@ describe('adding an expense', () => {
     await user.type(field('Total, pour contrôle (facultatif)'), '19,50');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(await screen.findByRole('heading', { name: 'Restaurant' })).toBeDefined();
+    await waitFor(() => {
+      expect(posted).toHaveLength(1);
+    });
     expect(posted).toMatchObject([
       {
         entry: {
@@ -182,7 +185,7 @@ describe('adding an expense', () => {
     // Alice paid 45,00 € with 20,00 € on Bruno, who paid 10,00 € split with Alice: 10,00 - 20,00 - 5,00.
     const line = (name: string) => screen.getByText(name).closest('li')?.textContent;
     expect(line('Bruno (toi)')).toBe(euros('Bruno (toi)-15,00'));
-    expect(screen.getByText(/^Dont 1 saisie non envoyée, dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+    expect(screen.getByText(/^Ces soldes comptent 1 saisie non envoyée\. Dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
     expect(posted).toHaveLength(0);
 
     // A second revision of the same expense counts once.
@@ -193,13 +196,18 @@ describe('adding an expense', () => {
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(await screen.findByRole('heading', { name: 'Péage A7' })).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Soldes' }));
-    expect(screen.getByText(/^Dont 1 saisie non envoyée/)).toBeDefined();
+    expect(screen.getByText(/^Ces soldes comptent 1 saisie non envoyée/)).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Dépenses' }));
     await user.click(screen.getByRole('link', { name: /Courses/ }));
     await user.click(screen.getByRole('button', { name: 'Supprimer' }));
     await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
     await user.click(await screen.findByRole('link', { name: 'Soldes' }));
-    expect(screen.getByText(/^Dont 2 saisies non envoyées, dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+    expect(screen.getByText(/^Ces soldes comptent 2 saisies non envoyées\. Dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+    // A wake that cannot reach the server says so, with the promise about what waits.
+    window.dispatchEvent(new Event('online'));
+    expect((await screen.findByRole('status')).textContent).toMatch(
+      /^Hors ligne, dernière synchro à \d\d:\d\d : tes saisies partiront au retour du réseau\./,
+    );
 
     offline = false;
     window.dispatchEvent(new Event('online'));
@@ -223,7 +231,10 @@ describe('modifying and deleting', () => {
     await user.type(field('Titre'), 'Courses du samedi');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(await screen.findByRole('heading', { name: 'Courses du samedi' })).toBeDefined();
-    // Every share saved as it was.
+    // Every share saved as it was, sent once the store has queued it.
+    await waitFor(() => {
+      expect(posted).toHaveLength(1);
+    });
     expect(posted).toMatchObject([
       {
         id: 'op-shopping',
@@ -250,7 +261,9 @@ describe('modifying and deleting', () => {
     await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
     expect(await screen.findByText("Aucune dépense pour l'instant.")).toBeDefined();
     expect(at(location)).toBe('/');
-    expect(posted).toMatchObject([{ id: 'op-shopping', title: 'Courses', deleted: true, author: 'm2' }]);
+    await waitFor(() => {
+      expect(posted).toMatchObject([{ id: 'op-shopping', title: 'Courses', deleted: true, author: 'm2' }]);
+    });
   });
 });
 
@@ -302,6 +315,10 @@ describe('a send under way', () => {
     expect(screen.queryByRole('button', { name: 'Annuler' })).toBeNull();
     release();
     expect(await screen.findByText("Aucune dépense pour l'instant.")).toBeDefined();
+    // A second deletion would be queued with the first, and sent in the same batch.
+    await waitFor(() => {
+      expect(posted.length).toBeGreaterThan(0);
+    });
     expect(posted).toHaveLength(1);
   });
 });
@@ -360,6 +377,9 @@ describe('a reimbursement', () => {
     expect((field('À') as HTMLSelectElement).value).toBe('m1');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(await screen.findByText('Bruno (toi) a remboursé Alice')).toBeDefined();
+    await waitFor(() => {
+      expect(posted).toHaveLength(1);
+    });
     expect(posted).toMatchObject([
       { title: 'Remboursement', entry: { kind: 'reimbursement', payer: 'm2', lines: [{ member: 'm1', amount: 2_000 }] } },
     ]);

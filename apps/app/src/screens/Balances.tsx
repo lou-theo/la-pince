@@ -1,8 +1,8 @@
 import { type ReactNode, useId } from 'react';
 import { Link } from 'wouter';
 
+import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
-import { formatMoment } from '../model/dates.ts';
 import { formatCents } from '../model/money.ts';
 import { settleHref } from './Forms.tsx';
 import layout from './Layout.module.css';

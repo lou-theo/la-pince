@@ -16,9 +16,8 @@ export function localDay(now: Date): string {
 const times = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 const shortDays = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
 
-/** When something happened, on this phone's clock: `à 14:05` the same day, `le 18 nov. à 14:05` before. */
-export function formatMoment(at: number, now: Date = new Date()): string {
+/** When something happened, on this phone's clock: the time, `14:05`, and the day, `18 nov.`, only when it is not the day of `now`. */
+export function momentOf(at: number, now: Date): { readonly time: string; readonly day: string | undefined } {
   const moment = new Date(at);
-  const time = times.format(moment);
-  return localDay(moment) === localDay(now) ? `à ${time}` : `le ${shortDays.format(moment)} à ${time}`;
+  return { time: times.format(moment), day: localDay(moment) === localDay(now) ? undefined : shortDays.format(moment) };
 }

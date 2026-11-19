@@ -63,9 +63,8 @@ describe('opening a group', () => {
     const location = renderApp('/', () => Promise.reject(new TypeError('Failed to fetch')));
     expect(await screen.findByText('Tu es Chloé')).toBeDefined();
     expect(location.history.at(-1)).toBe(`/g/${token}`);
-    expect(screen.getByRole('status').textContent).toMatch(
-      /^Hors ligne, dernière synchro à \d\d:\d\d : tes saisies partiront au retour du réseau\.Réessayer$/,
-    );
+    // Nothing waits to be sent: no promise about it.
+    expect((await screen.findByRole('status')).textContent).toMatch(/^Hors ligne, dernière synchro à \d\d:\d\d\.Réessayer$/);
     expect(screen.queryByRole('alert')).toBeNull();
   });
 

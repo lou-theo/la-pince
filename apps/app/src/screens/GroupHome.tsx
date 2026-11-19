@@ -3,8 +3,8 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 
 import { loadErrorMessage } from '../i18n/errors.ts';
+import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
-import { formatMoment } from '../model/dates.ts';
 import { liveOperations, overlay, sortedBalances, transfers } from '../model/group.ts';
 import type { LoadError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
@@ -104,7 +104,7 @@ export function GroupHome({
       {readError === 'network' ? (
         // Without network the app keeps working: the outbox leaves on its own once the server answers.
         <div className={styles.offline} role="status">
-          <p>{m.group_offline({ when: formatMoment(readAt) })}</p>
+          <p>{(computed.pendingCount > 0 ? m.group_offline_pending : m.group_offline)({ when: formatMoment(readAt) })}</p>
           <button className={layout.link} type="button" onClick={onRetry}>
             {m.group_retry()}
           </button>

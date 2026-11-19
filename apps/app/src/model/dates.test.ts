@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDay, formatMoment, localDay } from './dates.ts';
+import { formatDay, localDay, momentOf } from './dates.ts';
 
 describe('formatDay', () => {
   it('writes the calendar day as entered, never the day before, short or in full', () => {
@@ -18,11 +18,11 @@ describe('localDay', () => {
   });
 });
 
-describe('formatMoment', () => {
+describe('momentOf', () => {
   it("gives the time on the phone's clock, with the day when it is not today", () => {
     // Tests run at UTC-10.
     const now = new Date('2026-11-19T20:00:00Z');
-    expect(formatMoment(Date.parse('2026-11-19T19:05:00Z'), now)).toBe('à 09:05');
-    expect(formatMoment(Date.parse('2026-11-19T05:00:00Z'), now)).toBe('le 18 nov. à 19:00');
+    expect(momentOf(Date.parse('2026-11-19T19:05:00Z'), now)).toStrictEqual({ time: '09:05', day: undefined });
+    expect(momentOf(Date.parse('2026-11-19T05:00:00Z'), now)).toStrictEqual({ time: '19:00', day: '18 nov.' });
   });
 });
