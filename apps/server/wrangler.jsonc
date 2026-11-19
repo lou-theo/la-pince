@@ -7,7 +7,7 @@
   // stays within the CPU time of one invocation whatever the size of the group.
   "queues": {
     "producers": [{ "binding": "NOTIFICATIONS", "queue": "la-pince-notifications" }],
-    "consumers": [{ "queue": "la-pince-notifications", "max_batch_size": 1, "max_batch_timeout": 0 }],
+    "consumers": [{ "queue": "la-pince-notifications", "max_batch_size": 1, "max_batch_timeout": 0, "max_retries": 3 }],
   },
   "d1_databases": [
     {

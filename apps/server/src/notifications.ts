@@ -14,8 +14,8 @@ import {
 } from '@la-pince/core';
 import { z } from 'zod';
 
-// Raw statements throughout: lists are passed as one JSON parameter (`json_each`), D1 taking at most 100 parameters per statement. Table and
-// column names follow `schema.ts`.
+// Raw statements throughout, so that one style serves the guarded insert and the lists, passed as one JSON parameter (`json_each`) since D1
+// takes at most 100 parameters per statement. Table and column names follow `schema.ts`.
 
 /** One push to one phone, as the queue carries it from the request that wrote the revisions to the consumer that encrypts and sends it. */
 const notificationMessageSchema = z.strictObject({
@@ -28,6 +28,7 @@ const notificationMessageSchema = z.strictObject({
   message: pushMessageSchema,
 });
 export type NotificationMessage = z.infer<typeof notificationMessageSchema>;
+type PushNotice = Extract<NotificationMessage['message'], { type: 'operations' }>['notices'][number];
 
 /** Bindings of the notifications; an instance missing one of them runs without notifications. */
 export interface NotificationEnv {
@@ -113,12 +114,14 @@ export async function queueTest(notifier: Notifier, groupId: GroupId, endpoint: 
 const MAX_SEND_MESSAGES = 100;
 const MAX_SEND_BYTES = 200_000;
 
+const byteLength = (value: unknown): number => new TextEncoder().encode(JSON.stringify(value)).byteLength;
+
 /** Splits the messages into the batches `sendBatch` takes, in order. */
 export function sendBatches(messages: readonly NotificationMessage[]): NotificationMessage[][] {
   const batches: NotificationMessage[][] = [];
   let bytes = 0;
   for (const message of messages) {
-    const size = new TextEncoder().encode(JSON.stringify(message)).byteLength;
+    const size = byteLength(message);
     const last = batches.at(-1);
     if (last === undefined || last.length === MAX_SEND_MESSAGES || bytes + size > MAX_SEND_BYTES) {
       batches.push([message]);
@@ -129,6 +132,20 @@ export function sendBatches(messages: readonly NotificationMessage[]): Notificat
     }
   }
   return batches;
+}
+
+// Most bytes the encryption takes (one record of 4096 bytes, less its header and padding, RFC 8291): over it, a message fails on every try.
+export const MAX_PUSH_BYTES = 3993;
+
+// Drops the last notices until the message fits: a title in control characters weighs six bytes a character once in JSON. One notice always
+// fits (a title of 100 characters, a name of 50 and two ids of 64, under 1 200 bytes), and `count` still tells how many there were.
+function fitted(notices: readonly PushNotice[]): PushNotice[] {
+  const kept = [...notices];
+  // The other fields of the message (type, group, count) weigh under 150 bytes.
+  while (kept.length > 1 && byteLength(kept) > MAX_PUSH_BYTES - 150) {
+    kept.pop();
+  }
+  return kept;
 }
 
 // Content written by the server after `operationSchema`, parsed again all the same: a notification is never worth a wrong read.
@@ -181,7 +198,9 @@ export async function queueNotifications(notifier: Notifier, groupId: GroupId, r
         groupId,
         count: memberNotices.length,
         // The id stands in for a name the group no longer has, which the server never lets happen: an author is checked against the members.
-        notices: memberNotices.slice(0, MAX_PUSH_NOTICES).map((notice) => ({ ...notice, authorName: names.get(notice.author) ?? notice.author })),
+        notices: fitted(
+          memberNotices.slice(0, MAX_PUSH_NOTICES).map((notice) => ({ ...notice, authorName: names.get(notice.author) ?? notice.author })),
+        ),
       }),
     ),
   );
@@ -206,25 +225,30 @@ async function deliver(
   body: unknown,
   env: NotificationEnv,
   send: Send,
-): Promise<{ outcome: Outcome; status?: number; message?: NotificationMessage }> {
+): Promise<{ outcome: Outcome; status?: number; message?: NotificationMessage; error?: string }> {
   const parsed = notificationMessageSchema.safeParse(body);
   if (!parsed.success || env.VAPID_PUBLIC_KEY === undefined || env.VAPID_PRIVATE_KEY === undefined) {
     return { outcome: 'invalid' };
   }
   const message = parsed.data;
   const vapid = { subject: message.subject, publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY };
-  let response: Response;
+  let payload: Awaited<ReturnType<typeof buildPushPayload>>;
   try {
     // A day, then the push service drops it: a phone off for longer catches up when the app opens.
-    const payload = await buildPushPayload(
+    payload = await buildPushPayload(
       { data: message.message, options: { ttl: 86_400, urgency: 'normal' } },
       { endpoint: message.endpoint, expirationTime: null, keys: message.keys },
       vapid,
     );
+  } catch (error) {
+    // A phone key that is not a point of P-256, which the subscription's schema cannot check: it would fail again on every try.
+    return { outcome: 'invalid', message, error: String(error) };
+  }
+  let response: Response;
+  try {
     response = await send(message.endpoint, payload);
-  } catch {
-    // The push service out of reach; a key the encryption refuses would fail again just the same, but cannot come from a validated subscription.
-    return { outcome: 'retry', message };
+  } catch (error) {
+    return { outcome: 'retry', message, error: String(error) };
   }
   const { status } = response;
   if (status === 404 || status === 410) {
@@ -241,9 +265,9 @@ async function deliver(
 /** Consumer of the queue: encrypts and sends each message, forgets the subscriptions their push service says are gone, retries later on a failure of the service. */
 export async function deliverBatch(batch: MessageBatch, env: NotificationEnv, send: Send): Promise<void> {
   for (const queued of batch.messages) {
-    const { outcome, status, message } = await deliver(queued.body, env, send);
+    const { outcome, status, message, error } = await deliver(queued.body, env, send);
     // What `wrangler tail` shows of each push: neither the endpoint, which lets anyone send to the phone, nor the content.
-    log({ notification: outcome, status, group: message?.groupId, member: message?.member, attempt: queued.attempts });
+    log({ notification: outcome, status, group: message?.groupId, member: message?.member, attempt: queued.attempts, error });
     if (outcome === 'retry') {
       queued.retry({ delaySeconds: 30 });
     } else {

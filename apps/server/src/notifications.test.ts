@@ -16,6 +16,7 @@ import {
   deleteSubscription,
   deliverBatch,
   MAX_GROUP_SUBSCRIPTIONS,
+  MAX_PUSH_BYTES,
   type NotificationMessage,
   type Notifier,
   notifierOf,
@@ -26,7 +27,7 @@ import {
   sendBatches,
 } from './notifications.ts';
 import { applyBatch } from './store.ts';
-import { generateVapidKeys } from './vapid.ts';
+import { generateVapidKeys, toBase64Url } from './vapid.ts';
 
 // The statements run against the local D1 of workerd, called from the tests; the queue and the push services are played by the tests.
 const server = createTestHarness({ workers: [{ configPath: './wrangler.jsonc' }] });
@@ -56,20 +57,14 @@ const newGroup = async (members: readonly string[] = ['lea', 'max', 'tom']): Pro
   return id;
 };
 
-const base64Url = (bytes: ArrayBuffer): string =>
-  btoa(String.fromCharCode(...new Uint8Array(bytes)))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-
 // A phone's subscription: a real P-256 key, so that the encryption runs as it does for a real phone.
 let phones = 0;
 const phone = async (member: string): Promise<SubscribeRequest> => {
   phones += 1;
   const endpoint = `https://fcm.googleapis.com/fcm/send/phone${String(phones)}`;
   const pair = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])) as CryptoKeyPair;
-  const p256dh = base64Url((await crypto.subtle.exportKey('raw', pair.publicKey)) as ArrayBuffer);
-  const auth = base64Url(crypto.getRandomValues(new Uint8Array(16)).buffer);
+  const p256dh = toBase64Url(new Uint8Array((await crypto.subtle.exportKey('raw', pair.publicKey)) as ArrayBuffer));
+  const auth = toBase64Url(crypto.getRandomValues(new Uint8Array(16)));
   return {
     member: memberIdSchema.parse(member),
     subscription: { endpoint, keys: { p256dh, auth } },
@@ -264,6 +259,23 @@ describe('queueNotifications', () => {
     ]);
   });
 
+  it('drops the last notices of a message the encryption could not take, keeping their count', async () => {
+    const groupId = await newGroup();
+    await subscribe(groupId, 'lea');
+    // Control characters weigh six bytes each once in JSON: five such notices go past what one push carries.
+    await db.prepare("UPDATE members SET name = ? WHERE group_id = ? AND id = 'max'").bind('\u0001'.repeat(50), groupId).run();
+    const { batches, notifier } = fakeQueue();
+    const ops = Array.from({ length: 5 }, (_, index) => ({
+      id: `n7-${String(index)}-${'x'.repeat(58)}`,
+      title: '\u0001'.repeat(100),
+      author: 'max',
+    }));
+    expect(await queueNotifications(notifier, groupId, await write(groupId, ops), 'https://pince.example')).toBe(1);
+    const message = pushMessageSchema.parse(batches[0]?.[0]?.message);
+    expect(message.type === 'operations' ? [message.count, message.notices.length < 5] : []).toStrictEqual([5, true]);
+    expect(new TextEncoder().encode(JSON.stringify(message)).byteLength).toBeLessThanOrEqual(MAX_PUSH_BYTES);
+  });
+
   it('queues nothing for revisions without an author, nor for revisions it cannot find', async () => {
     const groupId = await newGroup();
     await subscribe(groupId, 'lea');
@@ -287,7 +299,7 @@ describe('queueNotifications', () => {
     expect(message.type === 'operations' ? message.notices[0]?.authorName : undefined).toBe('tom');
   });
 
-  // Decision 8: past the 13 members of the largest group seen, and past one `sendBatch`.
+  // Decision 45 (h): past the 13 members of the largest group seen, and past one `sendBatch`.
   it('notifies a group of 40 members with 5 phones each, in batches of at most 100 messages', async () => {
     const members = Array.from({ length: 40 }, (_, index) => `m${String(index)}`);
     const groupId = await newGroup(members);
@@ -398,6 +410,16 @@ describe('deliverBatch', () => {
     expect(message.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
     expect(message.ack).not.toHaveBeenCalled();
     expect(await countSubscriptions(groupId)).toBe(1);
+  });
+
+  it('drops, without sending nor retrying, a message whose phone key is not a point of P-256', async () => {
+    const groupId = await newGroup();
+    const body = await messageFor(groupId, 'lea');
+    const message = queued({ ...body, keys: { ...body.keys, p256dh: `B${'a'.repeat(86)}` } });
+    const send = vi.fn<Send>(() => Promise.resolve(new Response(null, { status: 201 })));
+    await deliverBatch(batchOf(message), env(), send);
+    expect([message.ack.mock.calls.length, message.retry.mock.calls.length, send.mock.calls.length]).toStrictEqual([1, 0, 0]);
+    expect(logs).toHaveBeenCalledWith(expect.stringContaining('"notification":"invalid"'));
   });
 
   it('drops a message the push service refuses for another reason, keeping the phone', async () => {

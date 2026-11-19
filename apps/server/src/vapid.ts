@@ -1,4 +1,5 @@
-function toBase64Url(bytes: Uint8Array): string {
+/** Bytes in base64url without padding, as Web Push writes keys. */
+export function toBase64Url(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes))
     .replaceAll('+', '-')
     .replaceAll('/', '_')
