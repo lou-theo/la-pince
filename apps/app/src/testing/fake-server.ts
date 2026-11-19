@@ -1,4 +1,15 @@
-import { type ApiError, type Change, changeSchema, changesResponseSchema, type GroupResponse, groupResponseSchema } from '@la-pince/core';
+import {
+  type ApiError,
+  type Change,
+  changeSchema,
+  changesResponseSchema,
+  type GroupResponse,
+  groupResponseSchema,
+  operationBatchResponseSchema,
+  operationBatchSchema,
+  type RevisionResult,
+  unknownMembers,
+} from '@la-pince/core';
 
 import type { Fetch } from '../sync/client.ts';
 
@@ -13,7 +24,10 @@ export interface FakeServer {
   readonly calls: string[];
 }
 
-/** Serves one group under its token, its changes by pages of `pageSize`; `answer` may replace the answer to a URL (failure, odd page). */
+/**
+ * Serves one group under its token, its changes by pages of `pageSize`, and writes the revisions sent into `changes` (a resent revision is a
+ * duplicate, one naming a stranger is rejected); `answer` may replace the answer to a URL (failure, odd page).
+ */
 export function fakeServer({
   token,
   group,
@@ -23,7 +37,7 @@ export function fakeServer({
 }: {
   token: string;
   group: GroupResponse;
-  changes?: readonly Change[];
+  changes?: Change[];
   pageSize?: number;
   answer?: (url: string) => Promise<Response> | undefined;
 }): FakeServer {
@@ -31,7 +45,7 @@ export function fakeServer({
   const base = `/api/groups/${token}`;
   return {
     calls,
-    fetch: (url) => {
+    fetch: (url, init) => {
       calls.push(url);
       const replaced = answer?.(url);
       if (replaced !== undefined) {
@@ -39,6 +53,23 @@ export function fakeServer({
       }
       if (url === base) {
         return Promise.resolve(json(groupResponseSchema.parse(group)));
+      }
+      if (url === `${base}/operations` && init?.method === 'POST') {
+        const batch = operationBatchSchema.parse(JSON.parse(typeof init.body === 'string' ? init.body : ''));
+        const members = new Set(group.members.map((member) => member.id));
+        const results = batch.operations.map((operation): RevisionResult => {
+          if (changes.some((current) => current.revisionId === operation.revisionId)) {
+            return { revisionId: operation.revisionId, status: 'duplicate' };
+          }
+          if (unknownMembers(operation, members).length > 0) {
+            return { revisionId: operation.revisionId, status: 'rejected', reason: 'unknown_member' };
+          }
+          seq += 1;
+          const createdSeq = changes.find((current) => current.id === operation.id)?.createdSeq ?? seq;
+          changes.push(changeSchema.parse({ ...operation, seq, createdSeq }));
+          return { revisionId: operation.revisionId, status: 'written', seq };
+        });
+        return Promise.resolve(json(operationBatchResponseSchema.parse({ results })));
       }
       const match = new RegExp(`^${base}/changes\\?since=(\\d+)$`).exec(url);
       if (match === null) {

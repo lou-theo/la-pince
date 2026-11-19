@@ -13,7 +13,7 @@ export default mergeConfig(
       setupFiles: ['src/test-setup.ts'],
       coverage: {
         include: ['src/**/*.{ts,tsx}'],
-        exclude: ['src/**/*.test.{ts,tsx}', 'src/test-setup.ts', 'src/testing/', 'src/main.tsx', 'src/i18n/paraglide/'],
+        exclude: ['src/**/*.test.{ts,tsx}', 'src/test-setup.ts', 'src/testing/**', 'src/main.tsx', 'src/i18n/paraglide/'],
         // Pure functions of the model: fully covered.
         thresholds: { 'src/model/**': { 100: true } },
       },

@@ -1,4 +1,4 @@
-import { type ApiError, cursorSchema, groupResponseSchema } from '@la-pince/core';
+import { type ApiError, type Change, cursorSchema, groupResponseSchema, operationSchema } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
 import { change, fakeServer, json } from '../testing/fake-server.ts';
@@ -69,6 +69,54 @@ describe('fetchChanges', () => {
     const stale = json({ changes, cursor: changes.at(-1)?.seq, hasMore: false });
     expect(await answering(stale).fetchChanges(token, cursor(changes.at(-1)?.seq ?? 0))).toStrictEqual({ ok: false, error: 'unexpected' });
     expect(await answering(json({ changes: [], cursor: 3, hasMore: false })).fetchChanges(token, cursor(2))).toStrictEqual({
+      ok: false,
+      error: 'unexpected',
+    });
+  });
+});
+
+describe('sendOperations', () => {
+  const operation = (id: string, revisionId: string, payer = 'm1') =>
+    operationSchema.parse({
+      id,
+      revisionId,
+      title: 'Courses',
+      date: '2026-11-05',
+      entry: { version: 1, kind: 'expense', payer, lines: [{ member: 'm2', amount: 500 }] },
+    });
+
+  it('posts the revisions in one batch and gives the result of each', async () => {
+    const changes: Change[] = [];
+    const server = fakeServer({ token, group, changes });
+    const client = createApiClient(server.fetch);
+    const first = await client.sendOperations(token, [operation('a', 'a-1'), operation('b', 'b-1', 'stranger')]);
+    expect(first).toMatchObject({
+      ok: true,
+      value: [
+        { revisionId: 'a-1', status: 'written' },
+        { revisionId: 'b-1', status: 'rejected', reason: 'unknown_member' },
+      ],
+    });
+    expect(await client.sendOperations(token, [operation('a', 'a-1')])).toStrictEqual({
+      ok: true,
+      value: [{ revisionId: 'a-1', status: 'duplicate' }],
+    });
+    expect(server.calls).toStrictEqual([`/api/groups/${token}/operations`, `/api/groups/${token}/operations`]);
+    expect(changes.map((written) => written.id)).toStrictEqual(['a']);
+  });
+
+  it('refuses an answer that does not give one result per revision sent, in order', async () => {
+    const results = (...revisionIds: string[]) => json({ results: revisionIds.map((revisionId) => ({ revisionId, status: 'duplicate' })) });
+    const sent = [operation('a', 'a-1'), operation('b', 'b-1')];
+    expect(await answering(results('a-1', 'b-1')).sendOperations(token, sent)).toMatchObject({ ok: true });
+    expect(await answering(results('b-1', 'a-1')).sendOperations(token, sent)).toStrictEqual({ ok: false, error: 'unexpected' });
+    expect(await answering(results('a-1')).sendOperations(token, sent)).toStrictEqual({ ok: false, error: 'unexpected' });
+    expect(await answering(new TypeError('Failed to fetch')).sendOperations(token, sent)).toStrictEqual({ ok: false, error: 'network' });
+    expect(await answering(json({ error: 'group_not_found' } satisfies ApiError, 404)).sendOperations(token, sent)).toStrictEqual({
+      ok: false,
+      error: 'group_not_found',
+    });
+    expect(await answering(json({ error: 'cursor_ahead' } satisfies ApiError, 409)).sendOperations(token, sent)).toStrictEqual({
       ok: false,
       error: 'unexpected',
     });
