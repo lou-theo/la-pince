@@ -26,6 +26,24 @@ export {
 } from './ids.ts';
 export { canonicalJson } from './json.ts';
 export {
+  type EndpointRequest,
+  endpointRequestSchema,
+  MAX_PUSH_NOTICES,
+  type Notice,
+  type NoticeKind,
+  noticeKindSchema,
+  noticesByMember,
+  noticeSchema,
+  type PushKeyResponse,
+  pushKeyResponseSchema,
+  type PushMessage,
+  pushMessageSchema,
+  type PushSubscriptionJson,
+  pushSubscriptionSchema,
+  type SubscribeRequest,
+  subscribeRequestSchema,
+} from './notifications.ts';
+export {
   type Change,
   changeSchema,
   type Operation,

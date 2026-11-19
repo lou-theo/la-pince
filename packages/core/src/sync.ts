@@ -116,9 +116,20 @@ export type OperationBatchResponse = z.infer<typeof operationBatchResponseSchema
 /**
  * Error of a whole request. `invalid_request`: a body or a query the server cannot read, a bug of the client; `group_not_found`: no group behind the
  * link; `unknown_cursor`: the group no longer has the revision named at the cursor (the database was restored to an earlier point), so the phone
- * drops its copy of the group and reads again from 0; `unauthorized`: missing or wrong admin token; `token_in_use`: the admin route was given the link token of another group.
+ * drops its copy of the group and reads again from 0; `unauthorized`: missing or wrong admin token; `token_in_use`: the admin route was given the
+ * link token of another group; `notifications_disabled`: the instance has no push keys or no queue; `subscription_not_found`: no subscription of
+ * the group behind the endpoint; `too_many_subscriptions`: the group holds the most subscriptions the server keeps for it.
  */
 export const apiErrorSchema = z.strictObject({
-  error: z.enum(['invalid_request', 'group_not_found', 'unknown_cursor', 'unauthorized', 'token_in_use']),
+  error: z.enum([
+    'invalid_request',
+    'group_not_found',
+    'unknown_cursor',
+    'unauthorized',
+    'token_in_use',
+    'notifications_disabled',
+    'subscription_not_found',
+    'too_many_subscriptions',
+  ]),
 });
 export type ApiError = z.infer<typeof apiErrorSchema>;
