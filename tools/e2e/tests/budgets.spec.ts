@@ -11,10 +11,11 @@ import { appUrl, openAs } from './app.ts';
 
 /** Budgets of decision 35 (g), on the corpus repeated 10 times (about 2,500 operations); limits and the CI measures they rest on: decision 38. */
 const budgets = {
-  balancesMs: 20,
-  offlineOpenMs: 1_000,
-  entryVisibleMs: 100,
-  catchUpMs: 2_000,
+  balancesMs: 8,
+  offlineOpenMs: 550,
+  entryVisibleMs: 45,
+  catchUpMs: 1_900,
+  // Twice the measure would pass the target of the decision: the target itself.
   shellKb: 150,
 };
 
