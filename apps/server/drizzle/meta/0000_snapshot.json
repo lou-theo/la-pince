@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "71adc13e-4892-46da-803a-61fcd0ce3249",
+  "id": "a956210c-d92d-4884-b9e7-78e6271c2caf",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "groups": {
@@ -217,13 +217,6 @@
             "revision_id"
           ],
           "isUnique": true
-        },
-        "revisions_operation": {
-          "name": "revisions_operation",
-          "columns": [
-            "operation_id"
-          ],
-          "isUnique": false
         }
       },
       "foreignKeys": {

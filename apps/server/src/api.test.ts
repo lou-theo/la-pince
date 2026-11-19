@@ -157,9 +157,11 @@ describe('POST /api/groups/:token/operations', () => {
     });
   });
 
-  it('serves the mark of a deleted operation', async () => {
+  it('serves the mark of a deleted operation, which a replay of an older revision does not bring back', async () => {
     const { token } = await newGroup();
     await send(token, [expense('c1', 'c1-r1'), { id: 'c1', revisionId: 'c1-r2', title: 'Groceries', date: '2026-11-16', deleted: true }]);
+    expect((await read(token)).changes).toMatchObject([{ id: 'c1', deleted: true }]);
+    expect(await send(token, [expense('c1', 'c1-r1')])).toStrictEqual([{ revisionId: 'c1-r1', status: 'duplicate' }]);
     expect((await read(token)).changes).toMatchObject([{ id: 'c1', deleted: true }]);
   });
 

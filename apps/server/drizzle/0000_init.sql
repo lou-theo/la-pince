@@ -33,5 +33,4 @@ CREATE TABLE `revisions` (
 	FOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `revisions_revision_id_unique` ON `revisions` (`revision_id`);--> statement-breakpoint
-CREATE INDEX `revisions_operation` ON `revisions` (`operation_id`);
+CREATE UNIQUE INDEX `revisions_revision_id_unique` ON `revisions` (`revision_id`);

@@ -9,17 +9,15 @@ import {
   MAX_BATCH_REVISIONS,
   memberIdSchema,
   type OperationBatchResponse,
-  operationIdSchema,
   revisionIdSchema,
-  type RevisionResult,
 } from '@la-pince/core';
-import { and, asc, eq, gt, inArray, max } from 'drizzle-orm';
+import { and, asc, eq, gt, max } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { type Context, Hono } from 'hono';
 import { z } from 'zod';
 
-import { type BatchContext, decideRevisions } from './revisions.ts';
-import { groups, members, operations, revisions } from './schema.ts';
+import { groups, members, operations } from './schema.ts';
+import { applyBatch } from './store.ts';
 
 export interface Env {
   readonly DB: D1Database;
@@ -119,65 +117,12 @@ app.post('/api/groups/:token/operations', async (context) => {
   if (groupId === undefined) {
     return apiError(context, 'group_not_found', 404);
   }
-  const db = drizzle(context.env.DB);
-  const batch = envelope.data.operations.map((raw) => ({ revisionId: raw.revisionId, raw }));
-  const revisionIds = batch.map((item) => item.revisionId);
-  const operationIds = envelope.data.operations.flatMap((raw) => {
-    const id = operationIdSchema.safeParse(raw.id);
-    return id.success ? [id.data] : [];
-  });
-  const [memberRows, revisionRows, operationRows] = await Promise.all([
-    db.select({ id: members.id }).from(members).where(eq(members.groupId, groupId)),
-    db
-      .select({ revisionId: revisions.revisionId, groupId: revisions.groupId, content: revisions.content })
-      .from(revisions)
-      .where(inArray(revisions.revisionId, revisionIds)),
-    operationIds.length === 0
-      ? []
-      : db.select({ id: operations.id, groupId: operations.groupId }).from(operations).where(inArray(operations.id, operationIds)),
-  ]);
-  const batchContext: BatchContext = {
-    groupId,
-    members: new Set(memberRows.map((row) => memberIdSchema.parse(row.id))),
-    storedRevisions: new Map(
-      revisionRows.map((row) => [revisionIdSchema.parse(row.revisionId), { groupId: groupIdSchema.parse(row.groupId), content: row.content }]),
-    ),
-    operationGroups: new Map(operationRows.map((row) => [operationIdSchema.parse(row.id), groupIdSchema.parse(row.groupId)])),
-  };
-  const decisions = decideRevisions(batch, batchContext);
-  const writes = decisions.flatMap((decision) => (decision.status === 'write' ? [decision] : []));
-  // Raw statements: Drizzle's D1 batch does not take an `INSERT … SELECT … ON CONFLICT`, and both must run in one batch, D1's transaction.
-  const statements = writes.flatMap(({ revisionId, operation, content }) => [
-    context.env.DB.prepare(
-      'INSERT INTO revisions (revision_id, group_id, operation_id, content) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING RETURNING seq',
-    ).bind(revisionId, groupId, operation.id, content),
-    // The current state moves only if the insert above took place (`last_insert_rowid()` is then its seq), and never across groups: a concurrent
-    // request that replays the same revision, or takes the same operation id in another group, changes nothing.
-    context.env.DB.prepare(
-      `INSERT INTO operations (id, group_id, seq, created_seq, content)
-       SELECT ?, ?, seq, seq, ? FROM revisions WHERE revision_id = ? AND seq = last_insert_rowid()
-       ON CONFLICT (id) DO UPDATE SET seq = excluded.seq, content = excluded.content WHERE operations.group_id = excluded.group_id`,
-    ).bind(operation.id, groupId, content, revisionId),
-  ]);
-  const results = statements.length === 0 ? [] : await context.env.DB.batch<{ seq: number }>(statements);
-  const written = new Map(
-    writes.flatMap((write, index) => {
-      const seq = results[index * 2]?.results[0]?.seq;
-      return seq === undefined ? [] : [[write.revisionId, seq] as const];
-    }),
-  );
   const response: OperationBatchResponse = {
-    results: decisions.map((decision): RevisionResult => {
-      if (decision.status !== 'write') {
-        return decision;
-      }
-      const seq = written.get(decision.revisionId);
-      // shortcut: a revision inserted meanwhile by a concurrent request is answered as a duplicate without comparing its content; the content check
-      // above covers every replay that does not race.
-      return seq === undefined
-        ? { revisionId: decision.revisionId, status: 'duplicate' }
-        : { revisionId: decision.revisionId, status: 'written', seq };
-    }),
+    results: await applyBatch(
+      context.env.DB,
+      groupId,
+      envelope.data.operations.map((raw) => ({ revisionId: raw.revisionId, raw })),
+    ),
   };
   return context.json(response);
 });

@@ -22,20 +22,16 @@ export const members = sqliteTable(
 );
 
 // Every revision received, kept to recover an overwritten change; `seq` is the counter of the sync, shared by all groups and never reused.
-export const revisions = sqliteTable(
-  'revisions',
-  {
-    seq: integer('seq').primaryKey({ autoIncrement: true }),
-    revisionId: text('revision_id').notNull().unique(),
-    groupId: text('group_id')
-      .notNull()
-      .references(() => groups.id),
-    operationId: text('operation_id').notNull(),
-    // The revision as parsed by `operationSchema`, in JSON.
-    content: text('content').notNull(),
-  },
-  (table) => [index('revisions_operation').on(table.operationId)],
-);
+export const revisions = sqliteTable('revisions', {
+  seq: integer('seq').primaryKey({ autoIncrement: true }),
+  revisionId: text('revision_id').notNull().unique(),
+  groupId: text('group_id')
+    .notNull()
+    .references(() => groups.id),
+  operationId: text('operation_id').notNull(),
+  // The revision as parsed by `operationSchema`, in JSON.
+  content: text('content').notNull(),
+});
 
 // Current state of each operation: its last revision written. An operation id belongs to a single group.
 export const operations = sqliteTable(
