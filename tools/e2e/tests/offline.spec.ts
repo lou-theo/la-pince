@@ -55,8 +55,13 @@ test('an expense entered offline, after a restart without network, reaches anoth
   await synced(page);
   expect(await balances(page)).toStrictEqual(entered);
 
+  // The second browser first shows its own copy, then the server's: a slow network keeps that order, which a single read would mistake for a lost expense.
+  await other.route('**/api/groups/**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await route.continue();
+  });
   await second.reload();
   await expect(second.getByText('Tu es Basile')).toBeVisible();
-  expect(await balances(second)).toStrictEqual(entered);
+  await expect.poll(() => balances(second)).toStrictEqual(entered);
   await other.close();
 });
