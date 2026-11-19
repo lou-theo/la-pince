@@ -16,8 +16,9 @@ PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cl
 
 - `packages/core` : calcul, types, validation (schémas zod de toute donnée entrante), contrat de synchronisation, conversion Tricount ; ne dépend d'aucun autre paquet du repo. `fixtures/tricount-demo.json` : corpus anonymisé, seule donnée issue du vrai groupe admise dans le repo.
 - `packages/config` : configs partagées (tsconfig de base, ESLint, Prettier, preset Vitest).
+- `apps/server` : Worker Hono, D1 par Drizzle ; schéma dans `src/schema.ts`, migrations générées dans `drizzle/` (jamais écrites à la main), tests de l'API dans workerd.
 - `docs/cadrage/` : cadrage du projet (besoin, décisions, plan) ; `docs/cadrage/essais/` garde des essais jetables, hors lint et format.
-- À venir, créés avec leur premier code : `apps/app` (PWA React), `apps/server` (Worker Hono et Drizzle), `tools/import-tricount` (script local d'import).
+- À venir, créés avec leur premier code : `apps/app` (PWA React), `tools/import-tricount` (script local d'import).
 
 Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint `import-x/no-extraneous-dependencies`) : app et server dépendent de core, jamais l'un de l'autre.
 
@@ -27,6 +28,8 @@ Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint
 - `pnpm verifier` : format, lint, typecheck et tests de tous les paquets ; lancé avant chaque push et rejoué par la CI.
 - `pnpm format` : reformate tout le repo (Prettier, largeur 150).
 - `pnpm --filter @la-pince/core test` : tests d'un seul paquet, avec couverture.
+- `pnpm --filter @la-pince/server migrations:generate` : écrit la migration d'un changement de `apps/server/src/schema.ts`, à committer avec lui.
+- `pnpm --filter @la-pince/server dev` : serveur local sur une D1 locale (`wrangler dev`), le secret d'administration dans `apps/server/.dev.vars` (`ADMIN_TOKEN=…`, ignoré par git) ; migrations appliquées par `wrangler d1 migrations apply la-pince --local`.
 
 ## Code
 

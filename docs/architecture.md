@@ -11,7 +11,7 @@ La Pince est une PWA installable (iPhone, Android, ordinateur), sans compte, uti
 | `packages/core`                   | calcul des effets et des soldes, types, schémas zod, contrat de synchronisation, conversion Tricount                            | aucun paquet |
 | `packages/config`                 | configs partagées : TypeScript, ESLint, Prettier, Vitest                                                                        | aucun paquet |
 | `apps/app` (à venir)              | PWA React et Vite, cache local IndexedDB, file d'envoi                                                                          | core         |
-| `apps/server` (à venir)           | Worker Hono, accès D1 par Drizzle, Web Push                                                                                     | core         |
+| `apps/server`                     | Worker Hono, accès D1 par Drizzle, API de synchronisation et route d'administration ; Web Push à venir                          | core         |
 | `tools/import-tricount` (à venir) | script local : lit un export Tricount et l'envoie par l'API de synchronisation, le jeton du tricount ne quittant pas la machine | core         |
 
 Le même cœur de calcul tourne sur le téléphone et sur le serveur : le téléphone calcule tout pour afficher hors ligne, le serveur recalcule pour refuser une saisie incohérente. Les frontières tiennent par les dépendances déclarées : ESLint refuse l'import d'un paquet absent du `package.json` le plus proche (pnpm ne suffit pas, Node trouvant les outils installés à la racine). Un paquet n'est créé qu'avec son premier code.
@@ -42,7 +42,7 @@ Chronologie d'une dépense saisie dans le métro, sans réseau :
 
 1. Le téléphone crée l'opération avec un identifiant tiré sur place, calcule son effet, l'affiche et la range dans la file d'envoi (IndexedDB).
 2. Au retour du réseau, la file envoie l'opération ; un envoi rejoué avec le même identifiant ne crée pas de doublon.
-3. Le serveur valide la saisie, recalcule l'effet avec le même cœur, refuse l'incohérent, puis enregistre une nouvelle version de l'opération avec la valeur suivante d'un compteur croissant.
+3. Le serveur valide chaque version avec les schémas du cœur, refuse l'incohérent version par version, puis enregistre chaque nouvelle version avec la valeur suivante d'un compteur croissant (`seq`) et répond pour chacune.
 4. Les autres téléphones demandent ce qui a changé depuis le dernier compteur reçu et mettent leur copie locale à jour.
 
 - Chaque téléphone garde tout le groupe en local (de l'ordre de 75 Ko par an, au jugé) et calcule tout lui-même.
@@ -53,10 +53,20 @@ Chronologie d'une dépense saisie dans le métro, sans réseau :
 Le contrat vit dans `packages/core`, lu par le téléphone comme par le serveur :
 
 - **Opération envoyée** (`operationSchema`, une version de l'opération) : identifiant de l'opération, identifiant de la version (tiré sur le téléphone à chaque modification), titre, jour (`YYYY-MM-DD`, jamais une heure), auteur facultatif, puis soit la saisie, soit le marquage `deleted: true`. Les identifiants s'écrivent en lettres ASCII, chiffres, `-` et `_` : un caractère qu'UTF-8 ne porte pas reviendrait changé du stockage et déplacerait le centime restant.
-- **Envoi** (`operationBatchSchema`) : versions écrites dans l'ordre reçu, plafonnées par requête (`MAX_BATCH_REVISIONS`) ; `newRevisions` écarte une version déjà reçue ou répétée dans le lot, pour qu'un renvoi de la file d'envoi n'écrive jamais une version deux fois. Ce n'est qu'un premier tri : deux requêtes qui rejouent la même version en même temps la trouvent toutes deux nouvelles, donc la base garde chaque version sous un identifiant unique et ne change l'état courant de l'opération que si la version vient d'être insérée, dans la même écriture. Une ancienne version qui arrive pour la première fois après une plus récente l'emporte : la file d'envoi l'évite en envoyant ses versions dans l'ordre, une requête à la fois, sans fusionner une version non acquittée. Avant d'écrire, le serveur refuse une opération qui nomme un non-membre du groupe (`unknownMembers` : payeur, lignes, auteur), contrôle que le téléphone fait aussi avant de mettre l'opération en file.
-- **Lecture** (`changesQuerySchema`, `changesResponseSchema`) : la version courante de chaque opération changée depuis le curseur, par `seq` croissant, plafonnée par page (`MAX_CHANGES`), le curseur suivant et `hasMore` ; `pageFollowsQuery` contrôle qu'une page répond à sa requête (rien au curseur demandé ou avant, même curseur rendu quand rien n'a changé). Des soldes calculés avant d'avoir lu une page à `hasMore: false` oublient des opérations : le téléphone lit jusque-là.
-- **Groupe** (`groupResponseSchema`) : titre et membres ; les opérations arrivent par la lecture des changements.
+- **Envoi** (`operationBatchSchema`, réponse `operationBatchResponseSchema`) : versions écrites dans l'ordre reçu, plafonnées par requête (`MAX_BATCH_REVISIONS`), chacune jugée seule et répondue dans le même ordre : écrite avec son `seq`, renvoi (`duplicate`) d'une version déjà reçue avec le même contenu, ou refusée avec son motif (`rejectionReasonSchema` : saisie hors schéma, membre hors du groupe selon `unknownMembers`, opération d'un autre groupe, identifiant de version déjà reçu avec un autre contenu). La file d'envoi retire la version dans les trois cas : aucune ne bloque les suivantes. Seuls un corps illisible ou une version sans identifiant lisible font refuser le lot entier (`invalid_request`). Une ancienne version qui arrive pour la première fois après une plus récente l'emporte : la file d'envoi l'évite en envoyant ses versions dans l'ordre, une requête à la fois, sans fusionner une version non acquittée. Le téléphone fait le contrôle des membres avant de mettre une opération en file.
+- **Lecture** (`changesQuerySchema`, `changesResponseSchema`) : la version courante de chaque opération changée depuis le curseur, avec son `seq` et le `createdSeq` de sa première version (ordre de saisie, stable quand l'opération change), par `seq` croissant, plafonnée par page (`MAX_CHANGES`), le curseur suivant et `hasMore` ; `pageFollowsQuery` contrôle qu'une page répond à sa requête (rien au curseur demandé ou avant, même curseur rendu quand rien n'a changé). Des soldes calculés avant d'avoir lu une page à `hasMore: false` oublient des opérations : le téléphone lit jusque-là. Un curseur au-delà du dernier changement du groupe (historique du serveur reconstruit) reçoit `409 cursor_ahead` : le téléphone abandonne sa copie et relit depuis 0.
+- **Groupe** (`groupResponseSchema`) : titre et membres dans leur ordre d'ajout ; les opérations arrivent par la lecture des changements. La route d'administration (`PUT /api/admin/groups/:id`, `adminGroupSchema`, sous le secret `ADMIN_TOKEN`) crée ou met à jour le titre, le jeton du lien et les membres, que la synchronisation ne crée pas ; un membre absent du corps est gardé.
+- **Erreurs** d'une requête entière (`apiErrorSchema`) : `invalid_request`, `group_not_found`, `cursor_ahead`, `unauthorized`.
 - **Effet** (`operationEffect`) : `computeEffect(operation.id, saisie)`, identique au centime d'un appel à l'autre, d'une version à l'autre et après le transit et le stockage en UTF-8 ; aucun pour une opération supprimée.
+
+Le serveur garde dans D1 (`apps/server/src/schema.ts`, migrations dans `apps/server/drizzle/`) :
+
+- `groups` : identifiant, titre et SHA-256 du jeton du lien, pour que la base lue ne donne accès à aucun groupe ;
+- `members` : membres de chaque groupe, avec leur ordre d'ajout ;
+- `revisions` : chaque version reçue, en JSON aux clés triées, sous un `seq` `AUTOINCREMENT` commun à tous les groupes et jamais réutilisé, et un identifiant de version unique ;
+- `operations` : état courant de chaque opération (sa dernière version, son `seq` et son `createdSeq`) ; un identifiant d'opération appartient à un seul groupe.
+
+Une version et l'état courant de son opération s'écrivent dans un seul lot D1, qui est une transaction ; l'état courant ne bouge que si la version vient d'être insérée, si bien que deux requêtes qui envoient la même version en même temps n'en écrivent qu'une.
 
 ## Outillage
 
@@ -70,7 +80,7 @@ Le contrat vit dans `packages/core`, lu par le téléphone comme par le serveur 
 Tests par l'interface publique ; simulations seulement hors de notre code. Cinq niveaux, chacun créé avec le code qu'il couvre :
 
 1. **Cœur** (Vitest) : cas cités d'une autre app sous licence MIT, tests de propriétés (fast-check), couverture 100 % ; corpus réel anonymisé du groupe (`packages/core/fixtures/tricount-demo.json` : prénoms et titres inventés, identifiants remplacés, dates, montants et répartitions gardés), chaque effet comparé aux allocations de Tricount et les soldes à un calcul fait hors de ce code.
-2. **Serveur et base** : runtime Workers local et vraie D1 ; migrations Drizzle commitées, contrôlées sur le schéma et rejouées sur un jeu de données.
+2. **Serveur et base** : le Worker tourne dans workerd, le runtime de Cloudflare, sur une D1 locale migrée par les migrations commitées (`createTestHarness` de Wrangler, appelé depuis Vitest) ; chaque `pnpm test` du serveur contrôle par `drizzle-kit generate` qu'aucune migration ne manque au schéma ; la couverture mesurée porte sur le code qui tourne sous Node (tri des versions reçues, 100 %), les routes étant couvertes par les tests d'API.
 3. **App sans écran** : file d'envoi, cache, IndexedDB simulée.
 4. **Bout en bout** (Playwright, Chromium et WebKit) : saisie hors ligne puis synchronisation vers un second navigateur.
 5. **Performance** : budgets en échec s'ils sont dépassés.
