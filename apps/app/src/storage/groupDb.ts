@@ -38,7 +38,7 @@ export interface CompleteRead {
   readonly cursor: Cursor;
   /** The whole copy the window holds once the read is applied: every change up to `cursor`. */
   readonly known: ReadonlyMap<OperationId, Change>;
-  /** The server's history was rebuilt (`cursor_ahead`): what is stored may hold operations the server no longer has. */
+  /** The read started again from 0 (`unknown_cursor`, or a copy without the change at its cursor): what is stored may hold operations the server no longer has. */
   readonly reset: boolean;
 }
 
@@ -129,8 +129,19 @@ export async function openGroupDb(token: string): Promise<GroupDb> {
         const previous = storedReadSchema.safeParse(await meta.get('read'));
         let saved = cursor;
         let savedGroup = group;
-        if (reset || !previous.success || previous.data.cursor < since) {
-          // No copy, or one that misses changes before the read started (an earlier save failed): the window's whole copy replaces it.
+        const mergeable = !reset && previous.success && previous.data.cursor >= since;
+        // A change another window saved past where this read started, which this read, checked by the server from the same point, brought older, as
+        // another revision under the same seq, or not at all, belongs to a history the server no longer has (database restored after that window
+        // read it).
+        const fromLostHistory = (stored: Change) => {
+          const read = known.get(stored.id);
+          return read === undefined || read.seq < stored.seq || (read.seq === stored.seq && read.revisionId !== stored.revisionId);
+        };
+        const diverged =
+          mergeable && (await operations.getAll()).some((stored) => stored.seq > since && stored.seq <= cursor && fromLostHistory(stored));
+        if (!mergeable || diverged) {
+          // No copy, one that misses changes before the read started (an earlier save failed), or one from a lost history: the window's whole copy
+          // replaces it.
           await operations.clear();
           for (const change of known.values()) {
             await operations.put(change);

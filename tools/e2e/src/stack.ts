@@ -8,6 +8,7 @@ import { build } from 'vite';
 import { createTestHarness } from 'wrangler';
 
 import { demoGroup } from './corpus.ts';
+import { type Database, serveRestore } from './restore.ts';
 import { serveApp } from './serve.ts';
 
 /** A demo group to import: its link token, and how many times the corpus is repeated in it. */
@@ -20,6 +21,8 @@ export interface Stack {
   readonly appUrl: string;
   /** Folder of the built app, served from disk at each request. */
   readonly dist: string;
+  /** Where the tests take a snapshot of the database and restore it (`serveRestore`). */
+  readonly restoreUrl: string;
   readonly close: () => Promise<void>;
 }
 
@@ -35,9 +38,10 @@ export async function startStack(groups: readonly GroupSpec[]): Promise<Stack> {
   const adminToken = `e2e-${crypto.randomUUID()}`;
   const server = createTestHarness({ workers: [{ configPath: join(root, 'apps/server/wrangler.jsonc'), secrets: { ADMIN_TOKEN: adminToken } }] });
   let app: Awaited<ReturnType<typeof serveApp>> | undefined;
+  let restore: Awaited<ReturnType<typeof serveRestore>> | undefined;
   const close = async () => {
     try {
-      await app?.close();
+      await Promise.all([app?.close(), restore?.close()]);
     } finally {
       try {
         await server.close();
@@ -60,8 +64,9 @@ export async function startStack(groups: readonly GroupSpec[]): Promise<Stack> {
     for (const group of groups) {
       await importTricount({ data: demoGroup(group.token, group.copies), serverUrl, adminToken, token: group.token });
     }
+    restore = await serveRestore((await server.getWorker<{ DB: Database }>().getEnv()).DB);
     app = await serveApp(dist, serverUrl);
-    return { appUrl: app.url, dist, close };
+    return { appUrl: app.url, dist, restoreUrl: restore.url, close };
   } catch (error) {
     // The error that stopped the start is the one to tell, not one of the cleanup.
     await close().catch(() => undefined);

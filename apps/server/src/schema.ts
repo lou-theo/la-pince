@@ -21,7 +21,8 @@ export const members = sqliteTable(
   (table) => [primaryKey({ columns: [table.groupId, table.id] })],
 );
 
-// Every revision received, kept to recover an overwritten change; `seq` is the counter of the sync, shared by all groups and never reused.
+// Every revision received, kept to recover an overwritten change; `seq` is the counter of the sync, shared by all groups, given again only after
+// the database is restored to an earlier point, which the read of the changes detects (`unknown_cursor`).
 export const revisions = sqliteTable('revisions', {
   seq: integer('seq').primaryKey({ autoIncrement: true }),
   revisionId: text('revision_id').notNull().unique(),

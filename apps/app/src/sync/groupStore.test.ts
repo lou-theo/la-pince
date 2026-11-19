@@ -1,11 +1,13 @@
 import {
   type ApiError,
   type Change,
+  cursorSchema,
   groupResponseSchema,
   memberIdSchema,
   operationBatchSchema,
   operationIdSchema,
   operationSchema,
+  seqSchema,
 } from '@la-pince/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -45,8 +47,8 @@ describe('createGroupStore', () => {
     expect(server.calls.map((url) => url.replace(`/api/groups/${token}`, ''))).toStrictEqual([
       '',
       `/changes?since=0`,
-      `/changes?since=${String(changes[1]?.seq)}`,
-      `/changes?since=${String(changes[3]?.seq)}`,
+      `/changes?since=${String(changes[1]?.seq)}&revision=${String(changes[1]?.revisionId)}`,
+      `/changes?since=${String(changes[3]?.seq)}&revision=${String(changes[3]?.revisionId)}`,
     ]);
     expect(store.getSnapshot()).toMatchObject({ status: 'ready', group, cursor: changes[4]?.seq });
   });
@@ -61,10 +63,10 @@ describe('createGroupStore', () => {
     const changes = ['a', 'b', 'c'].map((id) => change({ id, date: '2026-11-01' }));
     const { server, store } = watch(changes);
     await store.load();
-    const cursor = changes[2]?.seq;
+    const last = changes[2];
     changes.push(change({ id: 'a', date: '2026-11-02', title: 'Renamed' }), change({ id: 'b', date: '2026-11-01', deleted: true }));
     await store.load();
-    expect(server.calls.at(-1)).toBe(`/api/groups/${token}/changes?since=${String(cursor)}`);
+    expect(server.calls.at(-1)).toBe(`/api/groups/${token}/changes?since=${String(last?.seq)}&revision=${String(last?.revisionId)}`);
     const state = store.getSnapshot();
     expect(state.status === 'ready' && [...state.changes.values()].map((current) => [current.id, current.title, 'deleted' in current])).toStrictEqual(
       [
@@ -75,28 +77,72 @@ describe('createGroupStore', () => {
     );
   });
 
-  it('reads everything again from 0 once when the server is behind its cursor, and gives up the second time', async () => {
+  it('reads everything again from 0 once when the server no longer knows its cursor, and gives up the second time', async () => {
     const changes = [change({ id: 'a', date: '2026-11-01' }), change({ id: 'gone', date: '2026-11-01' })];
-    let ahead = 1;
-    const cursorAhead = (url: string) =>
-      !url.includes('changes') || url.endsWith('?since=0') || ahead-- <= 0
-        ? undefined
-        : Promise.resolve(json({ error: 'cursor_ahead' } satisfies ApiError, 409));
-    const { server, store } = watch(changes, { answer: cursorAhead });
+    const { server, store } = watch(changes);
     await store.load();
     // The server's base restored from before `gone`: its history no longer holds it.
-    changes.splice(1, 1);
-    ahead = 1;
+    const [gone] = changes.splice(1, 1);
     await store.load();
-    expect(server.calls.at(-1)).toBe(`/api/groups/${token}/changes?since=0`);
+    expect(server.calls.slice(-2)).toStrictEqual([
+      `/api/groups/${token}/changes?since=${String(gone?.seq)}&revision=${String(gone?.revisionId)}`,
+      `/api/groups/${token}/changes?since=0`,
+    ]);
     expect(ids(store.getSnapshot())).toStrictEqual(['a']);
 
     const always = watch(changes, {
       token: otherToken,
-      answer: (url) => (url.includes('changes') ? Promise.resolve(json({ error: 'cursor_ahead' }, 409)) : undefined),
+      answer: (url) => (url.includes('changes') ? Promise.resolve(json({ error: 'unknown_cursor' }, 409)) : undefined),
     });
     await always.store.load();
     expect(always.store.getSnapshot()).toStrictEqual({ status: 'error', error: 'unexpected' });
+  });
+
+  it('gives up, keeping the group shown, when the read from 0 meets a second restore on one of its next pages', async () => {
+    const changes = ['a', 'b', 'gone'].map((id) => change({ id, date: '2026-11-01' }));
+    const [, b, gone] = changes;
+    let restoredAgain = false;
+    const { server, store } = watch(changes, {
+      pageSize: 2,
+      // Past the first page of the read from 0, the server no longer knows `b`: restored once more meanwhile.
+      answer: (url) =>
+        restoredAgain && url.includes(`since=${String(b?.seq)}&`)
+          ? Promise.resolve(json({ error: 'unknown_cursor' } satisfies ApiError, 409))
+          : undefined,
+    });
+    await store.load();
+    changes.splice(2, 1, change({ id: 'c', date: '2026-11-02' }));
+    restoredAgain = true;
+    await store.load();
+    expect(server.calls.filter((url) => url.includes('changes')).slice(-3)).toStrictEqual([
+      `/api/groups/${token}/changes?since=${String(gone?.seq)}&revision=${String(gone?.revisionId)}`,
+      `/api/groups/${token}/changes?since=0`,
+      `/api/groups/${token}/changes?since=${String(b?.seq)}&revision=${String(b?.revisionId)}`,
+    ]);
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'unexpected' });
+    expect(ids(store.getSnapshot())).toStrictEqual(['a', 'b', 'gone']);
+  });
+
+  it('reads everything again when the seq of its cursor was given to another revision after a restore', async () => {
+    const changes = [change({ id: 'a', date: '2026-11-01' }), change({ id: 'gone', date: '2026-11-01' })];
+    const { store } = watch(changes);
+    await store.load();
+    // Restored from before `gone`, then a write from another phone took its seq again: asking what changed after that seq would miss `new`.
+    const [gone] = changes.splice(1, 1);
+    changes.push({ ...change({ id: 'new', date: '2026-11-02' }), seq: seqSchema.parse(gone?.seq), createdSeq: seqSchema.parse(gone?.seq) });
+    await store.load();
+    expect(ids(store.getSnapshot())).toStrictEqual(['a', 'new']);
+  });
+
+  it('reads everything again when its copy lacks the change at its cursor, which it could not name', async () => {
+    const first = change({ id: 'a', date: '2026-11-01' });
+    const db = await openGroupDb(otherToken);
+    const behind = cursorSchema.parse(first.seq + 5);
+    await db.saveRead({ group, since: cursorSchema.parse(0), changes: [first], cursor: behind, known: new Map([[first.id, first]]), reset: true });
+    const { server, store } = watch([first], { token: otherToken });
+    await store.load();
+    expect(server.calls.at(-1)).toBe(`/api/groups/${otherToken}/changes?since=0`);
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', cursor: first.seq });
   });
 
   it('tells why a read failed, and reads again on retry', async () => {
@@ -435,7 +481,7 @@ describe('the outbox', () => {
         if (init?.method === 'POST') {
           return failed();
         }
-        return url.includes('changes') && !url.endsWith('?since=0') ? Promise.resolve(json({ error: 'cursor_ahead' }, 409)) : server.fetch(url, init);
+        return server.fetch(url, init);
       }),
       token,
     );
@@ -594,14 +640,14 @@ describe('the copy kept on the phone', () => {
     const next = watch(changes);
     await next.store.load();
     expect(next.states.map(ids)).toStrictEqual([['a'], ['a', 'b']]);
-    expect(next.server.calls.at(-1)).toBe(`/api/groups/${token}/changes?since=${String(changes[0]?.seq)}`);
+    expect(next.server.calls.at(-1)).toBe(`/api/groups/${token}/changes?since=${String(changes[0]?.seq)}&revision=${String(changes[0]?.revisionId)}`);
   });
 
   it('keeps the last complete read when the network fails in the middle of catching up', async () => {
     const changes = ['a', 'b'].map((id) => change({ id, date: '2026-11-01' }));
     await watch(changes).store.load();
     changes.push(...['c', 'd', 'e'].map((id) => change({ id, date: '2026-11-02' })));
-    const cut = (url: string) => (url.endsWith(`since=${String(changes[3]?.seq)}`) ? Promise.reject(new TypeError('Failed to fetch')) : undefined);
+    const cut = (url: string) => (url.includes(`since=${String(changes[3]?.seq)}&`) ? Promise.reject(new TypeError('Failed to fetch')) : undefined);
     const interrupted = watch(changes, { pageSize: 2, answer: cut });
     await interrupted.store.load();
     expect(ids(interrupted.store.getSnapshot())).toStrictEqual(['a', 'b']);
@@ -616,9 +662,7 @@ describe('the copy kept on the phone', () => {
     const changes = [change({ id: 'a', date: '2026-11-01' }), change({ id: 'gone', date: '2026-11-01' })];
     await watch(changes).store.load();
     changes.splice(1, 1);
-    const restored = (url: string) =>
-      url.includes('changes') && !url.endsWith('?since=0') ? Promise.resolve(json({ error: 'cursor_ahead' } satisfies ApiError, 409)) : undefined;
-    await watch(changes, { answer: restored }).store.load();
+    await watch(changes).store.load();
 
     const offline = watch(changes, { answer: down });
     await offline.store.load();

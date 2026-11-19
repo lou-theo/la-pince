@@ -1,4 +1,4 @@
-import { type ApiError, type Change, cursorSchema, groupResponseSchema, operationSchema } from '@la-pince/core';
+import { type ApiError, type Change, cursorSchema, groupResponseSchema, operationSchema, revisionIdSchema } from '@la-pince/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { change, fakeServer, json } from '../testing/fake-server.ts';
@@ -15,6 +15,7 @@ const group = groupResponseSchema.parse({
 const answering = (response: Response | Error) =>
   createApiClient(() => (response instanceof Error ? Promise.reject(response) : Promise.resolve(response)));
 const cursor = (value: number) => cursorSchema.parse(value);
+const revision = (value: string) => revisionIdSchema.parse(value);
 
 describe('fetchGroup', () => {
   it('reads the group of a token from the API, title and members in their order', async () => {
@@ -36,7 +37,7 @@ describe('fetchGroup', () => {
       ok: false,
       error: 'unexpected',
     });
-    expect(await answering(json({ error: 'cursor_ahead' } satisfies ApiError, 409)).fetchGroup(token)).toStrictEqual({
+    expect(await answering(json({ error: 'unknown_cursor' } satisfies ApiError, 409)).fetchGroup(token)).toStrictEqual({
       ok: false,
       error: 'unexpected',
     });
@@ -89,29 +90,32 @@ describe('a request that never ends', () => {
 describe('fetchChanges', () => {
   const changes = [change({ id: 'a', date: '2026-11-01' }), change({ id: 'b', date: '2026-11-02' })];
 
-  it('reads a page of the changes since the cursor', async () => {
+  it('reads a page of the changes since the cursor, named with the revision received at it', async () => {
     const server = fakeServer({ token, group, changes, pageSize: 1 });
     const [first, second] = changes;
-    expect(await createApiClient(server.fetch).fetchChanges(token, cursor(0))).toStrictEqual({
+    expect(await createApiClient(server.fetch).fetchChanges(token, cursor(0), undefined)).toStrictEqual({
       ok: true,
       value: { changes: [first], cursor: first?.seq, hasMore: true },
     });
-    expect(server.calls).toStrictEqual([`/api/groups/${token}/changes?since=0`]);
-    expect(await createApiClient(server.fetch).fetchChanges(token, cursor(first?.seq ?? 0))).toStrictEqual({
-      ok: true,
-      value: { changes: [second], cursor: second?.seq, hasMore: false },
-    });
+    const next = createApiClient(server.fetch).fetchChanges(token, cursor(first?.seq ?? 0), first?.revisionId);
+    expect(await next).toStrictEqual({ ok: true, value: { changes: [second], cursor: second?.seq, hasMore: false } });
+    expect(server.calls).toStrictEqual([
+      `/api/groups/${token}/changes?since=0`,
+      `/api/groups/${token}/changes?since=${String(first?.seq)}&revision=${String(first?.revisionId)}`,
+    ]);
   });
 
-  it('passes on a cursor ahead of the server, and refuses a page that does not answer its query', async () => {
-    expect(await answering(json({ error: 'cursor_ahead' } satisfies ApiError, 409)).fetchChanges(token, cursor(9))).toStrictEqual({
+  it('passes on a cursor the server no longer knows, and refuses a page that does not answer its query', async () => {
+    const unknown = answering(json({ error: 'unknown_cursor' } satisfies ApiError, 409)).fetchChanges(token, cursor(9), revision('rev-9'));
+    expect(await unknown).toStrictEqual({
       ok: false,
-      error: 'cursor_ahead',
+      error: 'unknown_cursor',
     });
     // A change at or before the cursor asked: reading on from this page would skip or repeat changes.
     const stale = json({ changes, cursor: changes.at(-1)?.seq, hasMore: false });
-    expect(await answering(stale).fetchChanges(token, cursor(changes.at(-1)?.seq ?? 0))).toStrictEqual({ ok: false, error: 'unexpected' });
-    expect(await answering(json({ changes: [], cursor: 3, hasMore: false })).fetchChanges(token, cursor(2))).toStrictEqual({
+    const last = changes.at(-1);
+    expect(await answering(stale).fetchChanges(token, cursor(last?.seq ?? 0), last?.revisionId)).toStrictEqual({ ok: false, error: 'unexpected' });
+    expect(await answering(json({ changes: [], cursor: 3, hasMore: false })).fetchChanges(token, cursor(2), revision('rev-2'))).toStrictEqual({
       ok: false,
       error: 'unexpected',
     });
@@ -159,7 +163,7 @@ describe('sendOperations', () => {
       ok: false,
       error: 'group_not_found',
     });
-    expect(await answering(json({ error: 'cursor_ahead' } satisfies ApiError, 409)).sendOperations(token, sent)).toStrictEqual({
+    expect(await answering(json({ error: 'unknown_cursor' } satisfies ApiError, 409)).sendOperations(token, sent)).toStrictEqual({
       ok: false,
       error: 'unexpected',
     });

@@ -2,6 +2,7 @@ import {
   type ApiError,
   type Change,
   changeSchema,
+  changesQuerySchema,
   changesResponseSchema,
   type GroupResponse,
   groupResponseSchema,
@@ -25,7 +26,7 @@ export interface FakeServer {
 }
 
 /**
- * Serves one group under its token, its changes by pages of `pageSize`, and writes the revisions sent into `changes` (a resent revision is a
+ * Serves one group under its token, its changes by pages of `pageSize` (`unknown_cursor` when no change has the revision named at the cursor), and writes the revisions sent into `changes` (a resent revision is a
  * duplicate, one naming a stranger is rejected); `answer` may replace the answer to a URL (failure, odd page).
  */
 export function fakeServer({
@@ -71,11 +72,18 @@ export function fakeServer({
         });
         return Promise.resolve(json(operationBatchResponseSchema.parse({ results })));
       }
-      const match = new RegExp(`^${base}/changes\\?since=(\\d+)$`).exec(url);
-      if (match === null) {
+      const [path, search = ''] = url.split('?');
+      if (path !== `${base}/changes`) {
         return Promise.resolve(json({ error: 'group_not_found' } satisfies ApiError, 404));
       }
-      const since = Number(match[1]);
+      const query = changesQuerySchema.safeParse(Object.fromEntries(new URLSearchParams(search)));
+      if (!query.success) {
+        return Promise.resolve(json({ error: 'invalid_request' } satisfies ApiError, 400));
+      }
+      const { since, revision } = query.data;
+      if (revision !== undefined && !changes.some((candidate) => candidate.seq === since && candidate.revisionId === revision)) {
+        return Promise.resolve(json({ error: 'unknown_cursor' } satisfies ApiError, 409));
+      }
       const after = changes.filter((candidate) => candidate.seq > since).toSorted((a, b) => a.seq - b.seq);
       const page = after.slice(0, pageSize);
       return Promise.resolve(

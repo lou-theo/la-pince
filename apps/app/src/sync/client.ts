@@ -9,6 +9,7 @@ import {
   type Operation,
   operationBatchResponseSchema,
   pageFollowsQuery,
+  type RevisionId,
   type RevisionResult,
 } from '@la-pince/core';
 
@@ -20,13 +21,13 @@ export type LoadError = 'group_not_found' | 'network' | 'unexpected';
 
 export type ApiResult<T, E extends string = LoadError> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };
 
-/** `cursor_ahead`: the server's history is behind the cursor (rebuilt), the reader starts again from 0. */
-export type ChangesError = LoadError | 'cursor_ahead';
+/** `unknown_cursor`: the server no longer has the revision at the cursor (database restored), the reader starts again from 0. */
+export type ChangesError = LoadError | 'unknown_cursor';
 
 export interface ApiClient {
   readonly fetchGroup: (token: string) => Promise<ApiResult<GroupResponse>>;
-  /** One page of the changes since the cursor, checked to answer that very query. */
-  readonly fetchChanges: (token: string, since: Cursor) => Promise<ApiResult<ChangesResponse, ChangesError>>;
+  /** One page of the changes since the cursor, given with the revision received at it past 0, checked to answer that very query. */
+  readonly fetchChanges: (token: string, since: Cursor, revision: RevisionId | undefined) => Promise<ApiResult<ChangesResponse, ChangesError>>;
   /** Sends revisions in one batch; the result of each, in the order sent. */
   readonly sendOperations: (token: string, operations: readonly Operation[]) => Promise<ApiResult<RevisionResult[]>>;
 }
@@ -64,21 +65,22 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
     }
     const error = apiErrorSchema.safeParse(body);
     const code = error.success ? error.data.error : undefined;
-    return { ok: false, error: code === 'group_not_found' || code === 'cursor_ahead' ? code : 'unexpected' };
+    return { ok: false, error: code === 'group_not_found' || code === 'unknown_cursor' ? code : 'unexpected' };
   }
 
   const groupUrl = (token: string) => `/api/groups/${encodeURIComponent(token)}`;
 
-  // Only a read of the changes may answer `cursor_ahead`: elsewhere such an answer is outside the contract.
+  // Only a read of the changes may answer `unknown_cursor`: elsewhere such an answer is outside the contract.
   const withoutCursor = <T>(result: ApiResult<T, ChangesError>): ApiResult<T> =>
-    result.ok || result.error !== 'cursor_ahead' ? (result as ApiResult<T>) : { ok: false, error: 'unexpected' };
+    result.ok || result.error !== 'unknown_cursor' ? (result as ApiResult<T>) : { ok: false, error: 'unexpected' };
 
   return {
     async fetchGroup(token) {
       return withoutCursor(await read(groupUrl(token), groupResponseSchema));
     },
-    async fetchChanges(token, since) {
-      const result = await read(`${groupUrl(token)}/changes?since=${String(since)}`, changesResponseSchema);
+    async fetchChanges(token, since, revision) {
+      const query = new URLSearchParams({ since: String(since), ...(revision === undefined ? {} : { revision }) });
+      const result = await read(`${groupUrl(token)}/changes?${query.toString()}`, changesResponseSchema);
       if (result.ok && !pageFollowsQuery({ since, limit: MAX_CHANGES }, result.value)) {
         return { ok: false, error: 'unexpected' };
       }

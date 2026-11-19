@@ -19,7 +19,9 @@ export type OperationBatch = z.infer<typeof operationBatchSchema>;
 
 /**
  * Position in the server's history of changes: the counter of the last change a phone has received, 0 before the first. The counter only grows, so
- * asking for what changed since a cursor never misses a change, whatever the phones' clocks.
+ * asking for what changed since a cursor never misses a change, whatever the phones' clocks. A restored database takes the counter back with it and
+ * gives the numbers after the restored point again, to other revisions: the phone names the revision it received at its cursor, so that the server
+ * tells such a cursor from a valid one (`unknown_cursor`).
  */
 export const cursorSchema = z.int().nonnegative().brand('Cursor');
 export type Cursor = z.infer<typeof cursorSchema>;
@@ -30,11 +32,17 @@ const queryIntegerSchema = z
   .regex(/^\d{1,15}$/)
   .transform(Number);
 
-/** Query of a read of the changes (`?since=&limit=`), as strings; other parameters are ignored. */
-export const changesQuerySchema = z.object({
-  since: queryIntegerSchema.pipe(cursorSchema).default(cursorSchema.parse(0)),
-  limit: queryIntegerSchema.pipe(z.int().min(1).max(MAX_CHANGES)).default(MAX_CHANGES),
-});
+/**
+ * Query of a read of the changes (`?since=&revision=&limit=`), as strings; other parameters are ignored. `revision` is the revision the phone
+ * received at its cursor: given with every cursor past 0, and only then.
+ */
+export const changesQuerySchema = z
+  .object({
+    since: queryIntegerSchema.pipe(cursorSchema).default(cursorSchema.parse(0)),
+    revision: revisionIdSchema.optional(),
+    limit: queryIntegerSchema.pipe(z.int().min(1).max(MAX_CHANGES)).default(MAX_CHANGES),
+  })
+  .refine((query) => (query.since === 0) === (query.revision === undefined), { message: 'revision_with_cursor', path: ['revision'] });
 export type ChangesQuery = z.infer<typeof changesQuerySchema>;
 
 /**
@@ -107,10 +115,10 @@ export type OperationBatchResponse = z.infer<typeof operationBatchResponseSchema
 
 /**
  * Error of a whole request. `invalid_request`: a body or a query the server cannot read, a bug of the client; `group_not_found`: no group behind the
- * link; `cursor_ahead`: the cursor is past the group's last change (the server's history was rebuilt), so the phone drops its copy of the group and
- * reads again from 0; `unauthorized`: missing or wrong admin token; `token_in_use`: the admin route was given the link token of another group.
+ * link; `unknown_cursor`: the group no longer has the revision named at the cursor (the database was restored to an earlier point), so the phone
+ * drops its copy of the group and reads again from 0; `unauthorized`: missing or wrong admin token; `token_in_use`: the admin route was given the link token of another group.
  */
 export const apiErrorSchema = z.strictObject({
-  error: z.enum(['invalid_request', 'group_not_found', 'cursor_ahead', 'unauthorized', 'token_in_use']),
+  error: z.enum(['invalid_request', 'group_not_found', 'unknown_cursor', 'unauthorized', 'token_in_use']),
 });
 export type ApiError = z.infer<typeof apiErrorSchema>;

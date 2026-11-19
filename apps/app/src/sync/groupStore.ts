@@ -156,26 +156,38 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
     let since = state.status === 'ready' ? state.cursor : start;
     let reset = false;
     let cursor = since;
+    // The revision received at the cursor, which the server checks to tell a database restored behind it.
+    let revision = since === start ? undefined : [...known.values()].find((change) => change.seq === since)?.revisionId;
     const changes: Change[] = [];
+    // Drops the copy and reads it all again; the outbox stays.
+    const restart = () => {
+      known = new Map();
+      since = start;
+      reset = true;
+      cursor = start;
+      revision = undefined;
+      changes.length = 0;
+    };
+    if (since !== start && revision === undefined) {
+      // A copy that lacks the change at its cursor cannot name it.
+      restart();
+    }
     for (;;) {
-      const page = await client.fetchChanges(token, cursor);
+      const page = await client.fetchChanges(token, cursor, revision);
       if (!page.ok) {
-        // The server's history was rebuilt behind our cursor: drop the copy and read it all again, once; the outbox stays.
-        if (page.error === 'cursor_ahead' && since !== start) {
-          known = new Map();
-          since = start;
-          reset = true;
-          cursor = start;
-          changes.length = 0;
+        // The database was restored behind our cursor: what the copy holds past the restored point no longer exists. Once only.
+        if (page.error === 'unknown_cursor' && since !== start) {
+          restart();
           continue;
         }
-        return { status: 'error', error: page.error === 'cursor_ahead' ? 'unexpected' : page.error };
+        return { status: 'error', error: page.error === 'unknown_cursor' ? 'unexpected' : page.error };
       }
       for (const change of page.value.changes) {
         changes.push(change);
         known.set(change.id, change);
       }
       cursor = page.value.cursor;
+      revision = page.value.changes.at(-1)?.revisionId ?? revision;
       if (!page.value.hasMore) {
         return save({ group: group.value, since, changes, cursor, known, reset });
       }

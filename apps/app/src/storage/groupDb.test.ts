@@ -101,6 +101,43 @@ describe('openGroupDb', () => {
     expect(copy.cursor).toBe(again.seq);
   });
 
+  it('replaces the copy another window saved from a history the server lost, instead of merging into it', async () => {
+    const a = change({ id: 'a', date: '2026-11-01' });
+    const lost = [change({ id: 'lost1', date: '2026-11-02' }), change({ id: 'lost2', date: '2026-11-02' })];
+    // Written after the database was restored to `a`: they take the seqs the lost changes had, and one more.
+    const written = lost.map((gone, index) => ({
+      ...change({ id: `new${String(index)}`, date: '2026-11-03' }),
+      seq: gone.seq,
+      createdSeq: gone.seq,
+    }));
+    const next = change({ id: 'new2', date: '2026-11-03' });
+    const db = await openGroupDb(token);
+    await db.saveRead(readOf(0, [a]));
+    // Another window read the lost changes before the restore and saved them.
+    await db.saveRead(readOf(a.seq, lost, [a]));
+    // This window, still at `a` whose revision the server kept, reads what was written since the restore.
+    const copy = await db.saveRead(readOf(a.seq, [...written, next], [a]));
+    expect([...copy.changes.keys()]).toStrictEqual(['a', 'new0', 'new1', 'new2']);
+    expect(copy.cursor).toBe(next.seq);
+  });
+
+  it('replaces the copy too when the lost history wrote the same operation under the same seq, with another revision', async () => {
+    const a = change({ id: 'a', date: '2026-11-01' });
+    const lost = change({ id: 'x', date: '2026-11-02', title: 'Lost' });
+    // Written again after the restore, as an import does: same operation, same seq, another revision and content.
+    const rewritten = { ...change({ id: 'x', date: '2026-11-02', title: 'Rewritten' }), seq: lost.seq, createdSeq: lost.seq };
+    const next = change({ id: 'y', date: '2026-11-03' });
+    const db = await openGroupDb(token);
+    await db.saveRead(readOf(0, [a]));
+    await db.saveRead(readOf(a.seq, [lost], [a]));
+    const copy = await db.saveRead(readOf(a.seq, [rewritten, next], [a]));
+    expect(titles(copy)).toStrictEqual([
+      ['a', 'Opération a'],
+      ['x', 'Rewritten'],
+      ['y', 'Opération y'],
+    ]);
+  });
+
   it('keeps the previous copy whole when a save fails halfway', async () => {
     const db = await openGroupDb(token);
     const a = change({ id: 'a', date: '2026-11-01' });

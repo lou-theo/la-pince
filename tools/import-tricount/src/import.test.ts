@@ -46,6 +46,16 @@ const entries = (data: Corpus) => registryOf(data).all_registry_entry.map(({ Reg
 
 type Fetch = (url: URL, init?: RequestInit) => Promise<Response>;
 
+/** The part of the server's D1 binding the tests use to play a restore. */
+interface Statement {
+  bind(...values: unknown[]): Statement;
+  first<T>(): Promise<T | null>;
+}
+interface Database {
+  prepare(query: string): Statement;
+  batch(statements: Statement[]): Promise<unknown>;
+}
+
 const run = (data: unknown, token: string, options: { fetch?: Fetch; adminToken?: string } = {}) =>
   importTricount({ data, serverUrl, adminToken, token, ...options });
 
@@ -121,6 +131,30 @@ describe('importTricount', () => {
     const before = await changes(token);
     expect(await run(data, token)).toMatchObject({ written: 0, deleted: 0 });
     expect(await changes(token)).toStrictEqual(before);
+  });
+
+  it('gives other ids to the revisions after a difference, imported again after the database was restored before the first import', async () => {
+    const { data, token } = newCorpus();
+    const { DB } = await server.getWorker<{ DB: Database }>().getEnv();
+    const counter = await DB.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'revisions'").first<{ seq: number }>();
+    await run(data, token);
+    const first = (await changes(token)).at(-1);
+    // What a restore to the point before the import leaves of this group: no operation, the counter of the seqs back.
+    const groupId = convertTricount(data).id;
+    await DB.batch([
+      DB.prepare('DELETE FROM operations WHERE group_id = ?').bind(groupId),
+      DB.prepare('DELETE FROM revisions WHERE group_id = ?').bind(groupId),
+      DB.prepare("UPDATE sqlite_sequence SET seq = ? WHERE name = 'revisions'").bind(counter?.seq ?? 0),
+    ]);
+    const oldest = entries(data).at(-1);
+    if (oldest !== undefined) {
+      oldest.description = 'Changed before the import';
+    }
+    await run(data, token);
+    const again = (await changes(token)).at(-1);
+    // The same operation under the same seq: had it kept its revision id, a phone at that cursor would never read the change.
+    expect([again?.id, again?.seq]).toStrictEqual([first?.id, first?.seq]);
+    expect(again?.revisionId).not.toBe(first?.revisionId);
   });
 
   it('marks deleted an operation the export no longer holds, and writes a revision for one changed in Tricount', async () => {
