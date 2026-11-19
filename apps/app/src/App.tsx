@@ -21,7 +21,9 @@ export function App({ client }: { readonly client: ApiClient }): ReactNode {
         <Route path="/lien">
           <PasteLink />
         </Route>
-        <Route path="/g/:token">{({ token }) => <GroupScreen token={token} />}</Route>
+        <Route path="/g/:token" nest>
+          {({ token }) => <GroupScreen token={token} />}
+        </Route>
         <Route>
           <Layout>
             <p className={layout.muted}>{m.not_found()}</p>

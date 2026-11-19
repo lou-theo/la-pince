@@ -1,17 +1,17 @@
 import { groupTokenSchema } from '@la-pince/core';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
 import { Link } from 'wouter';
 
 import { loadErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { saveLastGroup } from '../storage/device.ts';
-import type { GroupResult } from '../sync/client.ts';
 import { useApiClient } from '../sync/context.ts';
+import { createGroupStore } from '../sync/groupStore.ts';
 import { GroupHome } from './GroupHome.tsx';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
 
-/** Screen of a group link (`/g/:token`): checks the token, reads the group from the server, then hands it to the group's home. */
+/** Screen of a group link (`/g/:token` and below): checks the token, reads the group from the server, then hands it to the group's home. */
 export function GroupScreen({ token }: { readonly token: string }): ReactNode {
   if (!groupTokenSchema.safeParse(token).success) {
     return (
@@ -21,69 +21,63 @@ export function GroupScreen({ token }: { readonly token: string }): ReactNode {
       </Layout>
     );
   }
-  return <GroupLoader token={token} />;
+  return <GroupLoader key={token} token={token} />;
 }
 
 function GroupLoader({ token }: { readonly token: string }) {
   const client = useApiClient();
-  const [attempt, setAttempt] = useState(0);
-  // The answer remembers what it answers, so that a new token or a retry shows the loading state until its own answer arrives.
-  const [loaded, setLoaded] = useState<{ token: string; attempt: number; result: GroupResult }>();
+  const [store] = useState(() => createGroupStore(client, token));
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const ready = state.status === 'ready';
 
   useEffect(() => {
-    let current = true;
-    void client.fetchGroup(token).then((result) => {
-      if (!current) {
-        return;
-      }
-      if (result.ok) {
-        saveLastGroup(token);
-      }
-      setLoaded({ token, attempt, result });
-    });
-    return () => {
-      current = false;
-    };
-  }, [client, token, attempt]);
+    void store.load();
+  }, [store]);
+  useEffect(() => {
+    if (ready) {
+      saveLastGroup(token);
+    }
+  }, [ready, token]);
 
-  if (loaded?.token !== token || loaded.attempt !== attempt) {
-    return (
-      <Layout>
-        <p className={layout.muted} role="status">
-          {m.group_loading()}
-        </p>
-      </Layout>
-    );
+  switch (state.status) {
+    case 'loading':
+      return (
+        <Layout>
+          <p className={layout.muted} role="status">
+            {m.group_loading()}
+          </p>
+        </Layout>
+      );
+    case 'error':
+      return (
+        <Layout>
+          <p className={layout.error} role="alert">
+            {loadErrorMessage(state.error)}
+          </p>
+          {state.error === 'group_not_found' ? (
+            <OtherLink />
+          ) : (
+            <button
+              className={layout.button}
+              type="button"
+              onClick={() => {
+                void store.load();
+              }}
+            >
+              {m.group_retry()}
+            </button>
+          )}
+        </Layout>
+      );
+    case 'ready':
+      return <GroupHome token={token} group={state.group} changes={state.changes} />;
   }
-  const { result } = loaded;
-  if (result.ok) {
-    return <GroupHome key={token} token={token} group={result.group} />;
-  }
-  return (
-    <Layout>
-      <p className={layout.error} role="alert">
-        {loadErrorMessage(result.error)}
-      </p>
-      {result.error === 'group_not_found' ? (
-        <OtherLink />
-      ) : (
-        <button
-          className={layout.button}
-          type="button"
-          onClick={() => {
-            setAttempt(attempt + 1);
-          }}
-        >
-          {m.group_retry()}
-        </button>
-      )}
-    </Layout>
-  );
 }
 
 function OtherLink() {
   return (
-    <Link className={layout.link} href="/lien">
+    // `~` leaves the group's nested routes.
+    <Link className={layout.link} href="~/lien">
       {m.group_other_link()}
     </Link>
   );
