@@ -19,12 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # The tip of the branch when the run starts, not the commit of its trigger: a run queued behind another one that committed would be refused its push.
+      # Credentials kept, the last step pushes with them.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref_name }}
       - env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           D1_DATABASE: ${{ vars.D1_DATABASE || 'la-pince' }}
         # Wrangler prints a download link to the export, valid one hour: its output stays out of the logs, shown on failure without links.
+        # Same version as the catalog of pnpm-workspace.yaml, which this repo does not have.
         run: |
           status=0
           npx --yes wrangler@4.164.0 d1 export "$D1_DATABASE" --remote --output=la-pince.sql > "$RUNNER_TEMP/export.log" 2>&1 || status=$?
@@ -39,5 +44,5 @@ jobs:
             echo "Database unchanged, nothing to commit."
             exit 0
           fi
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -q -m "Sauvegarde du $(date -u +%F)"
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -q -m "Sauvegarde du $(TZ=Europe/Paris date +%F)"
           git push -q
