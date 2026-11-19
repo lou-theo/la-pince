@@ -71,7 +71,11 @@ describe('a new expense', () => {
     const state = apply(expense(), { type: 'title', value: 'Courses' }, { type: 'amount', value: '10' });
     const preview = previewEffect(state);
     expect(preview?.shares.map((share) => share.amount).toSorted()).toStrictEqual([333, 333, 334]);
-    // The member who gets the leftover cent in the preview is the one charged by what is saved.
+    // The member who gets the leftover cent in the preview is the one charged by what is saved, whatever the operation id.
+    for (const other of ['op-2', 'op-3', 'op-4', 'op-5', 'op-6']) {
+      const withId = { ...state, id: operationIdSchema.parse(other) };
+      expect(previewEffect(withId)).toStrictEqual(saved(withId));
+    }
     expect(preview).toStrictEqual(saved(state));
     expect(previewEffect(apply(state, { type: 'uncheckAll' }))).toBeUndefined();
   });

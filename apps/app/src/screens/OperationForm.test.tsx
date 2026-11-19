@@ -1,5 +1,5 @@
 import { type Change, groupResponseSchema, operationBatchSchema } from '@la-pince/core';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -191,10 +191,14 @@ describe('adding an expense', () => {
     // Saving again sends a revision of the same operation, never a second one.
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     await screen.findByText("Enregistré, mais le groupe n'a pas pu être relu : relis-le avant de ressaisir quoi que ce soit.");
+    expect(posted).toHaveLength(2);
     expect(new Set(posted.map((operation) => (operation as { id: string }).id)).size).toBe(1);
     written = false;
     const banner = screen.getAllByRole('alert').find((alert) => alert.textContent.includes('date de la dernière lecture'));
-    await user.click(within(banner ?? document.body).getByRole('button', { name: 'Réessayer' }));
+    if (banner === undefined) {
+      throw new Error('the read error banner is missing');
+    }
+    await user.click(within(banner).getByRole('button', { name: 'Réessayer' }));
     await user.click(screen.getByRole('link', { name: 'Dépenses' }));
     expect(screen.getAllByRole('link', { name: /Péage/ })).toHaveLength(1);
   });
@@ -279,6 +283,33 @@ describe('a send under way', () => {
     await screen.findAllByRole('link', { name: /Enregistrer ce remboursement/ });
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(at(location)).toBe('/soldes');
+  });
+
+  it('does not take back from the detail a person who left before the deletion was answered', async () => {
+    const { gate, release } = held();
+    const { user, location } = await openAsBruno('/operations/op-shopping', { hold: gate });
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
+    await user.click(screen.getByRole('link', { name: 'Soldes' }));
+    release();
+    await screen.findAllByRole('link', { name: /Enregistrer ce remboursement/ });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(at(location)).toBe('/soldes');
+  });
+
+  it('puts the focus on the first field in error, or on the split when only it is wrong', async () => {
+    const { user } = await openAsBruno('/nouvelle-depense');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await waitFor(() => {
+      expect(document.activeElement).toBe(field('Titre'));
+    });
+    await user.type(field('Titre'), 'Péage');
+    await user.type(field('Montant'), '10');
+    await user.click(screen.getByRole('button', { name: 'Tout décocher' }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await waitFor(() => {
+      expect(document.activeElement?.tagName).toBe('FIELDSET');
+    });
   });
 
   it('deletes once on a double click', async () => {

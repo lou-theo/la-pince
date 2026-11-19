@@ -60,7 +60,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
     if (!operation.ok) {
       // The messages appear under their fields, maybe out of sight on a phone: the first field in error takes the focus.
       requestAnimationFrame(() => {
-        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], fieldset[aria-describedby]')?.focus();
       });
       return;
     }
@@ -209,7 +209,7 @@ function Split({ view, members, state, errors, preview, dispatch, splitId }: Spl
   const sum = typedSum(state);
   const total = state.mode === 'amounts' ? typedCents(state.amount) : undefined;
   return (
-    <fieldset className={styles.split} aria-describedby={error === undefined ? undefined : errorId}>
+    <fieldset className={styles.split} {...(error === undefined ? {} : { 'aria-describedby': errorId, tabIndex: -1 })}>
       <legend className={styles.legend}>{m.form_split()}</legend>
       <div className={styles.modes}>
         {(['equal', 'amounts'] as const).map((mode) => (
