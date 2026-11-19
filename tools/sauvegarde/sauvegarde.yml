@@ -19,13 +19,23 @@ jobs:
   sauvegarde:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        # bash -eo pipefail: without it, a failed gzip in front of age would still commit a copy of nothing.
+        shell: bash
     steps:
-      # Checked before the export, which blocks the database while it runs.
+      # Release archive pinned by its checksum, the one GitHub publishes for it.
+      - run: |
+          curl -sSfL -o "$RUNNER_TEMP/age.tar.gz" https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz
+          echo "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10  $RUNNER_TEMP/age.tar.gz" | sha256sum --check --quiet
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
+      # A missing or malformed public key fails here, before the export blocks the database.
       - env:
           AGE_RECIPIENT: ${{ secrets.AGE_RECIPIENT }}
         run: |
-          if [ -z "$AGE_RECIPIENT" ]; then
-            echo "::error::Secret AGE_RECIPIENT missing: the public key the copy is encrypted to (docs/auto-hebergement.md, section Sauvegarde)."
+          if [ -z "$AGE_RECIPIENT" ] || ! age -r "$AGE_RECIPIENT" -o /dev/null < /dev/null; then
+            echo "::error::Secret AGE_RECIPIENT missing or not an age public key (docs/auto-hebergement.md, section Sauvegarde)."
             exit 1
           fi
       # The tip of the branch when the run starts, not the commit of its trigger: a run queued behind another one that committed would be refused its push.
@@ -33,12 +43,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref_name }}
-      # Release archive pinned by its checksum, the one GitHub publishes for it.
-      - run: |
-          curl -sSfL -o "$RUNNER_TEMP/age.tar.gz" https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz
-          echo "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10  $RUNNER_TEMP/age.tar.gz" | sha256sum --check --quiet
-          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
       - env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -53,19 +57,24 @@ jobs:
             sed -E 's#https?://[^[:space:]"]+#<url>#g' "$RUNNER_TEMP/export.log"
             exit "$status"
           fi
-      # age draws a new random key for each encryption, so two copies of the same export differ: the change is detected on the SHA-256 of the clear export, committed beside the copy.
-      # Two exports of an unchanged database are identical, so a day without change leaves no commit.
+          if [ ! -s "$RUNNER_TEMP/la-pince.sql" ]; then
+            echo "::error::Wrangler succeeded but wrote no export."
+            exit 1
+          fi
+      # age encrypts with a fresh random key each time, so two copies of the same export differ: a change is detected on the SHA-256 of the clear export, committed beside the copy with the public key it was encrypted to.
+      # A new public key re-encrypts the copy even when the database has not changed.
       # The checksum only lets someone who already holds a whole database confirm it is this one.
       - env:
           AGE_RECIPIENT: ${{ secrets.AGE_RECIPIENT }}
         run: |
           checksum=$(sha256sum "$RUNNER_TEMP/la-pince.sql" | cut -d ' ' -f 1)
-          if [ -f la-pince.sql.sha256 ] && [ "$(cat la-pince.sql.sha256)" = "$checksum" ]; then
-            echo "Database unchanged, nothing to commit."
+          if [ -f la-pince.sql.gz.age ] && [ "$(cat la-pince.sql.sha256 2> /dev/null)" = "$checksum" ] && [ "$(cat age-recipient.txt 2> /dev/null)" = "$AGE_RECIPIENT" ]; then
+            echo "Database and key unchanged, nothing to commit."
             exit 0
           fi
           gzip -n -c "$RUNNER_TEMP/la-pince.sql" | age -r "$AGE_RECIPIENT" -o la-pince.sql.gz.age
           echo "$checksum" > la-pince.sql.sha256
-          git add la-pince.sql.gz.age la-pince.sql.sha256
+          echo "$AGE_RECIPIENT" > age-recipient.txt
+          git add la-pince.sql.gz.age la-pince.sql.sha256 age-recipient.txt
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -q -m "Sauvegarde du $(TZ=Europe/Paris date +%F)"
           git push -q
