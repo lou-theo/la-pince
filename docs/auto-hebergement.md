@@ -52,7 +52,7 @@ pnpm --filter @la-pince/server run deploy
 
 `run` est nécessaire : `pnpm deploy` est une autre commande, propre à pnpm. Le script construit l'app, applique à la base les migrations qu'elle n'a pas encore, puis publie le Worker, et affiche l'adresse de l'instance. Au tout premier déploiement, l'adresse peut répondre « 404 Not Found » pendant une minute ou deux, le temps que Cloudflare la propage.
 
-Pour mettre à jour l'instance : `git pull`, `pnpm install`, puis comparer sa config au modèle, qui a pu changer (`diff apps/server/wrangler.production.example.jsonc apps/server/wrangler.production.jsonc` ne doit montrer que l'identifiant de la base), reporter les changements, et relancer le déploiement.
+Pour mettre à jour l'instance : `git pull`, `pnpm install`, puis comparer sa config au modèle, qui a pu changer (`diff apps/server/wrangler.production.example.jsonc apps/server/wrangler.production.jsonc` ne doit montrer que l'identifiant de la base), reporter les changements, et relancer le déploiement. Une instance installée avant les notifications voit apparaître le bloc `queues` : avant de le reporter, ajouter « Queues: Edit » au jeton du déploiement (section 2, celui de la CI compris), créer la file (section 3), puis poser les clés (section 5, « Clés des notifications ») ; sans le bloc, l'instance continue de tourner, sans notifications.
 
 ### Déployer à chaque fusion sur `main` (facultatif)
 
@@ -73,7 +73,7 @@ Sur un repo GitHub à soi (un fork, par exemple, dont les workflows sont à acti
    base64 < apps/server/wrangler.production.jsonc | gh secret set WRANGLER_PRODUCTION_JSONC_BASE64 --env production -R <compte>/<repo>
    ```
 
-Le déploiement suivant part à la prochaine arrivée sur `main`. Son résultat est dans l'onglet Actions du repo, sans la sortie de Wrangler : les journaux d'un repo public sont publics, et elle contient l'adresse de l'instance ; en cas d'échec, elle s'affiche sans adresses ni identifiants. Un déploiement ne part que si son commit est encore le dernier de `main`, pour qu'un ancien passage relancé ne remette pas un code plus ancien sur une base déjà migrée. Quand le modèle de config change (comparaison ci-dessus), reposer `WRANGLER_PRODUCTION_JSONC_BASE64` avec la config à jour. Si les migrations passent mais que la publication du Worker échoue, l'ancien code tourne sur la nouvelle base jusqu'au déploiement suivant : relancer le job `deployer` du dernier passage sur `main`.
+Le déploiement suivant part à la prochaine arrivée sur `main`. Son résultat est dans l'onglet Actions du repo, sans la sortie de Wrangler : les journaux d'un repo public sont publics, et elle contient l'adresse de l'instance ; en cas d'échec, elle s'affiche sans adresses ni identifiants. Un déploiement ne part que si son commit est encore le dernier de `main`, pour qu'un ancien passage relancé ne remette pas un code plus ancien sur une base déjà migrée. Quand le modèle de config change (comparaison ci-dessus), reposer `WRANGLER_PRODUCTION_JSONC_BASE64` avec la config à jour, après avoir donné au jeton les droits que le changement demande. Si les migrations passent mais que la publication du Worker échoue, l'ancien code tourne sur la nouvelle base jusqu'au déploiement suivant : relancer le job `deployer` du dernier passage sur `main`.
 
 ## 5. Poser le secret d'administration
 

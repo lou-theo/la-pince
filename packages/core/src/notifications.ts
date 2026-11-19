@@ -17,8 +17,8 @@ export const noticeSchema = z.strictObject({
 });
 export type Notice = z.infer<typeof noticeSchema>;
 
-// Members a version of an operation concerns: its payer and every member with a non-zero share; none for a deletion.
-function concernedMembers(operation: Operation | undefined): MemberId[] {
+// Members a version of an operation affects: its payer and every member with a non-zero share (wider than “involved”); none for a deletion.
+function affectedMembers(operation: Operation | undefined): MemberId[] {
   const effect = operation === undefined ? undefined : operationEffect(operation);
   return effect === undefined ? [] : [effect.payer, ...effect.shares.map((share) => share.member)];
 }
@@ -37,7 +37,7 @@ function merge(earlier: Notice, later: Notice): Notice {
 
 /**
  * Notices of each member about the revisions written by one batch, in the order written: a member is told about a revision when the operation
- * concerns them before or after it, unless they entered it. `previous` holds the version of each operation before the batch. A revision without
+ * affects them before or after it (payer or non-zero share), unless they entered it. `previous` holds the version of each operation before the batch. A revision without
  * an author, which only an import writes, tells no one, so that importing a group again does not notify every member of its whole history.
  */
 export function noticesByMember(previous: ReadonlyMap<OperationId, Operation>, written: readonly Operation[]): Map<MemberId, Notice[]> {
@@ -51,7 +51,7 @@ export function noticesByMember(previous: ReadonlyMap<OperationId, Operation>, w
       continue;
     }
     const notice: Notice = { kind: kindOf(operation, before), operationId: operation.id, title: operation.title, author };
-    for (const member of new Set([...concernedMembers(before), ...concernedMembers(operation)])) {
+    for (const member of new Set([...affectedMembers(before), ...affectedMembers(operation)])) {
       if (member === author) {
         continue;
       }

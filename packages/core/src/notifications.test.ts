@@ -133,7 +133,7 @@ describe('noticesByMember', () => {
     expect(notified(noticesByMember(previousOf(before), changedTwice))).toStrictEqual({ lea: ['changed op3 Hôtel 2'] });
   });
 
-  // Decision 8: nothing is sized on the largest group seen (13 members).
+  // Decision 45 (h): nothing is sized on the largest group seen (13 members).
   it.each([13, 40])('tells every member of a group of %i but the author, each once', (size) => {
     const members = Array.from({ length: size }, (_, index) => `m${String(index)}`);
     const dinner = revision({ payer: 'm0', lines: members.map((member) => ({ member, weight: 1 })), author: 'm0' });
