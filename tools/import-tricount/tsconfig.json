@@ -1,0 +1,9 @@
+{
+  "extends": "@la-pince/config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    // The demo corpus is a JSON file read by the tests.
+    "resolveJsonModule": true
+  },
+  "include": ["src", "vitest.config.ts"]
+}

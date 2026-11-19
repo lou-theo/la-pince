@@ -1,4 +1,5 @@
 import {
+  canonicalJson,
   type GroupId,
   type MemberId,
   type Operation,
@@ -27,15 +28,6 @@ export type Decision =
   | { readonly revisionId: RevisionId; readonly status: 'write'; readonly operation: Operation; readonly content: string }
   | { readonly revisionId: RevisionId; readonly status: 'duplicate' }
   | { readonly revisionId: RevisionId; readonly status: 'rejected'; readonly reason: RejectionReason };
-
-/** JSON with object keys sorted, so that two equal revisions give the same text whatever the order their fields came in. */
-export function canonicalJson(value: unknown): string {
-  return JSON.stringify(value, (_, nested: unknown) =>
-    nested !== null && typeof nested === 'object' && !Array.isArray(nested)
-      ? Object.fromEntries(Object.entries(nested).toSorted(([a], [b]) => (a < b ? -1 : 1)))
-      : nested,
-  );
-}
 
 /**
  * Decides, in the order sent, what becomes of each revision of a batch: written, a resend of a revision already received with the same content in

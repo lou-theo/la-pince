@@ -24,6 +24,7 @@ export {
   type RevisionId,
   revisionIdSchema,
 } from './ids.ts';
+export { canonicalJson } from './json.ts';
 export {
   type Change,
   changeSchema,

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type Cents, enteredAmountSchema } from './amount.ts';
 import { type Entry, entrySchema } from './entry.ts';
 import { groupTitleSchema, memberNameSchema } from './group.ts';
-import { type MemberId, memberIdSchema, type OperationId, operationIdSchema } from './ids.ts';
+import { type GroupId, groupIdSchema, type MemberId, memberIdSchema, type OperationId, operationIdSchema } from './ids.ts';
 import { operationTitleSchema } from './operation.ts';
 
 // Tricount writes money spent as a negative amount with two decimals (“-10.20”), and a zero share unsigned or not; a positive amount is an
@@ -108,6 +108,9 @@ const tricountExportSchema = z.object({
     z.object({
       Registry: z
         .object({
+          // The tricount's own id, kept as the group's so that a new import overwrites the same group. Never the link token
+          // (`public_identifier_token`), which gives write access to the tricount and is not read.
+          uuid: groupIdSchema,
           title: groupTitleSchema,
           memberships: z.array(memberSchema),
           all_registry_entry: z.array(z.object({ RegistryEntry: registryEntrySchema })),
@@ -142,6 +145,7 @@ export interface ImportedMember {
 }
 
 export interface ImportedGroup {
+  readonly id: GroupId;
   readonly title: string;
   readonly members: readonly ImportedMember[];
   readonly operations: readonly ImportedOperation[];
@@ -156,6 +160,7 @@ export interface ImportedGroup {
 export function convertTricount(data: unknown): ImportedGroup {
   const registry = tricountExportSchema.parse(data).Response[0].Registry;
   return {
+    id: registry.uuid,
     title: registry.title,
     members: registry.memberships.map(({ uuid, alias }) => ({ id: uuid, name: alias.display_name })),
     operations: registry.all_registry_entry,

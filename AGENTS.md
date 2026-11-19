@@ -17,10 +17,11 @@ PWA open source de partage de dépenses pour un groupe d'amis, hébergée sur Cl
 - `packages/core` : calcul, types, validation (schémas zod de toute donnée entrante), contrat de synchronisation, conversion Tricount ; ne dépend d'aucun autre paquet du repo. `fixtures/tricount-demo.json` : corpus anonymisé, seule donnée issue du vrai groupe admise dans le repo.
 - `packages/config` : configs partagées (tsconfig de base, ESLint, Prettier, preset Vitest).
 - `apps/server` : Worker Hono, D1 par Drizzle ; schéma dans `src/schema.ts`, migrations générées dans `drizzle/` (jamais écrites à la main), tests de l'API dans workerd.
+- `tools/import-tricount` : script local qui importe un export Tricount dans un serveur par son API et relit les soldes ; lancé sous Node, sans étape de build.
 - `docs/cadrage/` : cadrage du projet (besoin, décisions, plan) ; `docs/cadrage/essais/` garde des essais jetables, hors lint et format.
-- À venir, créés avec leur premier code : `apps/app` (PWA React), `tools/import-tricount` (script local d'import).
+- À venir, créé avec son premier code : `apps/app` (PWA React).
 
-Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint `import-x/no-extraneous-dependencies`) : app et server dépendent de core, jamais l'un de l'autre.
+Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint `import-x/no-extraneous-dependencies`) : app, server et import dépendent de core, jamais l'un de l'autre.
 
 ## Commandes
 
@@ -30,6 +31,7 @@ Un paquet n'importe que ce qu'il déclare dans son `package.json` (règle ESLint
 - `pnpm --filter @la-pince/core test` : tests d'un seul paquet, avec couverture.
 - `pnpm --filter @la-pince/server migrations:generate` : écrit la migration d'un changement de `apps/server/src/schema.ts`, à committer avec lui.
 - `pnpm --filter @la-pince/server dev` : serveur local sur une D1 locale (`wrangler dev`), le secret d'administration dans `apps/server/.dev.vars` (`ADMIN_TOKEN=…`, ignoré par git) ; migrations appliquées par `wrangler d1 migrations apply la-pince --local`.
+- `pnpm --filter @la-pince/import-tricount start <chemin absolu de l'export>` : importe un export dans le serveur local (`LA_PINCE_URL` pour un autre), avec `ADMIN_TOKEN` et soit `LA_PINCE_GROUP_TOKEN` (jeton du lien d'un import précédent, gardé), soit `LA_PINCE_NEW_LINK=1` (nouveau lien, l'ancien cesse de marcher) ; secrets saisis sans écho (`read -rs ADMIN_TOKEN && export ADMIN_TOKEN`) plutôt que tapés dans la commande, que l'historique du shell garde ; le jeton du lien s'affiche dans le terminal avant tout appel, jamais dans un fichier. Jamais l'export réel de `temp/` avant l'étape 8.
 
 ## Code
 
