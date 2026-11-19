@@ -4,8 +4,8 @@ import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import type { Fetch } from '../sync/client.ts';
-import { rememberMember } from '../testing/device.ts';
 import { change, fakeServer } from '../testing/fake-server.ts';
+import { rememberMember } from '../testing/groupDb.ts';
 import { renderApp } from '../testing/render.tsx';
 
 const token = 'demo-token-of-the-form-tests-0123456789';
