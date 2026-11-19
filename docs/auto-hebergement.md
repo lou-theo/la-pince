@@ -125,29 +125,33 @@ Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi d
    cd la-pince
    ```
 
-3. Y poser le jeton et l'identifiant du compte ; une base qui ne s'appelle pas `la-pince` se nomme en plus par la variable `D1_DATABASE` :
+3. Y poser le jeton et l'identifiant du compte (section 2) ; une base qui ne s'appelle pas `la-pince` se nomme en plus par la variable `D1_DATABASE` (dernière commande) :
 
    ```sh
    gh secret set CLOUDFLARE_API_TOKEN -R <compte>/la-pince-sauvegardes
    gh secret set CLOUDFLARE_ACCOUNT_ID -R <compte>/la-pince-sauvegardes
+   gh variable set D1_DATABASE --body <nom de la base> -R <compte>/la-pince-sauvegardes
    ```
 
-4. Lancer une première copie sans attendre la nuit, puis vérifier que `la-pince.sql` est arrivé dans le repo :
+4. Lancer une première copie sans attendre la nuit, suivre son passage, puis vérifier que `la-pince.sql` est arrivé dans le repo :
 
    ```sh
    gh workflow run sauvegarde.yml -R <compte>/la-pince-sauvegardes
+   gh run watch -R <compte>/la-pince-sauvegardes
+   git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql
    ```
 
 GitHub prévient par mail d'une copie en échec la personne qui a poussé la tâche, selon ses réglages de notifications. Une tâche planifiée peut partir en retard, ou plus rarement sauter un jour, quand GitHub est chargé.
 
 ### Restaurer une copie
 
-Une copie se rejoue dans une base neuve, vers laquelle l'instance bascule ensuite ; l'ancienne reste intacte tant qu'on ne la supprime pas. `<commit>` est celui de la copie voulue, lu par `git log` dans le repo de sauvegarde :
+Une copie se rejoue dans une base neuve, vers laquelle l'instance bascule ensuite ; l'ancienne reste intacte tant qu'on ne la supprime pas. Les copies sont commitées par GitHub : rapatrier d'abord l'historique, puis choisir `<commit>`, celui de la copie voulue. Le fichier extrait contient tous les groupes en clair : il va dans `temp/`, que git ignore, jamais ailleurs dans le dossier du code.
 
 ```sh
-git -C ../la-pince-sauvegardes show <commit>:la-pince.sql > "$PWD/la-pince-restauree.sql"
+git -C ../la-pince-sauvegardes pull && git -C ../la-pince-sauvegardes log --oneline -- la-pince.sql
+mkdir -p temp && git -C ../la-pince-sauvegardes show <commit>:la-pince.sql > "$PWD/temp/la-pince-restauree.sql"
 pnpm --filter @la-pince/server exec wrangler d1 create la-pince-restauree --jurisdiction=eu --update-config=false
-pnpm --filter @la-pince/server exec wrangler d1 execute la-pince-restauree --remote --file="$PWD/la-pince-restauree.sql"
+pnpm --filter @la-pince/server exec wrangler d1 execute la-pince-restauree --remote --file="$PWD/temp/la-pince-restauree.sql"
 ```
 
-Puis, dans `apps/server/wrangler.production.jsonc`, remplacer `database_name` et `database_id` par ceux de la base neuve (donnés par `d1 create`), redéployer (section 4, et reposer `WRANGLER_PRODUCTION_JSONC_BASE64` si la CI déploie), et donner `la-pince-restauree` à la variable `D1_DATABASE` du repo de sauvegarde. Les téléphones voient que la base a changé et relisent leur groupe en entier ; ce qui a été saisi après la copie est perdu, sauf ce qui attendait encore dans la file d'envoi d'un téléphone.
+Puis, dans `apps/server/wrangler.production.jsonc`, remplacer seulement `database_id` par celui de la base neuve (donné par `d1 create`), en gardant `database_name` à `la-pince` : le déploiement et les commandes Time Travel trouvent la base par ce nom dans la config, et viseraient sinon l'ancienne base ou échoueraient ; redéployer (section 4, et reposer `WRANGLER_PRODUCTION_JSONC_BASE64` si la CI déploie), et donner `la-pince-restauree` à la variable `D1_DATABASE` du repo de sauvegarde. Les téléphones voient que la base a changé et relisent leur groupe en entier ; ce qui a été saisi après la copie est perdu, sauf ce qui attendait encore dans la file d'envoi d'un téléphone.
