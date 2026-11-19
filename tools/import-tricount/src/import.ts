@@ -107,14 +107,18 @@ export async function importTricount(options: ImportOptions): Promise<ImportRepo
       .map((change): Content => ({ id: change.id, title: change.title, date: change.date, deleted: true })),
   ];
   const revisions: Operation[] = [];
+  // The revision each new one follows, from the group's last change: after the database is restored, an import that differs anywhere gives other
+  // ids to every revision after the difference, so that a phone's cursor never names one of them in a history it did not read.
+  let previous = [...before.values()].toSorted((a, b) => b.seq - a.seq)[0]?.revisionId ?? '';
   for (const content of wanted) {
     const current = before.get(content.id);
     const text = contentOf(content);
     if (current === undefined || contentOf(current) !== text) {
       // From the group, the content and the revision it replaces: going back to an earlier state is a new revision, not taken for a resend, and a
-      // revision id stays the group's own.
-      const revisionId = await sha256(`${group.id}\n${text}\n${current === undefined ? '' : String(current.seq)}`);
+      // revision id stays the group's own. Two imports of the same export from the same state still send the same ids, counted once.
+      const revisionId = await sha256(`${group.id}\n${text}\n${current === undefined ? '' : String(current.seq)}\n${previous}`);
       revisions.push(operationSchema.parse({ ...content, revisionId }));
+      previous = revisionId;
     }
   }
   let written = 0;
