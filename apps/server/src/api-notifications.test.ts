@@ -58,8 +58,9 @@ describe('GET /api/notifications/key', () => {
 describe('PUT and DELETE /api/groups/:token/subscription', () => {
   it('saves a phone as a member, moves it when the member changes, and stops it', async () => {
     const { id, token } = await newGroup();
-    expect((await call(token, '', 'PUT', { member: 'alice', subscription: subscription('a1') })).status).toBe(204);
-    expect((await call(token, '', 'PUT', { member: 'bob', subscription: subscription('a1') })).status).toBe(204);
+    const first = await call(token, '', 'PUT', { member: 'alice', subscription: subscription('a1') });
+    expect([first.status, await first.json()]).toStrictEqual([200, { groupId: id }]);
+    expect((await call(token, '', 'PUT', { member: 'bob', subscription: subscription('a1') })).status).toBe(200);
     expect(await storedSubscriptions(id)).toStrictEqual([{ endpoint: subscription('a1').endpoint, member: 'bob' }]);
     expect((await call(token, '', 'DELETE', { endpoint: subscription('a1').endpoint })).status).toBe(204);
     expect(await storedSubscriptions(id)).toStrictEqual([]);
