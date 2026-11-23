@@ -27,6 +27,11 @@ function line(notice: Notice & { readonly authorName: string }): string {
   }
 }
 
+/** The path a touched notification opens, from the data it was shown with; the app's home for anything else. */
+export function pathOf(data: unknown): string {
+  return typeof data === 'object' && data !== null && 'path' in data && typeof data.path === 'string' && data.path.startsWith('/') ? data.path : '/';
+}
+
 /**
  * The notification of a push message: titled with the group, one line per notice and how many more there were. A touch opens the operation when
  * the message tells about one that still exists, the group otherwise. A message it cannot read, or from a group this phone no longer knows, still

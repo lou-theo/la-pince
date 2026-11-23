@@ -2,8 +2,8 @@ import { pushMessageSchema } from '@la-pince/core';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 
-import { notificationOf } from '../model/notification.ts';
-import { openNotificationDb } from '../storage/notificationDb.ts';
+import { notificationOf, pathOf } from '../model/notification.ts';
+import { type NotifiedGroup, openNotificationDb } from '../storage/notificationDb.ts';
 
 declare const self: ServiceWorkerGlobalScope & { readonly __WB_MANIFEST: Parameters<typeof precacheAndRoute>[0] };
 
@@ -29,7 +29,13 @@ async function show(data: PushMessageData | null): Promise<void> {
   }
   const parsed = pushMessageSchema.safeParse(raw);
   const message = parsed.success ? parsed.data : undefined;
-  const group = message === undefined ? undefined : await (await openNotificationDb()).get(message.groupId);
+  let group: NotifiedGroup | undefined;
+  try {
+    group = message === undefined ? undefined : await (await openNotificationDb()).get(message.groupId);
+  } catch {
+    // Storage unavailable: the notification still shows, untitled. Safari drops a subscription whose pushes show nothing.
+    group = undefined;
+  }
   const notification = notificationOf(message, group);
   await self.registration.showNotification(notification.title, {
     body: notification.body,
@@ -46,10 +52,13 @@ async function open(path: string): Promise<void> {
   const url = new URL(path, self.location.origin).href;
   const [client] = await self.clients.matchAll({ type: 'window' });
   if (client !== undefined) {
-    // The open app goes to the page of the notification; `null` when the browser refuses (another origin), and a new window opens instead.
-    const moved = await client.navigate(url).catch(() => null);
+    // Focused first, while the touch still allows it; then the open app goes to the page of the notification, or a new window opens where the
+    // browser refuses to navigate it.
+    const focused = await client.focus().catch(() => client);
+    const moved = await Promise.resolve()
+      .then(() => focused.navigate(url))
+      .catch(() => null);
     if (moved !== null) {
-      await moved.focus();
       return;
     }
   }
@@ -58,7 +67,5 @@ async function open(path: string): Promise<void> {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const data: unknown = event.notification.data;
-  const path = typeof data === 'object' && data !== null && 'path' in data && typeof data.path === 'string' ? data.path : '/';
-  event.waitUntil(open(path));
+  event.waitUntil(open(pathOf(event.notification.data)));
 });

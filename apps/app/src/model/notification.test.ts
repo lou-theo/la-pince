@@ -1,7 +1,7 @@
 import { type PushMessage, pushMessageSchema } from '@la-pince/core';
 import { describe, expect, it } from 'vitest';
 
-import { notificationOf } from './notification.ts';
+import { notificationOf, pathOf } from './notification.ts';
 
 const group = { token: 'abcdefghijklmnopqrstuvwxyz_0123456789-AB', title: 'Week-end' };
 const notice = (kind: 'added' | 'changed' | 'deleted', title: string, operationId = 'op1') => ({
@@ -54,5 +54,16 @@ describe('notificationOf', () => {
     const fallback = { title: 'La Pince', body: 'Du nouveau dans un de tes groupes.', path: '/' };
     expect(notificationOf(undefined, group)).toStrictEqual(fallback);
     expect(notificationOf(operations(1, [notice('added', 'Pizza')]), undefined)).toStrictEqual(fallback);
+  });
+});
+
+describe('pathOf', () => {
+  it('opens the path a notification was shown with, and the home for anything else', () => {
+    expect(pathOf({ path: `/g/${group.token}/operations/op1` })).toBe(`/g/${group.token}/operations/op1`);
+    expect(pathOf({ path: 'https://elsewhere.example/' })).toBe('/');
+    expect(pathOf({ path: 3 })).toBe('/');
+    expect(pathOf({})).toBe('/');
+    expect(pathOf(null)).toBe('/');
+    expect(pathOf(undefined)).toBe('/');
   });
 });
