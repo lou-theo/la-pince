@@ -134,9 +134,10 @@ export function sendBatches(messages: readonly NotificationMessage[]): Notificat
   return batches;
 }
 
-// Every message is padded to this size before encryption, so that its length tells the push service nothing of its content. It is what the
-// push service of Firefox on Android takes: it relays the body to FCM in base64, with fields of its own, within 4096 bytes (autopush-rs,
-// `FcmClient::send`), and answers 413 to a record of 4096 bytes. 2800 bytes make a body of 2903, 3871 in base64.
+// Every message is padded to this size before encryption, so that its length tells the push service nothing of its content. It stays under
+// what the push service of Firefox on Android takes: it relays the body to FCM in base64, with fields of its own, within 4096 bytes
+// (autopush-rs, `FcmClient::send`), which a body of 4096 bytes, the library's padding, goes past. 2800 bytes make a body of 2903, 3871 in
+// base64, about 150 bytes under that limit.
 export const MAX_PUSH_BYTES = 2800;
 
 // Drops the last notices until the message fits: a title in control characters weighs six bytes a character once in JSON. One notice always
