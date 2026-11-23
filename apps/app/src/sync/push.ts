@@ -24,6 +24,18 @@ function supportOf(): PushSupport {
   return apple ? 'home_screen' : 'unsupported';
 }
 
+/** The public key a subscription was made with, in base64url as the instance serves it; undefined where the browser does not tell it. */
+export function subscriptionKey(subscription: PushSubscription): string | undefined {
+  // Missing from older browsers, though the DOM types declare it.
+  const key = (subscription.options as PushSubscriptionOptions | undefined)?.applicationServerKey ?? null;
+  return key === null
+    ? undefined
+    : btoa(String.fromCharCode(...new Uint8Array(key)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
 function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
   const binary = atob(base64url.replace(/-/g, '+').replace(/_/g, '/'));
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
@@ -42,10 +54,11 @@ export function browserPushPlatform(): PushPlatform {
       return (await registration())?.pushManager.getSubscription() ?? null;
     },
     async subscribe(publicKey) {
-      const current = await registration();
-      if (current === undefined) {
+      if ((await registration()) === undefined) {
         throw new Error('no service worker');
       }
+      // Registered but maybe still installing on a first visit: subscribing needs an active service worker.
+      const current = await navigator.serviceWorker.ready;
       return current.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
     },
   };

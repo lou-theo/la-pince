@@ -58,7 +58,7 @@ export async function openNotificationDb(): Promise<NotificationDb> {
       return read(await db.get('groups', groupId));
     },
     async put(group) {
-      await db.put('groups', { ...group });
+      await db.put('groups', group);
     },
     async remove(groupId) {
       await db.delete('groups', groupId);

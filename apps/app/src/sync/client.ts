@@ -132,7 +132,7 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
       return answersEach ? { ok: true, value: results } : { ok: false, error: 'unexpected' };
     },
     async fetchPushKey() {
-      const result = await read('/api/notifications/key', pushKeyResponseSchema, NOTIFICATION_ERRORS);
+      const result = await read('/api/notifications/key', pushKeyResponseSchema, ['notifications_disabled']);
       return result.ok ? { ok: true, value: result.value.publicKey } : result;
     },
     async subscribe(token, request) {

@@ -6,9 +6,9 @@ import { m } from '../i18n/paraglide/messages.js';
 import { type NotificationDb, type NotifiedGroup, openNotificationDb } from '../storage/notificationDb.ts';
 import type { ApiClient, ApiResult, NotificationError } from '../sync/client.ts';
 import { useApiClient } from '../sync/context.ts';
-import { browserPushPlatform, type PushPlatform } from '../sync/push.ts';
+import { browserPushPlatform, type PushPlatform, subscriptionKey } from '../sync/push.ts';
 import layout from './Layout.module.css';
-import styles from './ShareLink.module.css';
+import styles from './Notifications.module.css';
 
 type Status = 'checking' | 'hidden' | 'home_screen' | 'denied' | 'off' | 'on';
 
@@ -21,51 +21,71 @@ interface NotificationsProps {
   readonly platform?: PushPlatform;
 }
 
+// One instance: `platform` is an effect dependency, and a new object at each render would start the effect again.
 let browser: PushPlatform | undefined;
+
+// Subscription writes, one at a time for the whole page: a member chosen then chosen back reaches the server last, whatever the network does.
+let writes: Promise<unknown> = Promise.resolve();
+function serialized<T>(write: () => Promise<T>): Promise<T> {
+  const next = writes.then(write);
+  writes = next.catch(() => undefined);
+  return next;
+}
 
 const entryOf = async (db: NotificationDb, token: string): Promise<NotifiedGroup | undefined> =>
   (await db.all()).find((group) => group.token === token);
 
-/** Saves the subscription of this browser on the server as the member, then on the phone under the group's id, which push messages carry. */
-async function save(
-  client: ApiClient,
-  db: NotificationDb,
-  group: { readonly token: string; readonly title: string; readonly member: MemberId },
-  subscription: PushSubscription,
-): Promise<ApiResult<undefined, NotificationError>> {
-  const json = pushSubscriptionSchema.safeParse(subscription.toJSON());
-  if (!json.success) {
-    return { ok: false, error: 'invalid_request' };
-  }
-  const result = await client.subscribe(group.token, { member: group.member, subscription: json.data });
-  if (!result.ok) {
-    return result;
-  }
-  await db.put({ groupId: result.value, ...group, endpoint: json.data.endpoint });
-  return { ok: true, value: undefined };
+interface GroupAs {
+  readonly token: string;
+  readonly title: string;
+  readonly member: MemberId;
 }
 
+/** Saves the subscription of this browser on the server as the member, then on the phone under the group's id, which push messages carry. */
+function save(client: ApiClient, group: GroupAs, subscription: PushSubscription): Promise<ApiResult<undefined, NotificationError>> {
+  return serialized(async () => {
+    const json = pushSubscriptionSchema.safeParse(subscription.toJSON());
+    if (!json.success) {
+      return { ok: false, error: 'invalid_request' } as const;
+    }
+    const result = await client.subscribe(group.token, { member: group.member, subscription: json.data });
+    if (!result.ok) {
+      return result;
+    }
+    await (await openNotificationDb()).put({ groupId: result.value, ...group, endpoint: json.data.endpoint });
+    return { ok: true, value: undefined } as const;
+  });
+}
+
+// A subscription the browser made with other keys than the instance's (keys changed since): its push service refuses what the server sends.
+const otherKeys = (subscription: PushSubscription, publicKey: string) => {
+  const key = subscriptionKey(subscription);
+  return key !== undefined && key !== publicKey;
+};
+
 /**
- * Where the phone stands for this group, brought in line with the browser: an entry whose subscription the browser dropped is forgotten, and a
- * subscription that changed address or member is saved again. A failed save keeps the entry as it was, so that the next opening tries again.
+ * Where the phone stands for this group, brought in line with the browser and the server: an entry whose subscription the browser dropped, or made
+ * with other keys, is forgotten; otherwise the subscription is saved again at each opening, as the current member and address, which also restores
+ * it on a server restored from a backup. A failed save keeps the entry and is told, the next opening trying again.
  */
-async function reconcile(client: ApiClient, platform: PushPlatform, group: Parameters<typeof save>[2]): Promise<Status> {
+async function reconcile(
+  client: ApiClient,
+  platform: PushPlatform,
+  group: GroupAs,
+  publicKey: string,
+): Promise<{ status: Status; error?: NotificationError }> {
   const db = await openNotificationDb();
   const entry = await entryOf(db, group.token);
   if (entry === undefined) {
-    return platform.permission() === 'denied' ? 'denied' : 'off';
+    return { status: platform.permission() === 'denied' ? 'denied' : 'off' };
   }
   const subscription = await platform.getSubscription();
-  if (subscription === null) {
+  if (subscription === null || otherKeys(subscription, publicKey)) {
     await db.remove(entry.groupId);
-    return 'off';
+    return { status: 'off' };
   }
-  if (subscription.endpoint !== entry.endpoint || entry.member !== group.member) {
-    await save(client, db, group, subscription);
-  } else if (entry.title !== group.title) {
-    await db.put({ ...entry, title: group.title });
-  }
-  return 'on';
+  const saved = await save(client, group, subscription);
+  return saved.ok ? { status: 'on' } : { status: 'on', error: saved.error };
 }
 
 /**
@@ -84,7 +104,7 @@ export function Notifications({ token, title, member, platform: given }: Notific
     if (platform.support === 'unsupported') {
       return;
     }
-    // Left by a later run (member changed) or by unmounting: its results are dropped.
+    // Left by a later run (member changed) or by unmounting: its results are dropped. Read through a function, which TypeScript does not narrow.
     let live = true;
     const isLive = () => live;
     void (async () => {
@@ -98,9 +118,14 @@ export function Notifications({ token, title, member, platform: given }: Notific
         return;
       }
       setPublicKey(key.value);
-      const next = platform.support === 'home_screen' ? 'home_screen' : await reconcile(client, platform, { token, title, member });
+      if (platform.support === 'home_screen') {
+        setStatus('home_screen');
+        return;
+      }
+      const next = await reconcile(client, platform, { token, title, member }, key.value);
       if (isLive()) {
-        setStatus(next);
+        setStatus(next.status);
+        setMessage(next.error === undefined ? undefined : notificationErrorMessage(next.error));
       }
     })();
     return () => {
@@ -118,7 +143,7 @@ export function Notifications({ token, title, member, platform: given }: Notific
     }
   }
 
-  const enable = () =>
+  const enable = (key: string) =>
     act(async () => {
       const permission = await platform.requestPermission();
       if (permission !== 'granted') {
@@ -128,12 +153,17 @@ export function Notifications({ token, title, member, platform: given }: Notific
       }
       let subscription: PushSubscription;
       try {
-        subscription = (await platform.getSubscription()) ?? (await platform.subscribe(publicKey ?? ''));
+        const current = await platform.getSubscription();
+        if (current !== null && otherKeys(current, key)) {
+          // The other groups on these old keys get the new subscription at their next opening.
+          await current.unsubscribe();
+        }
+        subscription = current !== null && !otherKeys(current, key) ? current : await platform.subscribe(key);
       } catch {
         setMessage(m.notifications_subscribe_failed());
         return;
       }
-      const result = await save(client, await openNotificationDb(), { token, title, member }, subscription);
+      const result = await save(client, { token, title, member }, subscription);
       if (result.ok) {
         setStatus('on');
       } else {
@@ -154,9 +184,9 @@ export function Notifications({ token, title, member, platform: given }: Notific
         }
         await db.remove(entry.groupId);
       }
-      // One subscription per browser, shared by its groups: dropped only once no other group uses it.
+      // One subscription per browser, shared by its groups: dropped only with the last one, even if another still holds an older address of it.
       const subscription = await platform.getSubscription();
-      if (subscription !== null && !(await db.all()).some((group) => group.endpoint === subscription.endpoint)) {
+      if (subscription !== null && (await db.all()).length === 0) {
         await subscription.unsubscribe().catch(() => false);
       }
       setStatus('off');
@@ -184,12 +214,12 @@ export function Notifications({ token, title, member, platform: given }: Notific
     return null;
   }
   return (
-    <div className={styles.share}>
+    <div className={styles.notifications}>
       {status === 'home_screen' ? <p className={layout.muted}>{m.notifications_home_screen()}</p> : null}
       {status === 'denied' ? <p className={layout.muted}>{m.notifications_denied()}</p> : null}
-      {status === 'off' ? (
+      {status === 'off' && publicKey !== undefined ? (
         <>
-          <button className={layout.link} type="button" disabled={busy} onClick={() => void enable()}>
+          <button className={layout.link} type="button" disabled={busy} onClick={() => void enable(publicKey)}>
             {m.notifications_enable()}
           </button>
           <span className={layout.muted}>{m.notifications_explanation()}</span>
