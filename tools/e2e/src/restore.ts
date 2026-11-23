@@ -8,7 +8,7 @@ export interface Database {
 }
 
 // In the order of their foreign keys: deleted backwards, filled forwards.
-const tables = ['groups', 'members', 'revisions', 'operations'] as const;
+const tables = ['groups', 'members', 'subscriptions', 'revisions', 'operations'] as const;
 
 /**
  * What Time Travel does to D1, played on the local database: `snapshot` keeps every table and the counter of the sync, `restore` puts them back.
