@@ -48,6 +48,23 @@ export const screens: readonly Screen[] = [
   },
   { name: 'groupe', label: 'Groupe, ses dépenses', reach: chooseFirstMember },
   {
+    name: 'groupe-sombre',
+    label: 'Ses dépenses, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await chooseFirstMember(page, demo);
+    },
+  },
+  {
+    name: 'moi',
+    label: 'Qui je suis, notifications',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator('header a[href$="/moi"]').click();
+      await page.locator('main section').waitFor();
+    },
+  },
+  {
     name: 'depense',
     label: 'Une dépense',
     reach: async (page: Page, demo: Demo): Promise<void> => {

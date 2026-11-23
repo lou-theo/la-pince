@@ -34,10 +34,14 @@ describe('opening a group', () => {
     expect(screen.getByRole('heading', { name: 'Week-end' })).toBeDefined();
     expect(screen.getByText('Tu es Bruno')).toBeDefined();
 
+    // The avatar of the band leads to who I am, outside both tabs.
+    await user.click(screen.getByRole('link', { name: 'Tu es Bruno' }));
+    expect(screen.getByRole('heading', { name: 'Tu es Bruno' })).toBeDefined();
+    expect(screen.queryAllByRole('link', { current: 'page' })).toStrictEqual([]);
     await user.click(screen.getByRole('button', { name: "Ce n'est pas moi" }));
     expect(screen.getByRole('button', { name: 'Bruno' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Chloé' }));
-    expect(screen.getByText('Tu es Chloé')).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Tu es Chloé' })).toBeDefined();
   });
 
   it('opens straight on the group once I said who I am, and asks again if that member is no longer in the group', async () => {
@@ -179,15 +183,51 @@ describe('a group as one of its members', () => {
     return { user, location };
   }
 
-  it('lists the operations, the latest first, with my share of each', async () => {
+  const rowsOf = (list: HTMLElement) =>
+    within(list)
+      .getAllByRole('listitem')
+      .map((row) => [...row.querySelectorAll('span span')].map((span) => span.textContent));
+
+  it('lists the operations under their day, the latest first, each saying in words what it means for me', async () => {
     await openAsBruno();
-    const rows = screen.getAllByRole('listitem').map((row) => [...row.querySelectorAll('span span')].map((span) => span.textContent));
-    expect(rows).toStrictEqual([
-      ['Virement', '7 nov. 2026 · Chloé a remboursé Alice', '5,00\u00a0€', 'Remboursement'],
-      ['Péage', '6 nov. 2026 · Payé par Bruno (toi)', '7,00\u00a0€', 'Tu as avancé 7,00\u00a0€'],
-      ['Courses', '5 nov. 2026 · Payé par Alice', '45,00\u00a0€', 'Ta part 20,00\u00a0€'],
+    const days = screen.getAllByRole('heading', { level: 2 });
+    // The year is said only for another year than today's.
+    expect(days.map((day) => day.textContent.replace(/ 2026$/, ''))).toStrictEqual(['Samedi 7 novembre', 'Vendredi 6 novembre', 'Jeudi 5 novembre']);
+    expect(screen.getAllByRole('list').flatMap(rowsOf)).toStrictEqual([
+      ['Virement', 'Chloé a remboursé 5,00 € à Alice', 'Pas concerné'],
+      ['Péage', 'Tu as payé 7,00 €', 'Tu as avancé', '7,00 €'],
+      ['Courses', 'Alice a payé 45,00 €', 'Tu dois', '20,00 €'],
     ]);
     expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('link', { name: 'Ajouter une dépense' }).getAttribute('href')).toBe(`/g/${token}/nouvelle-depense`);
+  });
+
+  it('says who reimbursed whom, “you” standing for who I am', async () => {
+    await rememberMember(token, 'm2');
+    const reimbursements = [
+      change({ id: 'r-sent', date: '2026-11-07', title: 'Rendu', payer: 'm2', lines: [['m1', 500]], kind: 'reimbursement' }),
+      change({ id: 'r-received', date: '2026-11-07', title: 'Reçu de Chloé', payer: 'm3', lines: [['m2', 300]], kind: 'reimbursement' }),
+      change({
+        id: 'r-several',
+        date: '2026-11-07',
+        title: 'Partagé',
+        payer: 'm3',
+        lines: [
+          ['m1', 400],
+          ['m2', 200],
+        ],
+        kind: 'reimbursement',
+      }),
+      change({ id: 'own', date: '2026-11-07', title: 'Pour moi', payer: 'm2', lines: [['m2', 900]] }),
+    ];
+    renderApp(`/g/${token}`, fakeServer({ token, group, changes: reimbursements }).fetch);
+    await screen.findByText('Tu es Bruno');
+    expect(rowsOf(screen.getByRole('list'))).toStrictEqual([
+      ['Pour moi', 'Tu as payé 9,00 €', 'Ta part', '9,00 €'],
+      ['Partagé', 'Chloé a remboursé Alice, Bruno (toi)', 'Reçu', '2,00 €'],
+      ['Reçu de Chloé', "Chloé t'a remboursé", 'Reçu', '3,00 €'],
+      ['Rendu', 'Tu as remboursé Alice', 'Versé', '5,00 €'],
+    ]);
   });
 
   it('shows an operation with the share of each member, in the order they were added', async () => {

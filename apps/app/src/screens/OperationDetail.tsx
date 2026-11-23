@@ -39,7 +39,7 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
     <article className={styles.detail}>
       {back}
       <header className={styles.detailHeader}>
-        <p className={layout.muted}>{operation.kind === 'reimbursement' ? m.operation_reimbursement() : formatDay(operation.date, { long: true })}</p>
+        <p className={layout.muted}>{operation.kind === 'reimbursement' ? m.operation_reimbursement() : formatDay(operation.date)}</p>
         <h2 className={layout.title}>{operation.title}</h2>
         <p className={styles.bigAmount}>
           <span className={layout.visuallyHidden}>{m.operation_total()} </span>
@@ -47,7 +47,7 @@ export function OperationDetail({ view, id }: { readonly view: GroupView; readon
         </p>
         <p>{who(view, operation)}</p>
         {operation.pending ? <p className={styles.pending}>{m.operation_pending()}</p> : null}
-        {operation.kind === 'reimbursement' ? <p className={layout.muted}>{formatDay(operation.date, { long: true })}</p> : null}
+        {operation.kind === 'reimbursement' ? <p className={layout.muted}>{formatDay(operation.date)}</p> : null}
         {operation.author === undefined ? null : <p className={layout.muted}>{m.operation_entered_by({ name: view.nameOf(operation.author) })}</p>}
       </header>
       {/* A reimbursement to a single member says it all in its title line. */}

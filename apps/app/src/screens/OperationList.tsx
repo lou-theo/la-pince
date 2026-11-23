@@ -1,72 +1,96 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Link } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
-import { formatDay } from '../model/dates.ts';
-import { myShare, type OperationView } from '../model/group.ts';
+import { dayHeading, localDay } from '../model/dates.ts';
+import type { OperationView } from '../model/group.ts';
+import { byDay, type MyPart, myPart } from '../model/listing.ts';
 import { formatCents } from '../model/money.ts';
 import layout from './Layout.module.css';
-import styles from './Operations.module.css';
-import { type GroupView, who } from './view.ts';
+import styles from './OperationList.module.css';
+import { type GroupView, sharesInOrder, who } from './view.ts';
 
-/** The group's operations, the latest first, each with what it puts on me. */
+/** The group's operations, the latest day first, one card each saying in words what it means for me, and the button to add an expense. */
 export function OperationList({ view }: { readonly view: GroupView }): ReactNode {
-  const actions = (
-    <div className={layout.actions}>
-      <Link className={layout.button} href="/nouvelle-depense">
-        {m.operations_add_expense()}
-      </Link>
-      <Link className={layout.link} href="/nouveau-remboursement">
-        {m.operations_add_reimbursement()}
-      </Link>
-    </div>
-  );
-  if (view.operations.length === 0) {
-    return (
-      <>
-        {actions}
-        <p className={layout.muted}>{m.operations_empty()}</p>
-      </>
-    );
-  }
+  // Read once: the heading only drops the year of the current year.
+  const [today] = useState(() => localDay(new Date()));
   return (
     <>
-      {actions}
-      <ul className={styles.list}>
-        {view.operations.map((operation) => (
-          <li key={operation.id}>
-            <Link className={styles.row} href={`/operations/${operation.id}`}>
-              <span className={styles.main}>
-                <span className={styles.title}>{operation.title}</span>
-                <span className={styles.meta}>
-                  {formatDay(operation.date)} · {who(view, operation)}
-                </span>
-                {operation.pending ? <span className={styles.pending}>{m.operation_pending()}</span> : null}
-              </span>
-              <span className={styles.amounts}>
-                <span className={styles.total}>{formatCents(operation.effect.total)}</span>
-                <MyShare view={view} operation={operation} />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {view.operations.length === 0 ? (
+        <p className={layout.muted}>{m.operations_empty()}</p>
+      ) : (
+        <div className={styles.days}>
+          {byDay(view.operations).map(({ day, operations }) => (
+            <section key={day} className={styles.day}>
+              <h2 className={styles.dayHeading}>{dayHeading(day, today)}</h2>
+              <ul className={styles.list}>
+                {operations.map((operation) => (
+                  <li key={operation.id}>
+                    <Line view={view} operation={operation} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+      <Link className={styles.add} href="/nouvelle-depense" aria-label={m.operations_add_expense()}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </Link>
     </>
   );
 }
 
-function MyShare({ view, operation }: { readonly view: GroupView; readonly operation: OperationView }) {
-  if (operation.kind === 'reimbursement') {
-    return <span className={styles.meta}>{m.operation_reimbursement()}</span>;
-  }
-  const share = myShare(operation.effect, view.me);
-  if (share !== 0) {
-    return <span className={styles.share}>{m.operation_my_share({ amount: formatCents(share) })}</span>;
-  }
-  // Paying for others without a share is not “not involved”: the money was advanced.
-  return operation.effect.payer === view.me ? (
-    <span className={styles.share}>{m.operation_you_advanced({ amount: formatCents(operation.effect.total) })}</span>
-  ) : (
-    <span className={styles.meta}>{m.operation_not_involved()}</span>
+function Line({ view, operation }: { readonly view: GroupView; readonly operation: OperationView }) {
+  const part = myPart(operation, view.me);
+  return (
+    <Link className={styles.row} href={`/operations/${operation.id}`}>
+      <span className={styles.main}>
+        <span className={styles.title}>{operation.title}</span>
+        <span className={styles.sub}>{subLine(view, operation, part)}</span>
+        {operation.pending ? <span className={styles.pending}>{m.operation_pending()}</span> : null}
+      </span>
+      <span className={`${styles.part ?? ''} ${styles[part.kind] ?? ''}`}>
+        <span className={styles.partLabel}>{partLabel(part)}</span>
+        {part.kind === 'not_involved' ? null : <span className={styles.amount}>{formatCents(part.amount)}</span>}
+      </span>
+    </Link>
   );
+}
+
+/** Who paid and how much, or who reimbursed whom, “you” standing for who I am; the amount of an operation that leaves me out comes here. */
+function subLine(view: GroupView, operation: OperationView, part: MyPart): string {
+  const { payer, total } = operation.effect;
+  const amount = formatCents(total);
+  if (operation.kind === 'expense') {
+    return payer === view.me ? m.operation_you_paid({ amount }) : m.operation_paid({ name: view.nameOf(payer), amount });
+  }
+  const to = sharesInOrder(view, operation).map((share) => view.nameOf(share.member));
+  if (part.kind === 'sent') {
+    return m.operation_you_reimbursed({ to: to.join(', ') });
+  }
+  if (part.kind === 'received') {
+    // To me alone it reads as “paid you back”; to several members, each is named.
+    return to.length === 1 ? m.operation_reimbursed_you({ from: view.nameOf(payer) }) : who(view, operation);
+  }
+  return m.operation_reimbursed_amount({ from: view.nameOf(payer), amount, to: to.join(', ') });
+}
+
+function partLabel(part: MyPart): string {
+  switch (part.kind) {
+    case 'owe':
+      return m.part_owe();
+    case 'advanced':
+      return m.part_advanced();
+    case 'own':
+      return m.part_own();
+    case 'received':
+      return m.part_received();
+    case 'sent':
+      return m.part_sent();
+    case 'not_involved':
+      return m.operation_not_involved();
+  }
 }
