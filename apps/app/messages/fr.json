@@ -12,7 +12,7 @@
   "group_other_link": "Ouvrir un autre lien",
   "group_you_are": "Tu es {name}",
   "group_change_member": "Ce n'est pas moi",
-  "me_explanation": "Ton nom et tes notifications sont gardés sur cet appareil.",
+  "me_explanation": "Ce choix reste sur cet appareil ; les notifications arrivent sur cet appareil, au nom choisi.",
   "who_am_i_title": "Qui es-tu ?",
   "who_am_i_explanation": "Choisis ton nom : l'app te montrera ta part de chaque dépense. Ce choix reste sur cet appareil.",
   "link_invalid": "Ce lien est incomplet ou mal recopié.",

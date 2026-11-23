@@ -7,7 +7,7 @@
 .days {
   gap: var(--space-3);
   /* The last card scrolls above the add button. */
-  padding-bottom: calc(3.75rem + var(--space-4));
+  padding-bottom: calc(var(--add-button-size) + var(--space-4));
 }
 
 .day {
@@ -109,8 +109,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.75rem;
-  height: 3.75rem;
+  width: var(--add-button-size);
+  height: var(--add-button-size);
   border-radius: 50%;
   background: var(--color-accent);
   color: var(--color-accent-text);
