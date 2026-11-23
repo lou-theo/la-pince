@@ -17,8 +17,10 @@
 }
 
 .logo {
-  width: 2.25rem;
-  height: 2.25rem;
+  /* The drawing fills the square loosely, sleeve and note included: a bit larger than the text. */
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: calc(-1 * var(--space-2)) 0;
 }
 
 @media (prefers-color-scheme: dark) {
