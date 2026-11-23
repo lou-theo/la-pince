@@ -205,6 +205,9 @@ describe('notifications of a group', () => {
       expect(api.writes()).toHaveLength(2);
     });
     become('m1');
+    // The subscription as m1 waits for the one as m2, still unanswered.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(api.writes()).toHaveLength(2);
     slow.resolve(undefined);
     await waitFor(async () => {
       expect(api.writes().map((call) => (call.body as { member: string }).member)).toStrictEqual(['m1', 'm2', 'm1']);

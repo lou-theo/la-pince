@@ -41,9 +41,20 @@ interface GroupAs {
   readonly member: MemberId;
 }
 
-/** Saves the subscription of this browser on the server as the member, then on the phone under the group's id, which push messages carry. */
-function save(client: ApiClient, group: GroupAs, subscription: PushSubscription): Promise<ApiResult<undefined, NotificationError>> {
+/**
+ * Saves the subscription of this browser on the server as the member, then on the phone under the group's id, which push messages carry; skipped
+ * when, its turn come, it is no longer `wanted` (a member chosen since).
+ */
+function save(
+  client: ApiClient,
+  group: GroupAs,
+  subscription: PushSubscription,
+  wanted: () => boolean = () => true,
+): Promise<ApiResult<undefined, NotificationError>> {
   return serialized(async () => {
+    if (!wanted()) {
+      return { ok: true, value: undefined } as const;
+    }
     const json = pushSubscriptionSchema.safeParse(subscription.toJSON());
     if (!json.success) {
       return { ok: false, error: 'invalid_request' } as const;
@@ -73,6 +84,7 @@ async function reconcile(
   platform: PushPlatform,
   group: GroupAs,
   publicKey: string,
+  wanted: () => boolean,
 ): Promise<{ status: Status; error?: NotificationError }> {
   const db = await openNotificationDb();
   const entry = await entryOf(db, group.token);
@@ -84,7 +96,7 @@ async function reconcile(
     await db.remove(entry.groupId);
     return { status: 'off' };
   }
-  const saved = await save(client, group, subscription);
+  const saved = await save(client, group, subscription, wanted);
   return saved.ok ? { status: 'on' } : { status: 'on', error: saved.error };
 }
 
@@ -122,7 +134,7 @@ export function Notifications({ token, title, member, platform: given }: Notific
         setStatus('home_screen');
         return;
       }
-      const next = await reconcile(client, platform, { token, title, member }, key.value);
+      const next = await reconcile(client, platform, { token, title, member }, key.value, isLive);
       if (isLive()) {
         setStatus(next.status);
         setMessage(next.error === undefined ? undefined : notificationErrorMessage(next.error));

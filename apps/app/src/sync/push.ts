@@ -57,8 +57,16 @@ export function browserPushPlatform(): PushPlatform {
       if ((await registration()) === undefined) {
         throw new Error('no service worker');
       }
-      // Registered but maybe still installing on a first visit: subscribing needs an active service worker.
-      const current = await navigator.serviceWorker.ready;
+      // Registered but maybe still installing on a first visit: subscribing needs an active service worker. Bounded, since `ready` never settles
+      // when the installation fails.
+      const current = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            reject(new Error('service worker not active'));
+          }, 10_000),
+        ),
+      ]);
       return current.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
     },
   };
