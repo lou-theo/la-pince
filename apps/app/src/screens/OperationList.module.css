@@ -100,6 +100,11 @@
   color: var(--color-positive);
 }
 
+/* My own share of what I paid alone is neither a gain nor a debt: the text color, as « Ta part » (decision 48 b). */
+.own {
+  color: var(--color-text);
+}
+
 .add {
   /* Round button over the list, above the menu, inside the column on a computer. */
   position: fixed;

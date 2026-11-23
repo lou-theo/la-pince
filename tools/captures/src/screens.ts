@@ -79,7 +79,8 @@ export const screens: readonly Screen[] = [
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await chooseFirstMember(page, demo);
       await page.locator(balancesTab).click();
-      await page.locator('section').first().waitFor();
+      // The list has sections too, one per day: those of the balances are named by their heading.
+      await page.locator('main section[aria-labelledby]').first().waitFor();
     },
   },
   {

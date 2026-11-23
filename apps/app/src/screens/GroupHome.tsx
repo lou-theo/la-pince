@@ -96,7 +96,7 @@ export function GroupHome({
       actions={
         <>
           <ShareLink token={token} title={group.title} />
-          <Link className={layout.iconButton} href="/moi">
+          <Link className={layout.iconButton} href="/moi" aria-current={section === 'me' ? 'page' : undefined}>
             <Avatar member={currentMember} view={view} />
             <span className={layout.visuallyHidden}>{m.group_you_are({ name: currentMember.name })}</span>
           </Link>

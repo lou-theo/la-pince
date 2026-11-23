@@ -37,7 +37,7 @@ describe('opening a group', () => {
     // The avatar of the band leads to who I am, outside both tabs.
     await user.click(screen.getByRole('link', { name: 'Tu es Bruno' }));
     expect(screen.getByRole('heading', { name: 'Tu es Bruno' })).toBeDefined();
-    expect(screen.queryAllByRole('link', { current: 'page' })).toStrictEqual([]);
+    expect(screen.getAllByRole('link', { current: 'page' }).map((link) => link.textContent)).toStrictEqual(['BTu es Bruno']);
     await user.click(screen.getByRole('button', { name: "Ce n'est pas moi" }));
     expect(screen.getByRole('button', { name: 'Bruno' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Chloé' }));

@@ -97,7 +97,7 @@ printf '%s' "${keys##* }" | pnpm --filter @la-pince/server exec wrangler secret 
 unset keys
 ```
 
-Une seule fois par instance : changer de clés désabonne tous les téléphones, qui doivent réactiver les notifications. Sans ces deux secrets, ou sans la file, l'instance tourne sans notifications et l'app ne les propose pas. Avec eux, chaque personne active les notifications dans l'écran du groupe ; sur iPhone (iOS 16.4 ou plus), l'app doit d'abord être ajoutée à l'écran d'accueil et ouverte depuis là.
+Une seule fois par instance : changer de clés désabonne tous les téléphones, qui doivent réactiver les notifications. Sans ces deux secrets, ou sans la file, l'instance tourne sans notifications et l'app ne les propose pas. Avec eux, chaque personne active les notifications sur sa page, ouverte par son avatar en haut de l'écran du groupe ; sur iPhone (iOS 16.4 ou plus), l'app doit d'abord être ajoutée à l'écran d'accueil et ouverte depuis là.
 
 ## 6. Créer le groupe
 
@@ -110,7 +110,7 @@ export LA_PINCE_APP_URL=$LA_PINCE_URL
 LA_PINCE_NEW_LINK=1 pnpm --filter @la-pince/import-tricount start "$PWD/packages/core/fixtures/tricount-demo.json"
 ```
 
-`read -rs` attend le secret d'administration, collé sans qu'il s'affiche ni reste dans l'historique du shell. L'import affiche le lien du groupe : c'est lui qu'on partage, et quiconque l'a peut lire et écrire dans le groupe. Il s'affiche une seule fois et n'est écrit nulle part ; le garder dans le gestionnaire de mots de passe. Pour réimporter le même groupe en gardant ce lien, donner son jeton (la fin du lien, après `/g/`) de la même façon, `read -rs LA_PINCE_GROUP_TOKEN && export LA_PINCE_GROUP_TOKEN`, puis relancer la dernière commande sans `LA_PINCE_NEW_LINK=1` ; dans un nouveau terminal, redonner d'abord `ADMIN_TOKEN`, `LA_PINCE_URL` et `LA_PINCE_APP_URL` comme ci-dessus. Un lien perdu se redemande à un membre du groupe, qui le partage depuis l'app (« Partager le lien du groupe ») ; si plus personne ne l'a, un import avec `LA_PINCE_NEW_LINK=1` en donne un nouveau, à renvoyer à tous.
+`read -rs` attend le secret d'administration, collé sans qu'il s'affiche ni reste dans l'historique du shell. L'import affiche le lien du groupe : c'est lui qu'on partage, et quiconque l'a peut lire et écrire dans le groupe. Il s'affiche une seule fois et n'est écrit nulle part ; le garder dans le gestionnaire de mots de passe. Pour réimporter le même groupe en gardant ce lien, donner son jeton (la fin du lien, après `/g/`) de la même façon, `read -rs LA_PINCE_GROUP_TOKEN && export LA_PINCE_GROUP_TOKEN`, puis relancer la dernière commande sans `LA_PINCE_NEW_LINK=1` ; dans un nouveau terminal, redonner d'abord `ADMIN_TOKEN`, `LA_PINCE_URL` et `LA_PINCE_APP_URL` comme ci-dessus. Un lien perdu se redemande à un membre du groupe, qui le partage depuis l'app (bouton de partage en haut de l'écran du groupe) ; si plus personne ne l'a, un import avec `LA_PINCE_NEW_LINK=1` en donne un nouveau, à renvoyer à tous.
 
 ## Sauvegarde
 

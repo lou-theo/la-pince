@@ -20,7 +20,13 @@ export function Layout({ children, title, actions, nav }: LayoutProps): ReactNod
       <header className={styles.band}>
         <div className={styles.header}>
           <img className={styles.logo} src="/logo.svg" alt="" />
-          {title === undefined ? <span className={styles.name}>{m.app_name()}</span> : <h1 className={styles.name}>{title}</h1>}
+          {title === undefined ? (
+            <span className={styles.name}>{m.app_name()}</span> // A long title is cut on a phone: the full one stays on hover and for screen readers.
+          ) : (
+            <h1 className={styles.name} title={title}>
+              {title}
+            </h1>
+          )}
           {actions}
         </div>
       </header>
