@@ -1,10 +1,18 @@
-// The day is formatted in UTC: `YYYY-MM-DD` is read as midnight UTC, and any other zone could show the day before.
-const days = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+// Days are formatted in UTC: `YYYY-MM-DD` is read as midnight UTC, and any other zone could show the day before.
 const longDays = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const headingDays = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
-/** A calendar day (`YYYY-MM-DD`) French style: `5 nov. 2026`, or `jeudi 5 novembre 2026` in full. */
-export function formatDay(day: string, { long = false }: { readonly long?: boolean } = {}): string {
-  return (long ? longDays : days).format(new Date(`${day}T00:00:00Z`));
+const midnight = (day: string) => new Date(`${day}T00:00:00Z`);
+
+/** A calendar day (`YYYY-MM-DD`) in full, French style: `jeudi 5 novembre 2026`. */
+export function formatDay(day: string): string {
+  return longDays.format(midnight(day));
+}
+
+/** Heading of a day in the list: `Jeudi 5 novembre`, with the year only when it is not the year of `today` (`YYYY-MM-DD`). */
+export function dayHeading(day: string, today: string): string {
+  const text = (day.slice(0, 4) === today.slice(0, 4) ? headingDays : longDays).format(midnight(day));
+  return text.charAt(0).toLocaleUpperCase('fr-FR') + text.slice(1);
 }
 
 /** The day of `now` on this phone's calendar, `YYYY-MM-DD`: the day a person sees when entering an expense, not the UTC one. */
