@@ -57,7 +57,7 @@ const newGroup = async (members: readonly string[] = ['lea', 'max', 'tom']): Pro
   return id;
 };
 
-// A phone's subscription: a real P-256 key, so that the encryption runs as it does for a real phone, and that the tests can read it back.
+// A phone's subscription: a real P-256 key, so that the encryption runs as it does for a real phone, which the tests keep to decrypt what is sent.
 let phones = 0;
 const phoneKeys = new Map<string, CryptoKeyPair>();
 const phone = async (member: string): Promise<SubscribeRequest> => {
@@ -445,7 +445,8 @@ describe('deliverBatch', () => {
       bodies.map(async (sent) => JSON.parse(new TextDecoder().decode(await decrypt(sent, body.endpoint, body.keys.auth))) as unknown),
     );
     expect(read).toStrictEqual([body.message, operations]);
-    // What autopush-rs relays to FCM for Firefox on Android, refused over 4096 bytes: the body in base64 with its channel, encoding and report ids.
+    // What autopush-rs relays to FCM for Firefox on Android, as read in its source (`message_size_check` against 4096 bytes): the body in base64
+    // with its channel, encoding and report ids.
     for (const sent of bodies) {
       const base64 = btoa(String.fromCharCode(...sent))
         .replaceAll('+', '-')
