@@ -117,6 +117,10 @@ export type PushSubscriptionJson = z.infer<typeof pushSubscriptionSchema>;
 export const subscribeRequestSchema = z.strictObject({ member: memberIdSchema, subscription: pushSubscriptionSchema });
 export type SubscribeRequest = z.infer<typeof subscribeRequestSchema>;
 
+/** Answer to a subscription: the id of the group, which the push messages carry, so that the phone finds the group's link when one arrives. */
+export const subscribeResponseSchema = z.strictObject({ groupId: groupIdSchema });
+export type SubscribeResponse = z.infer<typeof subscribeResponseSchema>;
+
 /** Body of the requests about one subscription of the group: stopping it, or sending it a test notification. */
 export const endpointRequestSchema = z.strictObject({ endpoint: z.url().max(1000) });
 export type EndpointRequest = z.infer<typeof endpointRequestSchema>;

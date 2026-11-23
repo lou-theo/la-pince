@@ -1,4 +1,12 @@
-import { type ApiError, type Change, cursorSchema, groupResponseSchema, operationSchema, revisionIdSchema } from '@la-pince/core';
+import {
+  type ApiError,
+  type Change,
+  cursorSchema,
+  groupResponseSchema,
+  operationSchema,
+  revisionIdSchema,
+  subscribeRequestSchema,
+} from '@la-pince/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { change, fakeServer, json } from '../testing/fake-server.ts';
@@ -164,6 +172,62 @@ describe('sendOperations', () => {
       error: 'group_not_found',
     });
     expect(await answering(json({ error: 'unknown_cursor' } satisfies ApiError, 409)).sendOperations(token, sent)).toStrictEqual({
+      ok: false,
+      error: 'unexpected',
+    });
+  });
+});
+
+describe('notifications', () => {
+  const subscription = { endpoint: 'https://fcm.googleapis.com/fcm/send/phone1', keys: { p256dh: `B${'a'.repeat(86)}`, auth: 'b'.repeat(22) } };
+  const request = subscribeRequestSchema.parse({ member: 'm1', subscription });
+  const recording = (response: Response) => {
+    const sent: { url: string; method: string | undefined; body: unknown }[] = [];
+    const client = createApiClient((url, init) => {
+      sent.push({ url, method: init?.method, body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined });
+      return Promise.resolve(response);
+    });
+    return { client, sent };
+  };
+
+  it('reads the public key, subscribes as a member and gives the group id, stops and asks for a test', async () => {
+    const publicKey = `B${'k'.repeat(86)}`;
+    expect(await answering(json({ publicKey })).fetchPushKey()).toStrictEqual({ ok: true, value: publicKey });
+
+    const subscribing = recording(json({ groupId: 'week-end' }));
+    expect(await subscribing.client.subscribe(token, request)).toStrictEqual({ ok: true, value: 'week-end' });
+    expect(subscribing.sent).toStrictEqual([{ url: `/api/groups/${token}/subscription`, method: 'PUT', body: { member: 'm1', subscription } }]);
+
+    const stopping = recording(new Response(null, { status: 204 }));
+    expect(await stopping.client.unsubscribe(token, subscription.endpoint)).toStrictEqual({ ok: true, value: undefined });
+    expect(stopping.sent).toStrictEqual([{ url: `/api/groups/${token}/subscription`, method: 'DELETE', body: { endpoint: subscription.endpoint } }]);
+
+    const testing = recording(new Response(null, { status: 202 }));
+    expect(await testing.client.sendTest(token, subscription.endpoint)).toStrictEqual({ ok: true, value: undefined });
+    expect(testing.sent).toStrictEqual([
+      { url: `/api/groups/${token}/subscription/test`, method: 'POST', body: { endpoint: subscription.endpoint } },
+    ]);
+  });
+
+  it('passes on the errors of the notification routes, and refuses an answer outside the contract', async () => {
+    for (const [error, status] of [
+      ['notifications_disabled', 404],
+      ['too_many_subscriptions', 409],
+      ['invalid_request', 400],
+      ['subscription_not_found', 404],
+      ['group_not_found', 404],
+    ] as const) {
+      expect(await answering(json({ error } satisfies ApiError, status)).subscribe(token, request)).toStrictEqual({
+        ok: false,
+        error,
+      });
+    }
+    expect(await answering(json({ error: 'unknown_cursor' } satisfies ApiError, 409)).sendTest(token, 'x')).toStrictEqual({
+      ok: false,
+      error: 'unexpected',
+    });
+    expect(await answering(json({ publicKey: 'short' })).fetchPushKey()).toStrictEqual({ ok: false, error: 'unexpected' });
+    expect(await answering(json({ groupId: '' })).subscribe(token, request)).toStrictEqual({
       ok: false,
       error: 'unexpected',
     });

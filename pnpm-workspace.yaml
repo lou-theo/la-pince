@@ -51,6 +51,9 @@ catalog:
   vite: 8.3.8
   vite-plugin-pwa: 2.0.0
   vitest: 5.1.0
+  # Same version as the workbox-build of vite-plugin-pwa, which injects the precache manifest into the service worker.
+  workbox-precaching: 7.4.1
+  workbox-routing: 7.4.1
   wouter: 3.13.0
   wrangler: 4.164.0
   zod: 4.6.7

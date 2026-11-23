@@ -123,6 +123,12 @@ catalogs:
     vitest:
       specifier: 5.1.0
       version: 5.1.0
+    workbox-precaching:
+      specifier: 7.4.1
+      version: 7.4.1
+    workbox-routing:
+      specifier: 7.4.1
+      version: 7.4.1
     wouter:
       specifier: 3.13.0
       version: 3.13.0
@@ -167,6 +173,12 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.3.1(react@19.3.1)
+      workbox-precaching:
+        specifier: 'catalog:'
+        version: 7.4.1
+      workbox-routing:
+        specifier: 'catalog:'
+        version: 7.4.1
       wouter:
         specifier: 'catalog:'
         version: 3.13.0(react@19.3.1)

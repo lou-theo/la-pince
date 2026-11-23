@@ -8,6 +8,15 @@ import { createTestHarness } from 'wrangler';
 
 import type { Demo } from './screens.ts';
 
+const base64Url = (bytes: ArrayBuffer) => Buffer.from(bytes).toString('base64url');
+
+/** A VAPID key pair as the Worker's secrets take it (`apps/server/src/vapid.ts`), so that the screens show the notifications as an instance that offers them. */
+async function vapidKeys(): Promise<{ VAPID_PUBLIC_KEY: string; VAPID_PRIVATE_KEY: string }> {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+  const { d = '' } = await crypto.subtle.exportKey('jwk', pair.privateKey);
+  return { VAPID_PUBLIC_KEY: base64Url(await crypto.subtle.exportKey('raw', pair.publicKey)), VAPID_PRIVATE_KEY: d };
+}
+
 export interface Stack {
   readonly demo: Demo;
   readonly close: () => Promise<void>;
@@ -27,7 +36,9 @@ export async function startStack(root: string): Promise<Stack | undefined> {
     return undefined;
   }
   const adminToken = `captures-${crypto.randomUUID()}`;
-  const server = createTestHarness({ workers: [{ configPath: join(root, 'apps/server/wrangler.jsonc'), secrets: { ADMIN_TOKEN: adminToken } }] });
+  const server = createTestHarness({
+    workers: [{ configPath: join(root, 'apps/server/wrangler.jsonc'), secrets: { ADMIN_TOKEN: adminToken, ...(await vapidKeys()) } }],
+  });
   const cwd = process.cwd();
   let vite: ViteDevServer | undefined;
   // Each step runs even if the one before fails, so that no server outlives the run.

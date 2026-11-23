@@ -42,6 +42,8 @@ export {
   pushSubscriptionSchema,
   type SubscribeRequest,
   subscribeRequestSchema,
+  type SubscribeResponse,
+  subscribeResponseSchema,
 } from './notifications.ts';
 export {
   type Change,

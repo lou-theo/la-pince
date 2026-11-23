@@ -97,7 +97,7 @@ printf '%s' "${keys##* }" | pnpm --filter @la-pince/server exec wrangler secret 
 unset keys
 ```
 
-Une seule fois par instance : changer de clés désabonne tous les téléphones, qui doivent réactiver les notifications. Sans ces deux secrets, ou sans la file, l'instance tourne sans notifications et l'app ne les propose pas.
+Une seule fois par instance : changer de clés désabonne tous les téléphones, qui doivent réactiver les notifications. Sans ces deux secrets, ou sans la file, l'instance tourne sans notifications et l'app ne les propose pas. Avec eux, chaque personne active les notifications dans l'écran du groupe ; sur iPhone (iOS 16.4 ou plus), l'app doit d'abord être ajoutée à l'écran d'accueil et ouverte depuis là.
 
 ## 6. Créer le groupe
 

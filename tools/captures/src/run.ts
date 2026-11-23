@@ -48,7 +48,7 @@ async function shoot(browser: Browser, demo: Demo, out: string, print: (line: st
     await mkdir(join(out, viewport.name), { recursive: true });
     for (const screen of screens) {
       // A fresh context per screen: nothing remembered from the screen before.
-      const context = await browser.newContext({ ...viewport.options, colorScheme: 'light', locale: 'fr-FR' });
+      const context = await browser.newContext({ ...viewport.options, colorScheme: 'light', locale: 'fr-FR', permissions: ['notifications'] });
       context.setDefaultTimeout(5000);
       const page = await context.newPage();
       try {
@@ -72,6 +72,7 @@ async function film(browser: Browser, demo: Demo, out: string): Promise<string> 
     ...phone.options,
     deviceScaleFactor: 1,
     colorScheme: 'light',
+    permissions: ['notifications'],
     recordVideo: { dir: join(out, 'video'), size: phoneSize },
   });
   const page = await context.newPage();
@@ -109,7 +110,8 @@ export async function captures({ before, out: outOption, print }: Options): Prom
   await mkdir(out, { recursive: true });
   await writeFile(join(out, outputMarker), '');
 
-  const browser = await chromium.launch();
+  // The new headless mode: the default headless shell keeps notifications denied, and the screens would show them blocked.
+  const browser = await chromium.launch({ channel: 'chromium' });
   try {
     const versions: { label: string; dir: string; found: Map<string, Set<string>> }[] = [];
     if (before !== undefined) {

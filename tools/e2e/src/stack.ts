@@ -28,6 +28,15 @@ export interface Stack {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 
+const base64Url = (bytes: ArrayBuffer) => Buffer.from(bytes).toString('base64url');
+
+/** A VAPID key pair as the Worker's secrets take it (`apps/server/src/vapid.ts`), so that the instance offers notifications. */
+async function vapidKeys(): Promise<{ VAPID_PUBLIC_KEY: string; VAPID_PRIVATE_KEY: string }> {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+  const { d = '' } = await crypto.subtle.exportKey('jwk', pair.privateKey);
+  return { VAPID_PUBLIC_KEY: base64Url(await crypto.subtle.exportKey('raw', pair.publicKey)), VAPID_PRIVATE_KEY: d };
+}
+
 /**
  * Builds the app as it ships (service worker included, which the dev server leaves out), starts the Worker in workerd on a fresh local D1, imports
  * each demo group by the import tool, then serves the build with `/api` passed to the Worker.
@@ -36,7 +45,9 @@ export async function startStack(groups: readonly GroupSpec[]): Promise<Stack> {
   const appRoot = join(root, 'apps/app');
   const dist = await mkdtemp(join(tmpdir(), 'la-pince-e2e-'));
   const adminToken = `e2e-${crypto.randomUUID()}`;
-  const server = createTestHarness({ workers: [{ configPath: join(root, 'apps/server/wrangler.jsonc'), secrets: { ADMIN_TOKEN: adminToken } }] });
+  const server = createTestHarness({
+    workers: [{ configPath: join(root, 'apps/server/wrangler.jsonc'), secrets: { ADMIN_TOKEN: adminToken, ...(await vapidKeys()) } }],
+  });
   let app: Awaited<ReturnType<typeof serveApp>> | undefined;
   let restore: Awaited<ReturnType<typeof serveRestore>> | undefined;
   const close = async () => {

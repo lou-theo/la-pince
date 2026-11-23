@@ -13,6 +13,7 @@ import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
+import { Notifications } from './Notifications.tsx';
 import { OperationDetail } from './OperationDetail.tsx';
 import { OperationList } from './OperationList.tsx';
 import { ShareLink } from './ShareLink.tsx';
@@ -101,6 +102,7 @@ export function GroupHome({
           </button>
         </p>
         <ShareLink token={token} title={group.title} />
+        <Notifications token={token} title={group.title} member={currentMember.id} />
       </header>
       <nav className={styles.tabs} aria-label={m.tabs_label()}>
         <Tab href="/">{m.tab_operations()}</Tab>

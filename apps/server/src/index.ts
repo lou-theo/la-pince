@@ -13,6 +13,7 @@ import {
   type PushKeyResponse,
   revisionIdSchema,
   subscribeRequestSchema,
+  type SubscribeResponse,
 } from '@la-pince/core';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
@@ -176,7 +177,7 @@ app.put('/api/groups/:token/subscription', async (context) => {
   if (saved === 'unknown_member') {
     return apiError(context, 'invalid_request', 400);
   }
-  return saved === 'full' ? apiError(context, 'too_many_subscriptions', 409) : context.body(null, 204);
+  return saved === 'full' ? apiError(context, 'too_many_subscriptions', 409) : context.json({ groupId } satisfies SubscribeResponse);
 });
 
 // Open even when the instance has no notifications: a phone can always stop a subscription it holds.
