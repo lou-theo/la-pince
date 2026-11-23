@@ -1,7 +1,11 @@
+import { convertTricount } from '@la-pince/core';
 import { expect, test } from '@playwright/test';
 
+import { demoGroup } from '../src/corpus.ts';
 import { tokenFor } from '../src/groups.ts';
 import { appUrl, openAs } from './app.ts';
+
+const memberId = (token: string, name: string) => convertTricount(demoGroup(token)).members.find((member) => member.name === name)?.id;
 
 // The push service of a headless browser cannot be reached: the subscription is the one a phone would give, and the push arrives through the
 // DevTools protocol, unencrypted, as the browser hands it to the service worker once decrypted (project `chromium-notifications`).
@@ -24,7 +28,10 @@ test('a phone subscribes as who it is, and a push about an expense shows a notif
 
   const subscribed = page.waitForResponse(`${appUrl()}/api/groups/${token}/subscription`);
   await page.getByRole('button', { name: 'Activer les notifications' }).click();
-  const { groupId } = (await (await subscribed).json()) as { groupId: string };
+  const response = await subscribed;
+  // Sent as who the phone is: Agathe's id in the group, drawn by the corpus.
+  expect((response.request().postDataJSON() as { member: string }).member).toBe(memberId(token, 'Agathe'));
+  const { groupId } = (await response.json()) as { groupId: string };
   await expect(page.getByText('Notifications activées sur cet appareil.')).toBeVisible();
 
   const cdp = await context.newCDPSession(page);
