@@ -57,18 +57,56 @@ const newGroup = async (members: readonly string[] = ['lea', 'max', 'tom']): Pro
   return id;
 };
 
-// A phone's subscription: a real P-256 key, so that the encryption runs as it does for a real phone.
+// A phone's subscription: a real P-256 key, so that the encryption runs as it does for a real phone, which the tests keep to decrypt what is sent.
 let phones = 0;
+const phoneKeys = new Map<string, CryptoKeyPair>();
 const phone = async (member: string): Promise<SubscribeRequest> => {
   phones += 1;
   const endpoint = `https://fcm.googleapis.com/fcm/send/phone${String(phones)}`;
   const pair = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])) as CryptoKeyPair;
+  phoneKeys.set(endpoint, pair);
   const p256dh = toBase64Url(new Uint8Array((await crypto.subtle.exportKey('raw', pair.publicKey)) as ArrayBuffer));
   const auth = toBase64Url(crypto.getRandomValues(new Uint8Array(16)));
   return {
     member: memberIdSchema.parse(member),
     subscription: { endpoint, keys: { p256dh, auth } },
   };
+};
+
+const fromBase64Url = (text: string) => Uint8Array.from(atob(text.replaceAll('-', '+').replaceAll('_', '/')), (char) => char.charCodeAt(0));
+
+// What the phone does with a body (RFC 8291, one record of RFC 8188): the plaintext, delimiter and padding of the record removed.
+const decrypt = async (body: Uint8Array, endpoint: string, auth: string): Promise<Uint8Array> => {
+  const pair = phoneKeys.get(endpoint);
+  if (pair === undefined) {
+    throw new Error(`no phone behind ${endpoint}`);
+  }
+  const hmac = async (key: Uint8Array, data: Uint8Array) => {
+    const imported = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return new Uint8Array(await crypto.subtle.sign('HMAC', imported, data));
+  };
+  const concat = (...parts: Uint8Array[]) => {
+    const all = new Uint8Array(parts.reduce((sum, part) => sum + part.byteLength, 0));
+    parts.reduce((offset, part) => (all.set(part, offset), offset + part.byteLength), 0);
+    return all;
+  };
+  const text = (value: string) => new TextEncoder().encode(value);
+  const salt = body.slice(0, 16);
+  const serverKey = body.slice(21, 86);
+  const phonePublic = new Uint8Array((await crypto.subtle.exportKey('raw', pair.publicKey)) as ArrayBuffer);
+  const serverPublic = await crypto.subtle.importKey('raw', serverKey, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  // Web Crypto names the field `public`, which the Workers types spell `$public`: a variable rather than a literal passes the type check.
+  const ecdh = { name: 'ECDH', public: serverPublic };
+  const secret = new Uint8Array(await crypto.subtle.deriveBits(ecdh, pair.privateKey, 256));
+  const ikm = (
+    await hmac(await hmac(fromBase64Url(auth), secret), concat(text('WebPush: info\0'), phonePublic, serverKey, new Uint8Array([1])))
+  ).slice(0, 32);
+  const prk = await hmac(salt, ikm);
+  const cek = (await hmac(prk, concat(text('Content-Encoding: aes128gcm\0'), new Uint8Array([1])))).slice(0, 16);
+  const nonce = (await hmac(prk, concat(text('Content-Encoding: nonce\0'), new Uint8Array([1])))).slice(0, 12);
+  const key = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['decrypt']);
+  const padded = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce }, key, body.slice(86)));
+  return padded.slice(0, padded.lastIndexOf(2));
 };
 
 const subscribe = async (groupId: GroupId, ...members: string[]): Promise<SubscribeRequest[]> => {
@@ -259,7 +297,7 @@ describe('queueNotifications', () => {
     ]);
   });
 
-  it('drops the last notices of a message the encryption could not take, keeping their count', async () => {
+  it('drops the last notices of a message over the size every push is padded to, keeping their count', async () => {
     const groupId = await newGroup();
     await subscribe(groupId, 'lea');
     // Control characters weigh six bytes each once in JSON: five such notices go past what one push carries.
@@ -385,6 +423,38 @@ describe('deliverBatch', () => {
     const signed = new TextEncoder().encode(`${header}.${claims}`);
     expect(await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, publicKey, decode(signature), signed)).toBe(true);
     expect(logs).toHaveBeenCalledWith(JSON.stringify({ notification: 'sent', status: 201, group: groupId, member: 'lea', attempt: 1 }));
+  });
+
+  it('pads every message to the same size, within what the push service of Firefox on Android relays, and the phone reads it', async () => {
+    const groupId = await newGroup();
+    const body = await messageFor(groupId, 'lea');
+    const operations = pushMessageSchema.parse({
+      type: 'operations',
+      groupId,
+      count: 2,
+      notices: [
+        { kind: 'added', operationId: 'op1', title: 'Courses du samedi', author: 'lea', authorName: 'Léa' },
+        { kind: 'changed', operationId: 'op2', title: 'Essence', author: 'max', authorName: 'Max' },
+      ],
+    });
+    const send = vi.fn<Send>(() => Promise.resolve(new Response(null, { status: 201 })));
+    await deliverBatch(batchOf(queued(body), queued({ ...body, message: operations })), env(), send);
+    const bodies = send.mock.calls.map(([, init]) => init.body as Uint8Array);
+    expect(bodies.map((sent) => sent.byteLength)).toStrictEqual([MAX_PUSH_BYTES + 103, MAX_PUSH_BYTES + 103]);
+    const read = await Promise.all(
+      bodies.map(async (sent) => JSON.parse(new TextDecoder().decode(await decrypt(sent, body.endpoint, body.keys.auth))) as unknown),
+    );
+    expect(read).toStrictEqual([body.message, operations]);
+    // What autopush-rs relays to FCM for Firefox on Android, as read in its source (`message_size_check` against 4096 bytes): the body in base64
+    // with its channel, encoding and report ids.
+    for (const sent of bodies) {
+      const base64 = btoa(String.fromCharCode(...sent))
+        .replaceAll('+', '-')
+        .replaceAll('/', '_')
+        .replace(/=+$/, '');
+      const relayed = JSON.stringify({ chid: crypto.randomUUID(), body: base64, con: 'aes128gcm', rid: crypto.randomUUID() });
+      expect(relayed.length).toBeLessThanOrEqual(4096);
+    }
   });
 
   it.each([404, 410])('forgets a phone in every group when its push service answers %i', async (status) => {

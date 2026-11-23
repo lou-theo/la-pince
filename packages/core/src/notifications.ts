@@ -64,7 +64,7 @@ export function noticesByMember(previous: ReadonlyMap<OperationId, Operation>, w
   return new Map([...byMember].map(([member, notices]) => [member, [...notices.values()]]));
 }
 
-/** Most notices one push message carries, so that it stays far under the 4 KB a push service takes; `count` tells how many there were. */
+/** Most notices one push message carries, the server dropping more to fit its push size; `count` tells how many there were. */
 export const MAX_PUSH_NOTICES = 5;
 
 /**
