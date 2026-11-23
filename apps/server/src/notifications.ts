@@ -1,4 +1,4 @@
-import { buildPushPayload } from '@block65/webcrypto-web-push';
+import { encryptNotification, vapidHeaders } from '@block65/webcrypto-web-push';
 import {
   type GroupId,
   groupIdSchema,
@@ -134,8 +134,10 @@ export function sendBatches(messages: readonly NotificationMessage[]): Notificat
   return batches;
 }
 
-// Most bytes the encryption takes (one record of 4096 bytes, less its header and padding, RFC 8291): over it, a message fails on every try.
-export const MAX_PUSH_BYTES = 3993;
+// Every message is padded to this size before encryption, so that its length tells the push service nothing of its content. It is what the
+// push service of Firefox on Android takes: it relays the body to FCM in base64, with fields of its own, within 4096 bytes (autopush-rs,
+// `FcmClient::send`), and answers 413 to a record of 4096 bytes. 2800 bytes make a body of 2903, 3871 in base64.
+export const MAX_PUSH_BYTES = 2800;
 
 // Drops the last notices until the message fits: a title in control characters weighs six bytes a character once in JSON. One notice always
 // fits (a title of 100 characters, a name of 50 and two ids of 64, under 1 200 bytes), and `count` still tells how many there were.
@@ -221,6 +223,21 @@ export type Send = (endpoint: string, init: RequestInit) => Promise<Response>;
 
 type Outcome = 'sent' | 'gone' | 'refused' | 'retry' | 'invalid';
 
+async function pushRequest(message: NotificationMessage, vapid: { subject: string; publicKey: string; privateKey: string }): Promise<RequestInit> {
+  const subscription = { endpoint: message.endpoint, expirationTime: null, keys: message.keys };
+  const json = new TextEncoder().encode(JSON.stringify(message.message));
+  // Padded with spaces, which JSON reads past, rather than by the library, which pads every record to 4096 bytes.
+  const plaintext = new Uint8Array(Math.max(MAX_PUSH_BYTES, json.byteLength)).fill(0x20);
+  plaintext.set(json);
+  const [{ headers }, body] = await Promise.all([vapidHeaders(subscription, vapid), encryptNotification(subscription, plaintext, { pad: false })]);
+  return {
+    method: 'post',
+    // A day, then the push service drops it: a phone off for longer catches up when the app opens.
+    headers: { ...headers, ttl: '86400', urgency: 'normal', 'content-encoding': 'aes128gcm', 'content-type': 'application/octet-stream' },
+    body,
+  };
+}
+
 async function deliver(
   body: unknown,
   env: NotificationEnv,
@@ -232,14 +249,9 @@ async function deliver(
   }
   const message = parsed.data;
   const vapid = { subject: message.subject, publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY };
-  let payload: Awaited<ReturnType<typeof buildPushPayload>>;
+  let payload: RequestInit;
   try {
-    // A day, then the push service drops it: a phone off for longer catches up when the app opens.
-    payload = await buildPushPayload(
-      { data: message.message, options: { ttl: 86_400, urgency: 'normal' } },
-      { endpoint: message.endpoint, expirationTime: null, keys: message.keys },
-      vapid,
-    );
+    payload = await pushRequest(message, vapid);
   } catch (error) {
     // A phone key that is not a point of P-256, which the subscription's schema cannot check, or broken VAPID keys: it would fail again on
     // every try.
