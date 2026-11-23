@@ -1,0 +1,7 @@
+{
+  "extends": "@la-pince/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "WebWorker"]
+  },
+  "include": ["."]
+}

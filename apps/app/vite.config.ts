@@ -3,19 +3,21 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// French only: the base locale, without cookie or URL detection.
+const paraglide = () => paraglideVitePlugin({ project: './project.inlang', outdir: './src/i18n/paraglide', strategy: ['baseLocale'] });
+
 export default defineConfig({
   plugins: [
     react(),
-    // French only: the base locale, without cookie or URL detection.
-    paraglideVitePlugin({ project: './project.inlang', outdir: './src/i18n/paraglide', strategy: ['baseLocale'] }),
+    paraglide(),
     VitePWA({
       registerType: 'autoUpdate',
-      // The shell only: API answers are never cached.
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png}'],
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api\//],
-      },
+      // Written by hand, for its push and notificationclick handlers; it precaches the shell like a generated one (`src/sw/sw.ts`).
+      strategies: 'injectManifest',
+      srcDir: 'src/sw',
+      filename: 'sw.ts',
+      // The service worker is built apart, with its own instance of each plugin it needs.
+      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png}'], buildPlugins: { vite: [paraglide()] } },
       manifest: {
         name: 'La Pince',
         short_name: 'La Pince',

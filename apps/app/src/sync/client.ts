@@ -3,14 +3,18 @@ import {
   type ChangesResponse,
   changesResponseSchema,
   type Cursor,
+  type GroupId,
   type GroupResponse,
   groupResponseSchema,
   MAX_CHANGES,
   type Operation,
   operationBatchResponseSchema,
   pageFollowsQuery,
+  pushKeyResponseSchema,
   type RevisionId,
   type RevisionResult,
+  type SubscribeRequest,
+  subscribeResponseSchema,
 } from '@la-pince/core';
 
 /** The part of `fetch` the client uses, so that tests hand it a fake transport. */
@@ -24,12 +28,25 @@ export type ApiResult<T, E extends string = LoadError> = { readonly ok: true; re
 /** `unknown_cursor`: the server no longer has the revision at the cursor (database restored), the reader starts again from 0. */
 export type ChangesError = LoadError | 'unknown_cursor';
 
+/**
+ * Why a request about notifications failed: `notifications_disabled`, the instance has not set them up; `too_many_subscriptions`, the group holds the
+ * most; `invalid_request`, the server refused the phone's push service or the member; `subscription_not_found`, the server no longer has this phone.
+ */
+export type NotificationError = LoadError | 'notifications_disabled' | 'too_many_subscriptions' | 'invalid_request' | 'subscription_not_found';
+
 export interface ApiClient {
   readonly fetchGroup: (token: string) => Promise<ApiResult<GroupResponse>>;
   /** One page of the changes since the cursor, given with the revision received at it past 0, checked to answer that very query. */
   readonly fetchChanges: (token: string, since: Cursor, revision: RevisionId | undefined) => Promise<ApiResult<ChangesResponse, ChangesError>>;
   /** Sends revisions in one batch; the result of each, in the order sent. */
   readonly sendOperations: (token: string, operations: readonly Operation[]) => Promise<ApiResult<RevisionResult[]>>;
+  /** The instance's public push key, which the phone gives its push service when it subscribes. */
+  readonly fetchPushKey: () => Promise<ApiResult<string, NotificationError>>;
+  /** Subscribes this phone to the group's notifications as a member, or moves it to that member; gives the group's id, which push messages carry. */
+  readonly subscribe: (token: string, request: SubscribeRequest) => Promise<ApiResult<GroupId, NotificationError>>;
+  readonly unsubscribe: (token: string, endpoint: string) => Promise<ApiResult<undefined, NotificationError>>;
+  /** Asks the server to send a test notification to this phone. */
+  readonly sendTest: (token: string, endpoint: string) => Promise<ApiResult<undefined, NotificationError>>;
 }
 
 // A request still pending past this is given up as a network failure: an answer that never ends would otherwise hold the outbox lock forever.
@@ -39,9 +56,26 @@ interface Schema<T> {
   safeParse(data: unknown): { success: true; data: T } | { success: false };
 }
 
-/** Client of the sync API of `apps/server`; every answer goes through the schemas of the core before the app reads it. */
+// Answers without a body (204, 202).
+const noBody: Schema<undefined> = { safeParse: () => ({ success: true, data: undefined }) };
+
+const NOTIFICATION_ERRORS = [
+  'group_not_found',
+  'notifications_disabled',
+  'too_many_subscriptions',
+  'invalid_request',
+  'subscription_not_found',
+] as const;
+
+/** Client of the API of `apps/server`; every answer goes through the schemas of the core before the app reads it. */
 export function createApiClient(fetchFn: Fetch): ApiClient {
-  async function read<T>(url: string, schema: Schema<T>, init?: RequestInit): Promise<ApiResult<T, ChangesError>> {
+  // `known`: the error codes the route may answer; any other is outside the contract.
+  async function read<T, E extends string>(
+    url: string,
+    schema: Schema<T>,
+    known: readonly E[],
+    init?: RequestInit,
+  ): Promise<ApiResult<T, E | 'network' | 'unexpected'>> {
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
@@ -64,36 +98,31 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
       return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: 'unexpected' };
     }
     const error = apiErrorSchema.safeParse(body);
-    const code = error.success ? error.data.error : undefined;
-    return { ok: false, error: code === 'group_not_found' || code === 'unknown_cursor' ? code : 'unexpected' };
+    const code = known.find((candidate) => error.success && candidate === error.data.error);
+    return { ok: false, error: code ?? 'unexpected' };
   }
 
   const groupUrl = (token: string) => `/api/groups/${encodeURIComponent(token)}`;
-
-  // Only a read of the changes may answer `unknown_cursor`: elsewhere such an answer is outside the contract.
-  const withoutCursor = <T>(result: ApiResult<T, ChangesError>): ApiResult<T> =>
-    result.ok || result.error !== 'unknown_cursor' ? (result as ApiResult<T>) : { ok: false, error: 'unexpected' };
+  const sendJson = (method: string, body: unknown): RequestInit => ({
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 
   return {
     async fetchGroup(token) {
-      return withoutCursor(await read(groupUrl(token), groupResponseSchema));
+      return read(groupUrl(token), groupResponseSchema, ['group_not_found']);
     },
     async fetchChanges(token, since, revision) {
       const query = new URLSearchParams({ since: String(since), ...(revision === undefined ? {} : { revision }) });
-      const result = await read(`${groupUrl(token)}/changes?${query.toString()}`, changesResponseSchema);
+      const result = await read(`${groupUrl(token)}/changes?${query.toString()}`, changesResponseSchema, ['group_not_found', 'unknown_cursor']);
       if (result.ok && !pageFollowsQuery({ since, limit: MAX_CHANGES }, result.value)) {
         return { ok: false, error: 'unexpected' };
       }
       return result;
     },
     async sendOperations(token, operations) {
-      const result = withoutCursor(
-        await read(`${groupUrl(token)}/operations`, operationBatchResponseSchema, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operations }),
-        }),
-      );
+      const result = await read(`${groupUrl(token)}/operations`, operationBatchResponseSchema, ['group_not_found'], sendJson('POST', { operations }));
       if (!result.ok) {
         return result;
       }
@@ -101,6 +130,20 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
       const answersEach =
         results.length === operations.length && results.every((answer, index) => answer.revisionId === operations[index]?.revisionId);
       return answersEach ? { ok: true, value: results } : { ok: false, error: 'unexpected' };
+    },
+    async fetchPushKey() {
+      const result = await read('/api/notifications/key', pushKeyResponseSchema, NOTIFICATION_ERRORS);
+      return result.ok ? { ok: true, value: result.value.publicKey } : result;
+    },
+    async subscribe(token, request) {
+      const result = await read(`${groupUrl(token)}/subscription`, subscribeResponseSchema, NOTIFICATION_ERRORS, sendJson('PUT', request));
+      return result.ok ? { ok: true, value: result.value.groupId } : result;
+    },
+    async unsubscribe(token, endpoint) {
+      return read(`${groupUrl(token)}/subscription`, noBody, NOTIFICATION_ERRORS, sendJson('DELETE', { endpoint }));
+    },
+    async sendTest(token, endpoint) {
+      return read(`${groupUrl(token)}/subscription/test`, noBody, NOTIFICATION_ERRORS, sendJson('POST', { endpoint }));
     },
   };
 }
