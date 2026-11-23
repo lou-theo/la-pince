@@ -1,13 +1,15 @@
 :root {
-  --color-background: #fbf7f2;
+  --color-background: #faefd8;
+  /* Sand of the logo: the header band only, too strong for a whole screen. */
+  --color-brand: #f3d9a4;
   --color-surface: #ffffff;
   --color-text: #1c1917;
   --color-muted: #57534e;
   --color-border: #e7e5e4;
-  --color-accent: #c2410c;
+  --color-accent: #2f6b4f;
   --color-accent-text: #ffffff;
   --color-danger: #b91c1c;
-  --color-positive: #15803d;
+  --color-positive: #1d4ed8;
   --radius: 0.75rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -23,14 +25,15 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --color-background: #1c1917;
+    --color-brand: #33291c;
     --color-surface: #292524;
     --color-text: #f5f5f4;
     --color-muted: #a8a29e;
     --color-border: #44403c;
-    --color-accent: #fb923c;
+    --color-accent: #6fcf97;
     --color-accent-text: #1c1917;
     --color-danger: #f87171;
-    --color-positive: #4ade80;
+    --color-positive: #60a5fa;
   }
 }
 
