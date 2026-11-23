@@ -1,0 +1,56 @@
+import { groupResponseSchema } from '@la-pince/core';
+import { cleanup, screen, waitFor } from '@testing-library/react';
+import { userEvent } from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+
+import { fakeServer, json } from '../testing/fake-server.ts';
+import { rememberMember } from '../testing/groupDb.ts';
+import { renderApp } from '../testing/render.tsx';
+
+const token = 'demo-token-of-the-group-home-tests-01234';
+const group = groupResponseSchema.parse({
+  title: 'Week-end',
+  members: [
+    { id: 'm1', name: 'Alice' },
+    { id: 'm2', name: 'Bruno' },
+  ],
+});
+const keyUrl = '/api/notifications/key';
+
+describe('frame of a group', () => {
+  it('checks the notifications at every opening, on the list too, and shows them with who I am only', async () => {
+    // An iPhone, whose browser has no Push API in a tab: the notifications ask for the home screen, after reading the instance's key.
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
+    await rememberMember(token, 'm2');
+    const server = fakeServer({
+      token,
+      group,
+      answer: (url) => (url === keyUrl ? Promise.resolve(json({ publicKey: `B${'k'.repeat(86)}` })) : undefined),
+    });
+    const user = userEvent.setup();
+    renderApp(`/g/${token}`, server.fetch);
+    await waitFor(() => {
+      expect(server.calls).toContain(keyUrl);
+    });
+    const homeScreen = /ajoute d'abord La Pince à l'écran d'accueil/;
+    expect((await screen.findByText(homeScreen)).closest('[hidden]')).not.toBeNull();
+
+    await user.click(screen.getByRole('link', { name: 'Tu es Bruno' }));
+    expect(screen.getByText(homeScreen).closest('[hidden]')).toBeNull();
+    vi.restoreAllMocks();
+  });
+
+  it('hides the menu on the forms, which take the whole screen, and keeps it elsewhere', async () => {
+    await rememberMember(token, 'm2');
+    const server = fakeServer({ token, group });
+    for (const path of ['/nouvelle-depense', '/nouveau-remboursement/', '/operations/op-1/modifier']) {
+      renderApp(`/g/${token}${path}`, server.fetch);
+      await screen.findByText('Tu es Bruno');
+      expect(screen.queryByRole('navigation')).toBeNull();
+      cleanup();
+    }
+    renderApp(`/g/${token}/operations/op-1`, server.fetch);
+    await screen.findByText('Tu es Bruno');
+    expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
+  });
+});
