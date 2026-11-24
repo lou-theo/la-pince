@@ -1,80 +1,114 @@
+import type { MemberId } from '@la-pince/core';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'wouter';
 
-import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
+import { decorScale, decorSize, standing } from '../model/balances.ts';
+import type { BalanceLine } from '../model/group.ts';
 import { formatCents } from '../model/money.ts';
-import { settleHref } from './Forms.tsx';
+import { Avatar } from './Avatar.tsx';
+import styles from './Balances.module.css';
+import { Bag, Ball } from './Decor.tsx';
 import layout from './Layout.module.css';
-import styles from './Operations.module.css';
-import type { GroupView } from './view.ts';
+import { type GroupView, shortName, syncLine } from './view.ts';
 
-/** Balance of every member, the largest first, then the transfers that would settle the group. */
+/**
+ * The ranking of the balances, the group owing the most to the first and the last owing the group the most, who I am at my place; each line opens
+ * the member's sheet, and a link below opens the transfers that would settle the group.
+ */
 export function Balances({ view }: { readonly view: GroupView }): ReactNode {
-  const balancesTitle = useId();
-  const transfersTitle = useId();
-  const suggested = view.transfers;
+  const title = useId();
+  const scale = decorScale(view.balances);
+  const count = view.transfers.length;
+  const countText = count === 1 ? m.balances_transfers_one() : m.balances_transfers({ count: String(count) });
   return (
     <>
-      <section className={styles.detailSection} aria-labelledby={balancesTitle}>
-        <h2 id={balancesTitle} className={styles.sectionTitle}>
+      <section className={styles.card} aria-labelledby={title}>
+        <h2 id={title} className={layout.visuallyHidden}>
           {m.balances_title()}
         </h2>
-        <p className={layout.muted}>{m.balances_explanation()}</p>
-        <ul className={styles.lines}>
-          {view.balances.map(({ member, balance }) => (
-            <li key={member.id} className={member.id === view.me ? styles.mine : undefined}>
-              <span>{view.nameOf(member.id)}</span>
-              <span className={balance > 0 ? styles.positive : balance < 0 ? styles.negative : undefined}>
-                {formatCents(balance, { signed: true })}
-              </span>
-            </li>
+        {/* A banner only above or below someone it names. */}
+        {view.balances.some((line) => line.balance > 0) ? (
+          <div className={`${styles.banner ?? ''} ${styles.aheadBanner ?? ''}`} aria-hidden="true">
+            <Bag size={16} />
+            {m.balances_ahead_banner()}
+          </div>
+        ) : null}
+        <ul className={styles.ranking}>
+          {view.balances.map((line) => (
+            <RankingLine key={line.member.id} view={view} line={line} scale={scale} />
           ))}
         </ul>
-        <p className={layout.muted}>{syncLine(view)}</p>
+        {view.balances.some((line) => line.balance < 0) ? (
+          <div className={`${styles.banner ?? ''} ${styles.owesBanner ?? ''}`} aria-hidden="true">
+            <Ball size={16} />
+            {m.balances_owes_banner()}
+          </div>
+        ) : null}
       </section>
-      <section className={styles.detailSection} aria-labelledby={transfersTitle}>
-        <h2 id={transfersTitle} className={styles.sectionTitle}>
-          {m.transfers_title()}
-        </h2>
-        {/* A reimbursement other than the suggested ones, reached from the balances since the list's button adds an expense. */}
-        <Link className={layout.link} href="/nouveau-remboursement">
-          {m.operations_add_reimbursement()}
+      {count === 0 ? (
+        <p className={styles.settleAll}>{m.balances_all_settled()}</p>
+      ) : (
+        // Named in full: a screen reader would join the two spans into one word.
+        <Link className={styles.settleAll} href="/soldes/virements" aria-label={`${m.balances_settle_all()} · ${countText}`}>
+          <span className={styles.settleAllTitle}>{m.balances_settle_all()}</span>
+          <span className={styles.settleAllCount}>{countText}</span>
+          <Chevron />
         </Link>
-        {suggested.length === 0 ? (
-          <p className={layout.muted}>{m.transfers_none()}</p>
-        ) : (
-          <ul className={styles.transfers}>
-            {suggested.map((transfer) => {
-              const line = m.transfer_line({ from: view.nameOf(transfer.from), amount: formatCents(transfer.amount), to: view.nameOf(transfer.to) });
-              return (
-                <li
-                  key={`${transfer.from}>${transfer.to}`}
-                  className={transfer.from === view.me || transfer.to === view.me ? styles.mine : undefined}
-                >
-                  <span>{line}</span>
-                  <Link
-                    className={layout.link}
-                    href={settleHref(transfer.from, transfer.to, transfer.amount)}
-                    aria-label={`${m.transfer_settle()} : ${line}`}
-                  >
-                    {m.transfer_settle_short()}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      )}
+      <p className={layout.muted}>{syncLine(view)}</p>
     </>
   );
 }
 
-/** What the balances count beyond the server's copy, and how fresh that copy is. */
-function syncLine(view: GroupView): string {
-  const when = formatMoment(view.readAt);
-  if (view.pendingCount === 0) {
-    return m.balances_sync({ when });
-  }
-  return view.pendingCount === 1 ? m.balances_sync_pending_one({ when }) : m.balances_sync_pending({ count: String(view.pendingCount), when });
+function RankingLine({ view, line, scale }: { readonly view: GroupView; readonly line: BalanceLine; readonly scale: number }) {
+  const { member, balance } = line;
+  const where = standing(balance);
+  const mine = member.id === view.me;
+  const word = where === 'ahead' ? m.balances_ahead() : where === 'owes' ? m.balances_owes() : m.balances_settled();
+  const amount = formatCents(Math.abs(balance));
+  const label =
+    where === 'settled'
+      ? m.balances_line_settled({ name: view.nameOf(member.id) })
+      : m.balances_line({ name: view.nameOf(member.id), standing: word, amount });
+  return (
+    <li>
+      <Link className={mine ? `${styles.line ?? ''} ${styles.mine ?? ''}` : styles.line} href={memberHref(member.id)} aria-label={label}>
+        <span className={styles.avatar}>
+          <Avatar member={member} view={view} />
+          {where === 'ahead' ? <Bag className={styles.decor} size={decorSize(balance, scale)} /> : null}
+          {where === 'owes' ? <Ball className={styles.decor} size={decorSize(balance, scale)} /> : null}
+        </span>
+        {/* Cut by an ellipsis when too long, whole in the tooltip and the link's name. */}
+        <span className={styles.name} title={view.nameOf(member.id)}>
+          {shortName(view, member.id)}
+        </span>
+        <span className={where === 'settled' ? styles.word : `${styles.word ?? ''} ${styles[where] ?? ''}`}>{word}</span>
+        {where === 'settled' ? null : <span className={`${styles.amount ?? ''} ${styles[where] ?? ''}`}>{amount}</span>}
+      </Link>
+    </li>
+  );
+}
+
+/** Link to a member's sheet; an identifier needs no escaping (`memberIdSchema`). */
+function memberHref(member: MemberId): string {
+  return `/soldes/membres/${member}`;
+}
+
+/** The arrow that says a line leads further. */
+function Chevron(): ReactNode {
+  return (
+    <svg
+      className={styles.chevron}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
 }

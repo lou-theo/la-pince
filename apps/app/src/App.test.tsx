@@ -287,26 +287,118 @@ describe('a group as one of its members', () => {
     expect(screen.getByText("Cette dépense n'existe pas, ou elle a été supprimée.")).toBeDefined();
   });
 
-  it('shows the balances, the largest first, and the transfers that settle them', async () => {
+  it('ranks the balances, the largest first, each line naming the member, where they stand and the amount', async () => {
     const { user, location } = await openAsBruno();
     await user.click(screen.getByRole('link', { name: 'Soldes' }));
     expect(location.history.at(-1)).toBe(`/g/${token}/soldes`);
     expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
     const balances = within(screen.getByRole('region', { name: 'Soldes' }));
-    expect(balances.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
-      'Alice+23,00\u00a0€',
-      'Chloé-10,00\u00a0€',
-      'Bruno (toi)-13,00\u00a0€',
+    expect(balances.getAllByRole('link').map((line) => line.getAttribute('aria-label'))).toStrictEqual([
+      'Alice, en positif, 23,00\u00a0€',
+      'Chloé, doit, 10,00\u00a0€',
+      'Bruno (toi), doit, 13,00\u00a0€',
     ]);
+    // Who I am is “Toi” on screen, each amount unsigned beside its word.
+    expect(balances.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
+      'A€Aliceen positif23,00\u00a0€',
+      'CChloédoit10,00\u00a0€',
+      'BToidoit13,00\u00a0€',
+    ]);
+    expect(screen.getByText('Les rentiers')).toBeDefined();
+    expect(screen.getByText('Au bagne')).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Pour tout solder · 2 virements suggérés' }).getAttribute('href')).toBe(`/g/${token}/soldes/virements`);
     cleanup();
     // The same screen with a trailing slash keeps its tab.
     await openAsBruno(`/g/${token}/soldes/`);
     expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
-    const transfers = within(screen.getByRole('region', { name: 'Remboursements suggérés' }));
-    expect(transfers.getAllByRole('listitem').map((line) => line.firstChild?.textContent)).toStrictEqual([
-      'Chloé doit 10,00\u00a0€ à Alice',
-      'Bruno (toi) doit 13,00\u00a0€ à Alice',
+  });
+
+  it('groups the transfers by who owes, the largest debt first, under the balances tab', async () => {
+    const { user, location } = await openAsBruno(`/g/${token}/soldes`);
+    await user.click(screen.getByRole('link', { name: /^Pour tout solder/ }));
+    expect(location.history.at(-1)).toBe(`/g/${token}/soldes/virements`);
+    expect(screen.getByRole('heading', { level: 1, name: 'Remboursements suggérés' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.getAttribute('aria-label'))).toStrictEqual([
+      'Bruno (toi), doit, 13,00\u00a0€',
+      'Chloé, doit, 10,00\u00a0€',
     ]);
+    expect(screen.getAllByRole('link', { name: /^Enregistrer ce remboursement/ }).map((link) => link.getAttribute('aria-label'))).toStrictEqual([
+      'Enregistrer ce remboursement : Bruno (toi) doit 13,00\u00a0€ à Alice',
+      'Enregistrer ce remboursement : Chloé doit 10,00\u00a0€ à Alice',
+    ]);
+    expect(screen.getByRole('link', { name: 'Déclarer un autre remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement`);
+    expect(screen.getByText(/^Dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+    await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
+    expect(location.history.at(-1)).toBe(`/g/${token}/soldes`);
+  });
+
+  it("opens a member's sheet from the ranking: who owes them, or what they owe, in my words on mine", async () => {
+    const { user, location } = await openAsBruno(`/g/${token}/soldes`);
+    await user.click(screen.getByRole('link', { name: /^Alice,/ }));
+    expect(location.history.at(-1)).toBe(`/g/${token}/soldes/membres/m1`);
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Alice');
+    expect(screen.getByText(/^en positif de/).textContent).toBe('en positif de 23,00\u00a0€');
+    const owed = within(screen.getByRole('region', { name: 'Lui doivent' }));
+    expect(owed.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([
+      'BToi13,00\u00a0€Enregistrer',
+      'CChloé10,00\u00a0€Enregistrer',
+    ]);
+    expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement?a=m1`);
+    expect(screen.getByText('Remboursements suggérés pour que tout le groupe soit à jour.')).toBeDefined();
+    expect(screen.getByText(/^Dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
+
+    await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
+    await user.click(screen.getByRole('link', { name: /^Bruno \(toi\),/ }));
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Bruno (toi)');
+    expect(screen.getByText(/^Tu dois/).textContent).toBe('Tu dois 13,00\u00a0€');
+    const mine = within(screen.getByRole('region', { name: 'Tes remboursements à faire' }));
+    expect(mine.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual(['Aà Alice13,00\u00a0€Enregistrer']);
+    expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement?de=m2`);
+
+    await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
+    await user.click(screen.getByRole('link', { name: /^Chloé,/ }));
+    expect(screen.getByRole('region', { name: 'Ses remboursements à faire' }).textContent).toContain('à Alice');
+    expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement?de=m3`);
+  });
+
+  it('prefills nobody when the group owes me, nor a member who left the group, whom the form would replace by me', async () => {
+    const user = userEvent.setup();
+    await rememberMember(token, 'm2');
+    // Bruno paid 5,00 € for Alice; a member who left paid 3,00 € for Chloé.
+    const owedToMe = [
+      change({ id: 'op-mine', date: '2026-11-02', payer: 'm2', lines: [['m1', 500]] }),
+      change({ id: 'op-left', date: '2026-11-03', payer: 'gone', lines: [['m3', 300]] }),
+      change({ id: 'op-left-owes', date: '2026-11-04', payer: 'm1', lines: [['gone-too', 100]] }),
+    ];
+    renderApp(`/g/${token}/soldes`, fakeServer({ token, group, changes: owedToMe }).fetch);
+    await user.click(await screen.findByRole('link', { name: /^Bruno \(toi\), en positif/ }));
+    expect(screen.getByText(/^Tu es en positif de/).textContent).toBe('Tu es en positif de 5,00 €');
+    expect(screen.getByRole('region', { name: 'Te doivent' }).textContent).toContain('Alice');
+    expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement`);
+    await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
+    await user.click(screen.getByRole('link', { name: 'gone, en positif, 3,00\u00a0€' }));
+    // Nobody to prefill: the form would put me in their place.
+    expect(screen.queryByRole('link', { name: 'Déclarer un remboursement' })).toBeNull();
+    // Chloé's transfer to them is shown, without a button that would record it as mine.
+    expect(screen.getByRole('region', { name: 'Lui doivent' }).textContent).toBe('Lui doiventCChloé3,00\u00a0€');
+    // Nor on the transfer of a member who left and owes.
+    await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
+    await user.click(screen.getByRole('link', { name: 'gone-too, doit, 1,00\u00a0€' }));
+    expect(screen.getByRole('region', { name: 'Ses remboursements à faire' }).textContent).toBe('Ses remboursements à faireBà toi1,00\u00a0€');
+  });
+
+  it('says so for a member who is not in the group', async () => {
+    await rememberMember(token, 'm2');
+    for (const id of ['nobody', 'not%20an%20id']) {
+      renderApp(`/g/${token}/soldes/membres/${id}`, fakeServer({ token, group, changes }).fetch);
+      expect(await screen.findByText("Ce membre n'est pas dans le groupe.")).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Retour aux soldes' })).toBeDefined();
+      cleanup();
+    }
+    // An unknown path under the balances keeps the group's band, a way out included.
+    renderApp(`/g/${token}/soldes/membres`, fakeServer({ token, group, changes }).fetch);
+    expect(await screen.findByText('Tu es Bruno')).toBeDefined();
   });
 
   it('tells an empty group, settled', async () => {
@@ -315,6 +407,22 @@ describe('a group as one of its members', () => {
     renderApp(`/g/${token}`);
     expect(await screen.findByText("Aucune dépense pour l'instant.")).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Soldes' }));
-    expect(screen.getByText("Tout le monde est à l'équilibre.")).toBeDefined();
+    // Neither banners nor amounts, and no transfers to open.
+    const balances = within(screen.getByRole('region', { name: 'Soldes' }));
+    expect(balances.getAllByRole('link').map((line) => line.getAttribute('aria-label'))).toStrictEqual([
+      'Alice, à jour',
+      'Bruno (toi), à jour',
+      'Chloé, à jour',
+    ]);
+    expect(screen.queryByText('Les rentiers')).toBeNull();
+    expect(screen.queryByText('Au bagne')).toBeNull();
+    expect(screen.getByText('Tout le monde est à jour').tagName).toBe('P');
+    await user.click(screen.getByRole('link', { name: 'Chloé, à jour' }));
+    expect(screen.getByText('À jour')).toBeDefined();
+    expect(screen.getByText('Aucun remboursement à faire ni à recevoir.')).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement?de=m3`);
+    cleanup();
+    renderApp(`/g/${token}/soldes/virements`);
+    expect(await screen.findByText('Tout le monde est à jour : aucun remboursement à faire.')).toBeDefined();
   });
 });

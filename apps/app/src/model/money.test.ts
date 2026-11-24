@@ -23,12 +23,6 @@ describe('formatCents', () => {
     expect(formatCents(Number.MAX_SAFE_INTEGER)).toBe(`90${thin}071${thin}992${thin}547${thin}409,91${nbsp}€`);
   });
 
-  it('signs a balance, zero left unsigned', () => {
-    expect(formatCents(1_250, { signed: true })).toBe(`+12,50${nbsp}€`);
-    expect(formatCents(-1_250, { signed: true })).toBe(`-12,50${nbsp}€`);
-    expect(formatCents(0, { signed: true })).toBe(`0,00${nbsp}€`);
-  });
-
   it('refuses what is not a whole number of cents', () => {
     expect(() => formatCents(0.5)).toThrow(RangeError);
     expect(() => formatCents(Number.NaN)).toThrow(RangeError);

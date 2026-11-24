@@ -22,7 +22,7 @@ import {
 import type { QueueError } from '../sync/groupStore.ts';
 import { Avatar } from './Avatar.tsx';
 import layout from './Layout.module.css';
-import { FormBar } from './Layout.tsx';
+import { ScreenBar } from './Layout.tsx';
 import styles from './OperationForm.module.css';
 import { useMounted } from './useMounted.ts';
 import type { GroupView } from './view.ts';
@@ -114,7 +114,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
 
   return (
     <>
-      <FormBar>
+      <ScreenBar>
         <button className={layout.iconButton} type="button" aria-label={m.form_close()} disabled={sending} onClick={close}>
           <CloseIcon />
         </button>
@@ -125,7 +125,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
         <button className={styles.save} type="submit" form={formId} aria-disabled={!read.ok} disabled={sending}>
           {sending ? m.form_saving() : editing ? m.form_save() : m.form_add()}
         </button>
-      </FormBar>
+      </ScreenBar>
       {closing ? (
         <Discard
           onDiscard={() => {

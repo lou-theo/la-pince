@@ -25,6 +25,19 @@
   --avatar-10: #a16207;
   --avatar-11: #475569;
   --avatar-text: #ffffff;
+  /* Decor of the balances: a bag of coins for who the group owes, a ball for who owes it, and their banners. */
+  --decor-ahead-band: #fef3c7;
+  --decor-ahead-text: #92400e;
+  --decor-owes-band: #e7e5e4;
+  --decor-owes-text: #44403c;
+  --decor-bag: #f59e0b;
+  --decor-bag-line: #92400e;
+  --decor-bag-coin: #78350f;
+  --decor-ball: #292524;
+  --decor-ball-shine: #a8a29e;
+  --decor-chain: #57534e;
+  /* Who I am in a list of members: a neutral grey, a pink one reading as a debt. */
+  --color-mine: #ece7e0;
   --radius: 0.75rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -53,6 +66,15 @@
     --color-accent-text: #1c1917;
     --color-danger: #f87171;
     --color-positive: #60a5fa;
+    --decor-ahead-band: #3b2f12;
+    --decor-ahead-text: #fbbf24;
+    --decor-owes-band: #3a3532;
+    --decor-owes-text: #d6d3d1;
+    --decor-bag-line: #fbbf24;
+    --decor-ball: #a8a29e;
+    --decor-ball-shine: #e7e5e4;
+    --decor-chain: #a8a29e;
+    --color-mine: #3a3532;
   }
 }
 

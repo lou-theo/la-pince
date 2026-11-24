@@ -1,5 +1,6 @@
 import type { Member, MemberId, Operation, Share, SuggestedTransfer } from '@la-pince/core';
 
+import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import type { BalanceLine, OperationView } from '../model/group.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
@@ -39,4 +40,31 @@ export function who(view: GroupView, operation: OperationView): string {
     return m.operation_reimbursed({ from: view.nameOf(payer), to: to.join(', ') });
   }
   return m.operation_paid_by({ name: view.nameOf(payer) });
+}
+
+/** A member of the group, or one an operation names who is missing from its list, under their identifier as the balances keep them. */
+export function memberOf(view: GroupView, id: MemberId): Member {
+  return view.members.find((member) => member.id === id) ?? { id, name: id };
+}
+
+/** A member of the group's list, as opposed to one an operation names who left it: the forms only offer the former. */
+export function isMember(view: GroupView, id: MemberId): boolean {
+  return view.members.some((member) => member.id === id);
+}
+
+/** “Toi” for who I am, at the start of a line, or “toi” after “à”; a member's name otherwise. */
+export function shortName(view: GroupView, id: MemberId, place: 'subject' | 'object' = 'subject'): string {
+  if (id === view.me) {
+    return place === 'subject' ? m.form_you() : m.you();
+  }
+  return memberOf(view, id).name;
+}
+
+/** What the balances count beyond the server's copy, and how fresh that copy is; said under each screen of the balances. */
+export function syncLine(view: GroupView): string {
+  const when = formatMoment(view.readAt);
+  if (view.pendingCount === 0) {
+    return m.balances_sync({ when });
+  }
+  return view.pendingCount === 1 ? m.balances_sync_pending_one({ when }) : m.balances_sync_pending({ count: String(view.pendingCount), when });
 }

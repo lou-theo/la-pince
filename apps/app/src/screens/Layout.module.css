@@ -45,6 +45,11 @@
   cursor: pointer;
 }
 
+/* Title of a screen under a tab, beside the way back. */
+.subTitle {
+  font-size: 1.125rem;
+}
+
 .iconButton svg {
   width: 1.375rem;
   height: 1.375rem;

@@ -24,15 +24,20 @@ export async function openAs(page: Page, token: string, member: string): Promise
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
 }
 
-/** Balance of each member as the balances tab shows it, in cents, by name without the « (toi) » mark. */
+/** Balance of each member as the balances tab shows it, in cents, by name without the « (toi) » mark, read from each line's name (« Basile, doit, 5,75 € »). */
 export async function balances(page: Page): Promise<Map<string, number>> {
   await page.getByRole('link', { name: 'Soldes', exact: true }).click();
-  const lines = page.getByRole('region', { name: 'Soldes' }).getByRole('listitem');
+  const lines = page.getByRole('region', { name: 'Soldes' }).getByRole('link');
   await expect(lines.first()).toBeVisible();
   const read = new Map<string, number>();
   for (const line of await lines.all()) {
-    const [name = '', amount = ''] = await line.locator('span').allTextContents();
-    read.set(name.replace(' (toi)', ''), cents(amount));
+    const label = (await line.getAttribute('aria-label')) ?? '';
+    const match = /^(.*), (?:(en positif|doit), (.*)|à jour)$/.exec(label);
+    if (match === null) {
+      throw new Error(`not a line of the balances: ${label}`);
+    }
+    const [, name = '', standing, amount = '0'] = match;
+    read.set(name.replace(' (toi)', ''), (standing === 'doit' ? -1 : 1) * cents(amount));
   }
   return read;
 }

@@ -21,6 +21,9 @@ const settle = (page: Page) => page.waitForLoadState('networkidle');
 const operationLink = 'main a[href*="/operations/"]';
 const balancesTab = 'nav a[href$="/soldes"]';
 const newExpenseLink = 'main a[href$="/nouvelle-depense"]';
+// Lines of the ranking, each opening a member's sheet, the largest balance first.
+const memberLine = 'main a[href*="/soldes/membres/"]';
+const transfersLink = 'main a[href$="/soldes/virements"]';
 
 // The button that saves a form: in the band since the full-screen form, in the form before.
 const saveButton = 'button[type="submit"]';
@@ -29,6 +32,32 @@ const chooseFirstMember = async (page: Page, demo: Demo): Promise<void> => {
   await page.goto(`${demo.appUrl}/g/${demo.token}`);
   await page.getByRole('list').getByRole('button').first().click();
   await settle(page);
+};
+
+/** Opens the balances, ready once a line is there: a line of the ranking, or of the balances before it. */
+const openBalances = async (page: Page, demo: Demo): Promise<void> => {
+  await chooseFirstMember(page, demo);
+  await page.locator(balancesTab).click();
+  await page.locator(`${memberLine}, main section ul > li`).first().waitFor();
+};
+
+/** Opens the suggested transfers: their own screen, or below the balances before it. */
+const openTransfers = async (page: Page, demo: Demo): Promise<void> => {
+  await openBalances(page, demo);
+  if ((await page.locator(transfersLink).count()) === 0) {
+    await page.locator('main section').last().scrollIntoViewIfNeeded();
+    return;
+  }
+  await page.locator(transfersLink).click();
+  // A transfer's button to record it, which the ranking does not have.
+  await page.locator('main a[href*="/nouveau-remboursement?"]').first().waitFor();
+};
+
+/** Opens the sheet of the first member of the ranking (`first`) or the last one, ready once its button to declare a reimbursement is there. */
+const openSheet = async (page: Page, demo: Demo, which: 'first' | 'last'): Promise<void> => {
+  await openBalances(page, demo);
+  await page.locator(memberLine)[which]().click();
+  await page.locator('main a[href*="/nouveau-remboursement?"]').first().waitFor();
 };
 
 /** Opens the form of a new expense, ready once its fields are there. */
@@ -84,24 +113,44 @@ export const screens: readonly Screen[] = [
       await page.locator('article').waitFor();
     },
   },
+  { name: 'soldes', label: 'Soldes', reach: openBalances },
   {
-    name: 'soldes',
-    label: 'Soldes',
+    name: 'soldes-sombre',
+    label: 'Soldes, thème sombre',
     reach: async (page: Page, demo: Demo): Promise<void> => {
-      await chooseFirstMember(page, demo);
-      await page.locator(balancesTab).click();
-      // The list has sections too, one per day: those of the balances are named by their heading.
-      await page.locator('main section[aria-labelledby]').first().waitFor();
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openBalances(page, demo);
+    },
+  },
+  { name: 'remboursements-suggeres', label: 'Remboursements suggérés', reach: openTransfers },
+  {
+    name: 'remboursements-suggeres-sombre',
+    label: 'Remboursements suggérés, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openTransfers(page, demo);
     },
   },
   {
-    name: 'remboursements-suggeres',
-    label: 'Remboursements suggérés',
+    name: 'fiche-crediteur',
+    label: 'Fiche de qui est en positif',
     reach: async (page: Page, demo: Demo): Promise<void> => {
-      await chooseFirstMember(page, demo);
-      await page.locator(balancesTab).click();
-      // Below the balances, out of the first screen.
-      await page.locator('main section').last().scrollIntoViewIfNeeded();
+      await openSheet(page, demo, 'first');
+    },
+  },
+  {
+    name: 'fiche-debiteur',
+    label: 'Fiche de qui doit',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openSheet(page, demo, 'last');
+    },
+  },
+  {
+    name: 'fiche-debiteur-sombre',
+    label: 'Fiche de qui doit, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openSheet(page, demo, 'last');
     },
   },
   {
@@ -158,8 +207,7 @@ export const screens: readonly Screen[] = [
     name: 'nouveau-remboursement',
     label: 'Remboursement suggéré',
     reach: async (page: Page, demo: Demo): Promise<void> => {
-      await chooseFirstMember(page, demo);
-      await page.locator(balancesTab).click();
+      await openTransfers(page, demo);
       await page.locator('a[href*="/nouveau-remboursement?"]').first().click();
       await page.locator('form').waitFor();
     },
@@ -183,7 +231,7 @@ export const screens: readonly Screen[] = [
   },
 ];
 
-/** Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, the balances, then add an expense. */
+/** Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, the balances, their transfers and a sheet, then add an expense. */
 export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.goto(`${demo.appUrl}/lien`);
   await page.waitForTimeout(600);
@@ -199,6 +247,12 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.waitForTimeout(1500);
   await page.locator(balancesTab).click();
   await page.waitForTimeout(2000);
+  await page.locator(transfersLink).click();
+  await page.waitForTimeout(1500);
+  await page.locator(balancesTab).click();
+  await page.waitForTimeout(800);
+  await page.locator(memberLine).last().click();
+  await page.waitForTimeout(1500);
   await page.locator('nav a').first().click();
   await page.locator(newExpenseLink).click();
   await page.locator('form input[type="text"]').first().pressSequentially('Glaces', { delay: 40 });
