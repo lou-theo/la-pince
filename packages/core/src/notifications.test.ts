@@ -133,6 +133,52 @@ describe('noticesByMember', () => {
     expect(notified(noticesByMember(previousOf(before), changedTwice))).toStrictEqual({ lea: ['changed op3 Hôtel 2'] });
   });
 
+  it('tells no one about an operation added then deleted in the same batch, only about the rest of the batch', () => {
+    const undone = [
+      revision({ id: 'op1', author: 'max' }),
+      revision({ id: 'op2', title: 'Train', author: 'max' }),
+      revision({ id: 'op1', deleted: true, author: 'max' }),
+    ];
+    expect(notified(noticesByMember(new Map(), undone))).toStrictEqual({ lea: ['added op2 Train'] });
+    expect(noticesByMember(new Map(), [revision({ author: 'max' }), revision({ deleted: true, author: 'max' })]).size).toBe(0);
+    // Added, changed, then deleted: still nothing; deleted then added again: new to the member.
+    const changedBetween = [revision({ author: 'max' }), revision({ title: 'Pizzas', author: 'max' }), revision({ deleted: true, author: 'max' })];
+    expect(notified(noticesByMember(new Map(), changedBetween))).toStrictEqual({});
+    const addedAgain = [revision({ author: 'max' }), revision({ deleted: true, author: 'max' }), revision({ title: 'Pizzas', author: 'max' })];
+    expect(notified(noticesByMember(new Map(), addedAgain))).toStrictEqual({ lea: ['added op1 Pizzas'] });
+
+    // Whoever it concerned along the way, and whoever entered each revision.
+    const movedThenDeleted = [
+      revision({ lines: [{ member: 'lea', weight: 1 }], author: 'max' }),
+      revision({ lines: [{ member: 'tom', weight: 1 }], author: 'max' }),
+      revision({ deleted: true, author: 'max' }),
+    ];
+    expect(notified(noticesByMember(new Map(), movedThenDeleted))).toStrictEqual({});
+    const deletedByAnother = [revision({ author: 'max' }), revision({ deleted: true, author: 'lea' })];
+    expect(notified(noticesByMember(new Map(), deletedByAnother))).toStrictEqual({});
+    // Restored then deleted again: it was deleted before the batch, still nobody saw it.
+    const restored = [revision({ author: 'max' }), revision({ deleted: true, author: 'max' })];
+    expect(notified(noticesByMember(previousOf(revision({ deleted: true })), restored))).toStrictEqual({});
+  });
+
+  it('tells each member what changed for them between the version before the batch and the last one, not what came between', () => {
+    const forLea = revision({ lines: [{ member: 'lea', weight: 1 }], author: 'max' });
+    const forTom = revision({ lines: [{ member: 'tom', weight: 1 }], author: 'max' });
+    const deletion = revision({ deleted: true, author: 'max' });
+    // Lived for Léa, moved to Tom then deleted: Léa sees it go, Tom never saw it.
+    expect(notified(noticesByMember(previousOf(forLea), [forTom, deletion]))).toStrictEqual({ lea: ['deleted op1 Pizza'] });
+    expect(notified(noticesByMember(previousOf(forLea), [deletion, forTom, deletion]))).toStrictEqual({ lea: ['deleted op1 Pizza'] });
+    // New, for Léa then for Tom: only Tom has something new.
+    expect(notified(noticesByMember(new Map(), [forLea, forTom]))).toStrictEqual({ tom: ['added op1 Pizza'] });
+    expect(notified(noticesByMember(new Map(), [forLea, deletion, forTom]))).toStrictEqual({ tom: ['added op1 Pizza'] });
+  });
+
+  it('tells an addition then its deletion when they come in two batches', () => {
+    const added = revision({ author: 'max' });
+    expect(notified(noticesByMember(new Map(), [added]))).toStrictEqual({ lea: ['added op1 Pizza'] });
+    expect(notified(noticesByMember(previousOf(added), [revision({ deleted: true, author: 'max' })]))).toStrictEqual({ lea: ['deleted op1 Pizza'] });
+  });
+
   // Decision 46 (h): nothing is sized on the largest group seen (13 members).
   it.each([13, 40])('tells every member of a group of %i but the author, each once', (size) => {
     const members = Array.from({ length: size }, (_, index) => `m${String(index)}`);

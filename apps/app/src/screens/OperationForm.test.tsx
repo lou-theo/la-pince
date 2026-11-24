@@ -1,65 +1,16 @@
-import { type Change, groupResponseSchema, operationBatchSchema } from '@la-pince/core';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import type { Fetch } from '../sync/client.ts';
-import { change, fakeServer } from '../testing/fake-server.ts';
-import { rememberMember } from '../testing/groupDb.ts';
-import { renderApp } from '../testing/render.tsx';
+import { change } from '../testing/fake-server.ts';
+import { openAsBruno as openGroup } from '../testing/group.ts';
 
 const token = 'demo-token-of-the-form-tests-0123456789';
-const group = groupResponseSchema.parse({
-  title: 'Week-end',
-  members: [
-    { id: 'm1', name: 'Alice' },
-    { id: 'm2', name: 'Bruno' },
-    { id: 'm3', name: 'Chloé' },
-  ],
-});
 const nbsp = ' ';
 const euros = (amount: string) => `${amount}${nbsp}€`;
 // `getByText` collapses the spaces of the page, no-break ones included, but not those of the text looked for.
 const shown = (text: string) => text.replace(/\s+/g, ' ');
 
-/** Opens the group as Bruno on a fake server holding one expense of Alice, and records what the app posts. */
-async function openAsBruno(path = '', options: { down?: (url: string, init?: RequestInit) => boolean; hold?: Promise<void>; more?: Change[] } = {}) {
-  const changes: Change[] = [
-    change({
-      id: 'op-shopping',
-      date: '2026-11-05',
-      title: 'Courses',
-      payer: 'm1',
-      lines: [
-        ['m1', 1_000],
-        ['m2', 2_000],
-        ['m3', 1_500],
-      ],
-    }),
-  ];
-  changes.push(...(options.more ?? []));
-  const server = fakeServer({ token, group, changes });
-  const posted: unknown[] = [];
-  const fetchFn: Fetch = (url, init) => {
-    if (options.down?.(url, init) === true) {
-      return Promise.reject(new TypeError('Failed to fetch'));
-    }
-    if (init?.method === 'POST' && typeof init.body === 'string') {
-      posted.push(...operationBatchSchema.parse(JSON.parse(init.body)).operations);
-      if (options.hold !== undefined) {
-        return options.hold.then(() => server.fetch(url, init));
-      }
-    }
-    return server.fetch(url, init);
-  };
-  await rememberMember(token, 'm2');
-  const location = renderApp(`/g/${token}${path}`, fetchFn);
-  // On a form or a screen under a tab, the band holds that screen's bar instead of who I am.
-  await screen.findByText(
-    /^(Tu es Bruno|Nouvelle dépense|Nouveau remboursement|Modifier la dépense|Modifier le remboursement|Remboursements suggérés)$/,
-  );
-  return { user: userEvent.setup(), location, posted, changes };
-}
+const openAsBruno = (path = '', options: Parameters<typeof openGroup>[2] = {}) => openGroup(token, path, options);
 
 const field = (name: string) => screen.getByLabelText(name);
 const member = (name: string) => screen.getByRole('button', { name });
@@ -430,41 +381,5 @@ describe('modifying or deleting what is gone', () => {
       expect(posted).toMatchObject([{ id: 'op-shopping', deleted: true }]);
     });
     expect(screen.getByText("Aucune dépense pour l'instant.")).toBeDefined();
-  });
-});
-
-describe('a reimbursement', () => {
-  it('opens prefilled from a suggested transfer, and settles the balances once saved', async () => {
-    const { user, posted } = await openAsBruno('/soldes/virements');
-    await user.click(screen.getByRole('link', { name: /Enregistrer ce remboursement : Bruno \(toi\) doit 20,00/ }));
-    expect(screen.getByRole('heading', { name: 'Nouveau remboursement' })).toBeDefined();
-    expect(value('Quoi')).toBe('Remboursement');
-    expect(value('Montant')).toBe('20,00');
-    expect(value('De')).toBe('m2');
-    expect(value('À')).toBe('m1');
-    expect(screen.queryByRole('group')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(await screen.findByText('Bruno (toi) a remboursé Alice')).toBeDefined();
-    await waitFor(() => {
-      expect(posted).toHaveLength(1);
-    });
-    expect(posted).toMatchObject([
-      { title: 'Remboursement', entry: { kind: 'reimbursement', payer: 'm2', lines: [{ member: 'm1', amount: 2_000 }] } },
-    ]);
-    await user.click(screen.getByRole('link', { name: 'Soldes' }));
-    expect(screen.getByRole('link', { name: 'Bruno (toi), à jour' })).toBeDefined();
-  });
-
-  it('needs someone to receive it', async () => {
-    const { user, posted } = await openAsBruno('/nouveau-remboursement?de=stranger&montant=1.5');
-    expect(value('De')).toBe('m2');
-    expect(value('Montant')).toBe('');
-    await user.type(field('Montant'), '5');
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(screen.getByText('Choisis qui reçoit le remboursement.')).toBeDefined();
-    await user.selectOptions(field('À'), 'Toi');
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(screen.getByText('On ne se rembourse pas soi-même : choisis un autre membre.')).toBeDefined();
-    expect(posted).toStrictEqual([]);
   });
 });

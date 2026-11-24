@@ -49,8 +49,31 @@ const openTransfers = async (page: Page, demo: Demo): Promise<void> => {
     return;
   }
   await page.locator(transfersLink).click();
-  // A transfer's button to record it, which the ranking does not have.
-  await page.locator('main a[href*="/nouveau-remboursement?"]').first().waitFor();
+  // A transfer's line, under its debtor's card, which the ranking does not have.
+  await page.locator('main li li').first().waitFor();
+};
+
+/**
+ * Records the first suggested transfer by its button, ready once the band offering to undo it shows. The send is held, never answered: the shot
+ * must not change the demo group the next screens are shot on.
+ */
+const payFirstTransfer = async (page: Page, demo: Demo): Promise<void> => {
+  await openTransfers(page, demo);
+  await page.route('**/api/groups/*/operations', () => new Promise(() => undefined));
+  await page.locator('main li li button').first().click();
+  await page.locator('main [role="status"]').waitFor();
+};
+
+/** Opens the reimbursement page by the first link to it of a screen: “Déclarer un autre remboursement” on the transfers, the prefilled form before. */
+const openReimbursement = async (page: Page): Promise<void> => {
+  await page.locator('main a[href*="/nouveau-remboursement"]').first().click();
+  await page.locator('form').waitFor();
+  // The grid of the side to choose, which the form before did not have; nothing to wait for there.
+  await page
+    .locator('form section button')
+    .first()
+    .waitFor({ timeout: 1000 })
+    .catch(() => undefined);
 };
 
 /** Opens the sheet of the first member of the ranking (`first`) or the last one, ready once its button to declare a reimbursement is there. */
@@ -123,6 +146,15 @@ export const screens: readonly Screen[] = [
     },
   },
   { name: 'remboursements-suggeres', label: 'Remboursements suggérés', reach: openTransfers },
+  { name: 'virement-paye', label: "« C'est payé » : ligne « Payé » et « Annuler »", reach: payFirstTransfer },
+  {
+    name: 'virement-paye-sombre',
+    label: "« C'est payé », thème sombre",
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await payFirstTransfer(page, demo);
+    },
+  },
   {
     name: 'remboursements-suggeres-sombre',
     label: 'Remboursements suggérés, thème sombre',
@@ -205,11 +237,27 @@ export const screens: readonly Screen[] = [
   },
   {
     name: 'nouveau-remboursement',
-    label: 'Remboursement suggéré',
+    label: 'Remboursement depuis les virements',
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await openTransfers(page, demo);
-      await page.locator('a[href*="/nouveau-remboursement?"]').first().click();
-      await page.locator('form').waitFor();
+      await openReimbursement(page);
+    },
+  },
+  {
+    name: 'nouveau-remboursement-sombre',
+    label: 'Remboursement, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openTransfers(page, demo);
+      await openReimbursement(page);
+    },
+  },
+  {
+    name: 'remboursement-depuis-fiche',
+    label: 'Remboursement depuis la fiche de qui est en positif',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openSheet(page, demo, 'first');
+      await openReimbursement(page);
     },
   },
   {
@@ -231,7 +279,10 @@ export const screens: readonly Screen[] = [
   },
 ];
 
-/** Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, the balances, their transfers and a sheet, then add an expense. */
+/**
+ * Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, the balances, their transfers with one
+ * paid then undone, and a sheet, then add an expense.
+ */
 export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.goto(`${demo.appUrl}/lien`);
   await page.waitForTimeout(600);
@@ -249,6 +300,11 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.waitForTimeout(2000);
   await page.locator(transfersLink).click();
   await page.waitForTimeout(1500);
+  // A transfer paid, then undone: the demo group ends as it was.
+  await page.locator('main li li button').first().click();
+  await page.waitForTimeout(1800);
+  await page.locator('main [role="status"] button').click();
+  await page.waitForTimeout(1200);
   await page.locator(balancesTab).click();
   await page.waitForTimeout(800);
   await page.locator(memberLine).last().click();

@@ -253,6 +253,12 @@ describe('a reimbursement', () => {
       errors: { amount: 'required', split: 'none_checked' },
     });
   });
+
+  it('opens from who receives it with nobody to give it, who must be chosen', () => {
+    const fromReceiver = newReimbursement({ id, title: 'R', today: '2026-11-05', from: undefined, to: alice, amount: undefined });
+    expect(readEntry(apply(fromReceiver, { type: 'amount', value: '5' }))).toStrictEqual({ ok: false, errors: { payer: 'required' } });
+    expect(readEntry(apply(fromReceiver, { type: 'amount', value: '5' }, { type: 'payer', member: bruno }))).toMatchObject({ ok: true });
+  });
 });
 
 describe('editForm', () => {
