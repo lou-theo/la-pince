@@ -8,10 +8,9 @@ import { formatCents } from '../model/money.ts';
 import type { FormErrors, FormState } from '../model/operationForm.ts';
 import { balanceContext, candidates } from '../model/settle.ts';
 import { Avatar } from './Avatar.tsx';
-import { amountError, Box, Case, FormBar, invalid, labelled, QueueErrorLine, splitError, useOperationForm } from './FormFrame.tsx';
+import { amountError, Box, Case, DateInput, FormBar, invalid, labelled, QueueErrorLine, splitError, useOperationForm } from './FormFrame.tsx';
 import layout from './Layout.module.css';
 import formStyles from './OperationForm.module.css';
-import { DateInput } from './OperationForm.tsx';
 import styles from './ReimbursementForm.module.css';
 import { type GroupView, memberOf, shortName } from './view.ts';
 
@@ -113,7 +112,7 @@ export function ReimbursementForm({ view, initial, back }: ReimbursementFormProp
             </span>
           </Box>
           <Case id={ids.date} label={m.form_date()} value={state.date === '' ? m.form_choose() : shortDay(state.date, today)} error={dateError}>
-            <DateInput id={ids.date} value={state.date} error={dateError} dispatch={dispatch} className={formStyles.overlay} />
+            <DateInput id={ids.date} value={state.date} error={dateError} dispatch={dispatch} />
           </Case>
         </div>
         {context === undefined ? null : <p className={styles.context}>{contextText(view, context.member.id, context.balance)}</p>}

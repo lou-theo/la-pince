@@ -221,6 +221,40 @@ export function invalid(id: string, error: string | undefined): { 'aria-invalid'
   return error === undefined ? {} : { 'aria-invalid': true, 'aria-describedby': `${id}-error` };
 }
 
+/** The date of an operation, its native field laid over the box that shows the day. */
+export function DateInput({
+  id,
+  value,
+  error,
+  dispatch,
+}: {
+  readonly id: string;
+  readonly value: string;
+  readonly error: string | undefined;
+  readonly dispatch: (action: FormAction) => void;
+}): ReactNode {
+  return (
+    <input
+      id={id}
+      className={styles.overlay}
+      type="date"
+      value={value}
+      {...labelled(id, error)}
+      onClick={(event) => {
+        // On a computer, a click on the hidden field selects a part of the date instead of opening the calendar.
+        try {
+          event.currentTarget.showPicker();
+        } catch {
+          // Thrown without a user gesture or by a browser that lacks it: the field keeps its native behaviour.
+        }
+      }}
+      onChange={(event) => {
+        dispatch({ type: 'date', value: event.target.value });
+      }}
+    />
+  );
+}
+
 /**
  * A box of fixed width showing a choice, its native control laid over it, invisible: a touch opens the phone's own picker. A long name is cut
  * in the box, whole in the control.

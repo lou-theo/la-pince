@@ -7,7 +7,19 @@ import { selectionOrder } from '../model/members.ts';
 import { centsToInput, formatCents } from '../model/money.ts';
 import { type FormAction, type FormErrors, type FormState, type SplitMode, splitStatus, typedSum } from '../model/operationForm.ts';
 import { Avatar } from './Avatar.tsx';
-import { amountError, Box, Case, CloseIcon, FormBar, invalid, labelled, QueueErrorLine, splitError, useOperationForm } from './FormFrame.tsx';
+import {
+  amountError,
+  Box,
+  Case,
+  CloseIcon,
+  DateInput,
+  FormBar,
+  invalid,
+  labelled,
+  QueueErrorLine,
+  splitError,
+  useOperationForm,
+} from './FormFrame.tsx';
 import layout from './Layout.module.css';
 import styles from './OperationForm.module.css';
 import type { GroupView } from './view.ts';
@@ -91,7 +103,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
             />
           </Case>
           <Case id={ids.date} label={m.form_date()} value={state.date === '' ? m.form_choose() : shortDay(state.date, today)} error={dateError}>
-            <DateInput id={ids.date} value={state.date} error={dateError} dispatch={dispatch} className={styles.overlay} />
+            <DateInput id={ids.date} value={state.date} error={dateError} dispatch={dispatch} />
           </Case>
           <Case id={ids.mode} label={m.form_split()} value={modeLabel(state.mode)} highlighted={state.mode === 'amounts'}>
             <select
@@ -115,42 +127,6 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
         <QueueErrorLine error={frame.queueError} />
       </form>
     </>
-  );
-}
-
-/** The date of an operation, its native field laid over the box that shows the day. */
-export function DateInput({
-  id,
-  value,
-  error,
-  dispatch,
-  className,
-}: {
-  readonly id: string;
-  readonly value: string;
-  readonly error: string | undefined;
-  readonly dispatch: (action: FormAction) => void;
-  readonly className: string | undefined;
-}): ReactNode {
-  return (
-    <input
-      id={id}
-      className={className}
-      type="date"
-      value={value}
-      {...labelled(id, error)}
-      onClick={(event) => {
-        // On a computer, a click on the hidden field selects a part of the date instead of opening the calendar.
-        try {
-          event.currentTarget.showPicker();
-        } catch {
-          // Thrown without a user gesture or by a browser that lacks it: the field keeps its native behaviour.
-        }
-      }}
-      onChange={(event) => {
-        dispatch({ type: 'date', value: event.target.value });
-      }}
-    />
   );
 }
 
