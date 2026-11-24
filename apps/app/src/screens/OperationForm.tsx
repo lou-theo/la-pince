@@ -178,7 +178,11 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
           </Box>
         </div>
         <div className={styles.cases}>
-          <Case id={ids.payer} label={reimbursement ? m.form_from() : m.form_payer()} value={shortName(state.payer)}>
+          <Case
+            id={ids.payer}
+            label={reimbursement ? m.form_from() : m.form_payer()}
+            value={state.payer === undefined ? m.form_choose() : shortName(state.payer)}
+          >
             <MemberSelect
               id={ids.payer}
               members={members}

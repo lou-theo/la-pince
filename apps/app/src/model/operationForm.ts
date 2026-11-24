@@ -28,7 +28,8 @@ export interface FormState {
   readonly date: string;
   /** Total of an equal split or of a reimbursement; with amounts, an optional control total. */
   readonly amount: string;
-  readonly payer: MemberId;
+  /** Who paid the expense or gives the reimbursement; none on a reimbursement opened from who receives it, until it is chosen. */
+  readonly payer: MemberId | undefined;
   readonly mode: SplitMode;
   /** Members of the split, whatever its mode; for a reimbursement, the single member who receives it. */
   readonly checked: readonly MemberId[];
@@ -89,7 +90,7 @@ export function newExpense({ id, me, today }: { id: OperationId; me: MemberId; t
   return { id, kind: 'expense', title: '', date: today, amount: '', payer: me, mode: 'equal', checked: [me], amounts: {} };
 }
 
-/** A new reimbursement, prefilled from a suggested transfer when there is one. */
+/** A new reimbursement, with who gives it or who receives it when the page opens from one of them, and its amount when there is one. */
 export function newReimbursement({
   id,
   title,
@@ -101,7 +102,7 @@ export function newReimbursement({
   id: OperationId;
   title: string;
   today: string;
-  from: MemberId;
+  from: MemberId | undefined;
   to: MemberId | undefined;
   amount: number | undefined;
 }): FormState {
@@ -167,6 +168,7 @@ export type MemberAmountError = 'missing' | 'invalid';
 export interface FormErrors {
   readonly title?: 'required' | 'too_long';
   readonly date?: 'invalid';
+  readonly payer?: 'required';
   readonly amount?: AmountError;
   readonly split?: SplitError;
   readonly amounts?: Readonly<Partial<Record<MemberId, MemberAmountError>>>;
@@ -224,7 +226,10 @@ export function splitStatus(state: FormState): SplitStatus | undefined {
 
 /** The entry the form describes, or what keeps it from being one. */
 export function readEntry(state: FormState): Read<Entry> {
-  const errors: { amount?: AmountError; split?: SplitError; amounts?: Partial<Record<MemberId, MemberAmountError>> } = {};
+  const errors: { payer?: 'required'; amount?: AmountError; split?: SplitError; amounts?: Partial<Record<MemberId, MemberAmountError>> } = {};
+  if (state.payer === undefined) {
+    errors.payer = 'required';
+  }
   const typedTotal = state.amount.trim();
   const total = typedCents(typedTotal);
   if (state.mode === 'equal' || state.kind === 'reimbursement') {
