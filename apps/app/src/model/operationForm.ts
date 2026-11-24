@@ -147,6 +147,16 @@ export function editForm(operation: OperationView): FormState {
   };
 }
 
+/** Whether the form says something else than when it opened, what a person would lose by leaving it; amounts count only in a split by amounts. */
+export function hasChanged(initial: FormState, state: FormState): boolean {
+  const meaning = (form: FormState) => {
+    const checked = form.checked.toSorted();
+    const amounts = form.mode === 'amounts' ? checked.map((member) => form.amounts[member] ?? '') : [];
+    return JSON.stringify([form.title, form.date, form.amount, form.payer, form.mode, checked, amounts]);
+  };
+  return meaning(initial) !== meaning(state);
+}
+
 export type AmountError = 'required' | 'invalid' | 'zero' | 'mismatch';
 export type SplitError = 'none_checked' | 'same_member' | 'too_large' | 'several_receivers';
 

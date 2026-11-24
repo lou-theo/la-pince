@@ -9,6 +9,7 @@ import {
   type FormAction,
   formReducer,
   type FormState,
+  hasChanged,
   newExpense,
   newReimbursement,
   previewEffect,
@@ -337,6 +338,22 @@ describe('editForm', () => {
   it('opens a reimbursement on the member who received it', () => {
     const current = change({ id: 'r', date: '2026-11-02', kind: 'reimbursement', payer: 'm2', lines: [['m1', 500]] });
     expect(editForm(view(current))).toMatchObject({ kind: 'reimbursement', amount: '5,00', payer: 'm2', checked: ['m1'] });
+  });
+});
+
+describe('hasChanged', () => {
+  it('tells a form that says something new from one only reordered, or changed where it does not count', () => {
+    const initial = apply(expense(), everyone, { type: 'amount', value: '10' });
+    expect(hasChanged(initial, initial)).toBe(false);
+    expect(hasChanged(initial, apply(initial, { type: 'title', value: 'Courses' }))).toBe(true);
+    expect(hasChanged(initial, apply(initial, { type: 'toggle', member: alice }))).toBe(true);
+    // The same members checked in another order, and lines typed then left for equal shares, say the same thing.
+    expect(hasChanged(initial, apply(initial, { type: 'toggle', member: alice }, { type: 'toggle', member: alice }))).toBe(false);
+    expect(hasChanged(initial, apply(initial, { type: 'memberAmount', member: alice, value: '4' }))).toBe(false);
+    const amounts = apply(initial, { type: 'mode', mode: 'amounts' });
+    expect(hasChanged(amounts, apply(amounts, { type: 'memberAmount', member: alice, value: '4' }))).toBe(true);
+    const empty = apply(expense(), { type: 'mode', mode: 'amounts' });
+    expect(hasChanged(empty, apply(empty, { type: 'memberAmount', member: bruno, value: '' }))).toBe(false);
   });
 });
 
