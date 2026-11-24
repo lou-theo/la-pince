@@ -61,7 +61,8 @@ export const screens: readonly Screen[] = [
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await chooseFirstMember(page, demo);
       await page.locator('header a[href$="/moi"]').click();
-      await page.locator('main section').waitFor();
+      // The notifications render nothing while they check the server and the browser: their status line appears once they know.
+      await page.locator('main [aria-live="polite"]').waitFor({ state: 'attached' });
     },
   },
   {
