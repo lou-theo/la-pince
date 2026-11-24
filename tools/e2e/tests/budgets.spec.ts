@@ -65,7 +65,7 @@ test('catching up from 0, opening offline up to the balances, an entry shown', a
   await context.setOffline(true);
   start = performance.now();
   await page.reload();
-  await expect(page.getByRole('region', { name: 'Soldes' }).getByRole('listitem').first()).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Soldes' }).getByRole('link').first()).toBeVisible();
   report('ouverture hors ligne jusqu’aux soldes', performance.now() - start, 'ms', budgets.offlineOpenMs);
 
   await page.getByRole('link', { name: 'Dépenses', exact: true }).click();
