@@ -216,7 +216,7 @@
   white-space: nowrap;
 }
 
-/* “Enregistrer”, a small outlined button at the end of a transfer. */
+/* “C'est payé”, a small outlined button at the end of a transfer. */
 .settle {
   display: inline-flex;
   flex: none;
@@ -225,10 +225,43 @@
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
+  background: var(--color-surface);
   color: var(--color-accent);
+  font: inherit;
   font-size: 0.875rem;
   font-weight: 600;
-  text-decoration: none;
+  cursor: pointer;
+}
+
+.settle:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* A transfer paid on this screen: struck, on a pale green, until the screen is left. */
+.paid {
+  background: var(--color-paid);
+}
+
+.paid s {
+  color: var(--color-muted);
+}
+
+.paidMark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 2.25rem;
+  padding: 0 var(--space-2);
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.check {
+  width: 1rem;
+  height: 1rem;
 }
 
 .sheetHead {

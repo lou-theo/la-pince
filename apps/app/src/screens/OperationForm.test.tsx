@@ -55,9 +55,7 @@ async function openAsBruno(path = '', options: { down?: (url: string, init?: Req
   await rememberMember(token, 'm2');
   const location = renderApp(`/g/${token}${path}`, fetchFn);
   // On a form or a screen under a tab, the band holds that screen's bar instead of who I am.
-  await screen.findByText(
-    /^(Tu es Bruno|Nouvelle dépense|Nouveau remboursement|Modifier la dépense|Modifier le remboursement|Remboursements suggérés)$/,
-  );
+  await screen.findByText(/^(Tu es Bruno|Nouvelle dépense|Modifier la dépense|Remboursement|Remboursements suggérés)$/);
   return { user: userEvent.setup(), location, posted, changes };
 }
 
@@ -430,41 +428,5 @@ describe('modifying or deleting what is gone', () => {
       expect(posted).toMatchObject([{ id: 'op-shopping', deleted: true }]);
     });
     expect(screen.getByText("Aucune dépense pour l'instant.")).toBeDefined();
-  });
-});
-
-describe('a reimbursement', () => {
-  it('opens prefilled from a suggested transfer, and settles the balances once saved', async () => {
-    const { user, posted } = await openAsBruno('/soldes/virements');
-    await user.click(screen.getByRole('link', { name: /Enregistrer ce remboursement : Bruno \(toi\) doit 20,00/ }));
-    expect(screen.getByRole('heading', { name: 'Nouveau remboursement' })).toBeDefined();
-    expect(value('Quoi')).toBe('Remboursement');
-    expect(value('Montant')).toBe('20,00');
-    expect(value('De')).toBe('m2');
-    expect(value('À')).toBe('m1');
-    expect(screen.queryByRole('group')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(await screen.findByText('Bruno (toi) a remboursé Alice')).toBeDefined();
-    await waitFor(() => {
-      expect(posted).toHaveLength(1);
-    });
-    expect(posted).toMatchObject([
-      { title: 'Remboursement', entry: { kind: 'reimbursement', payer: 'm2', lines: [{ member: 'm1', amount: 2_000 }] } },
-    ]);
-    await user.click(screen.getByRole('link', { name: 'Soldes' }));
-    expect(screen.getByRole('link', { name: 'Bruno (toi), à jour' })).toBeDefined();
-  });
-
-  it('needs someone to receive it', async () => {
-    const { user, posted } = await openAsBruno('/nouveau-remboursement?de=stranger&montant=1.5');
-    expect(value('De')).toBe('m2');
-    expect(value('Montant')).toBe('');
-    await user.type(field('Montant'), '5');
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(screen.getByText('Choisis qui reçoit le remboursement.')).toBeDefined();
-    await user.selectOptions(field('À'), 'Toi');
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(screen.getByText('On ne se rembourse pas soi-même : choisis un autre membre.')).toBeDefined();
-    expect(posted).toStrictEqual([]);
   });
 });
