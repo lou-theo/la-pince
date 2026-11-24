@@ -30,8 +30,9 @@ export interface FormState {
   readonly amount: string;
   readonly payer: MemberId;
   readonly mode: SplitMode;
-  /** Members of an equal split; for a reimbursement, the single member who receives it. */
+  /** Members of the split, whatever its mode; for a reimbursement, the single member who receives it. */
   readonly checked: readonly MemberId[];
+  /** Amount typed for each member of a split by amounts; only those of the members checked count. */
   readonly amounts: Readonly<Record<MemberId, string>>;
 }
 
@@ -51,29 +52,41 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.type]: action.value };
     case 'payer':
       return { ...state, payer: action.member };
-    case 'toggle':
+    case 'toggle': {
+      if (!state.checked.includes(action.member)) {
+        return { ...state, checked: [...state.checked, action.member] };
+      }
+      // A member taken out of a split by amounts comes back with an empty line.
       return {
         ...state,
-        checked: state.checked.includes(action.member)
-          ? state.checked.filter((member) => member !== action.member)
-          : [...state.checked, action.member],
+        checked: state.checked.filter((member) => member !== action.member),
+        amounts: Object.fromEntries(Object.entries(state.amounts).filter(([member]) => member !== action.member)),
       };
+    }
     case 'receiver':
       return { ...state, checked: [action.member] };
     case 'mode':
-      return { ...state, mode: action.mode };
+      return action.mode === state.mode
+        ? state
+        : { ...state, mode: action.mode, amounts: action.mode === 'amounts' ? equalAmounts(state) : state.amounts };
     case 'checkAll':
       return { ...state, checked: [...action.members] };
     case 'uncheckAll':
-      return { ...state, checked: [] };
+      return { ...state, checked: [], amounts: {} };
     case 'memberAmount':
       return { ...state, amounts: { ...state.amounts, [action.member]: action.value } };
   }
 }
 
-/** A new expense: paid by who I am, split equally between all members. */
-export function newExpense({ id, me, members, today }: { id: OperationId; me: MemberId; members: readonly MemberId[]; today: string }): FormState {
-  return { id, kind: 'expense', title: '', date: today, amount: '', payer: me, mode: 'equal', checked: [...members], amounts: {} };
+/** Amounts of a split turning from equal to amounts: each member checked gets their equal share, when the total can be shared. */
+function equalAmounts(state: FormState): Readonly<Record<MemberId, string>> {
+  const preview = previewEffect(state);
+  return preview === undefined ? state.amounts : Object.fromEntries(preview.shares.map((share) => [share.member, centsToInput(share.amount)]));
+}
+
+/** A new expense: paid by who I am, for me alone at first, an expense concerning 3 members in the median and never the whole group. */
+export function newExpense({ id, me, today }: { id: OperationId; me: MemberId; today: string }): FormState {
+  return { id, kind: 'expense', title: '', date: today, amount: '', payer: me, mode: 'equal', checked: [me], amounts: {} };
 }
 
 /** A new reimbursement, prefilled from a suggested transfer when there is one. */
@@ -129,21 +142,24 @@ export function editForm(operation: OperationView): FormState {
   return {
     ...base,
     mode: 'amounts',
-    checked: [],
+    checked: effect.shares.map((share) => share.member),
     amounts: Object.fromEntries(effect.shares.map((share) => [share.member, centsToInput(share.amount)])),
   };
 }
 
 export type AmountError = 'required' | 'invalid' | 'zero' | 'mismatch';
-export type SplitError = 'none_checked' | 'no_amount' | 'same_member' | 'too_large' | 'several_receivers';
+export type SplitError = 'none_checked' | 'same_member' | 'too_large' | 'several_receivers';
 
-/** What is wrong with the form, field by field; `amounts` lists the members whose typed amount cannot be read. */
+/** What keeps the line of one member of a split by amounts from being read: empty or zero, or unreadable. */
+export type MemberAmountError = 'missing' | 'invalid';
+
+/** What is wrong with the form, field by field; `amounts` gives the members whose line cannot be read, and why. */
 export interface FormErrors {
   readonly title?: 'required' | 'too_long';
   readonly date?: 'invalid';
   readonly amount?: AmountError;
   readonly split?: SplitError;
-  readonly amounts?: readonly MemberId[];
+  readonly amounts?: Readonly<Partial<Record<MemberId, MemberAmountError>>>;
 }
 
 type Read<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly errors: FormErrors };
@@ -154,14 +170,42 @@ export function typedCents(typed: string): number | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
-/** Sum of the amounts typed for each member that can be read, shown under an amounts split. */
+/** Sum of the amounts typed for the members checked that can be read. */
 export function typedSum(state: FormState): number {
-  return Object.values(state.amounts).reduce((sum, typed) => sum + (typedCents(typed) ?? 0), 0);
+  return state.checked.reduce((sum, member) => sum + (typedCents(state.amounts[member] ?? '') ?? 0), 0);
+}
+
+/**
+ * What the split says next to “For whom”: with equal shares, each one, `low` and `high` differing by the leftover cent; with amounts, what is
+ * left to share or what goes over a typed total, or that the amounts make the total. None while the shares or the total cannot be read.
+ */
+export type SplitStatus =
+  | { readonly kind: 'each'; readonly low: number; readonly high: number }
+  | { readonly kind: 'left' | 'over'; readonly amount: number }
+  | { readonly kind: 'matches' };
+
+export function splitStatus(state: FormState): SplitStatus | undefined {
+  if (state.mode === 'equal') {
+    const amounts = previewEffect(state)?.shares.map((share) => share.amount);
+    return amounts === undefined ? undefined : { kind: 'each', low: Math.min(...amounts), high: Math.max(...amounts) };
+  }
+  if (state.amount.trim() === '') {
+    return { kind: 'matches' };
+  }
+  const total = typedCents(state.amount);
+  if (total === undefined) {
+    return undefined;
+  }
+  const sum = typedSum(state);
+  if (total === sum) {
+    return { kind: 'matches' };
+  }
+  return total > sum ? { kind: 'left', amount: total - sum } : { kind: 'over', amount: sum - total };
 }
 
 /** The entry the form describes, or what keeps it from being one. */
 export function readEntry(state: FormState): Read<Entry> {
-  const errors: { amount?: AmountError; split?: SplitError; amounts?: MemberId[] } = {};
+  const errors: { amount?: AmountError; split?: SplitError; amounts?: Partial<Record<MemberId, MemberAmountError>> } = {};
   const typedTotal = state.amount.trim();
   const total = typedCents(typedTotal);
   if (state.mode === 'equal' || state.kind === 'reimbursement') {
@@ -193,28 +237,30 @@ export function readEntry(state: FormState): Read<Entry> {
     }
     lines = state.checked.map((member) => ({ member, weight: 1 }));
   } else {
+    // Each member checked has a line to fill: an empty one is an error, not a member silently left out.
     const fixed: { member: MemberId; amount: number }[] = [];
-    const unreadable: MemberId[] = [];
-    for (const [member, typed] of Object.entries(state.amounts) as [MemberId, string][]) {
+    const unreadable: Partial<Record<MemberId, MemberAmountError>> = {};
+    for (const member of state.checked) {
+      const typed = state.amounts[member] ?? '';
       const amount = typedCents(typed);
       if (typed.trim() === '' || amount === 0) {
-        continue;
-      }
-      if (amount === undefined) {
-        unreadable.push(member);
+        unreadable[member] = 'missing';
+      } else if (amount === undefined) {
+        unreadable[member] = 'invalid';
       } else {
         fixed.push({ member, amount });
       }
     }
-    if (unreadable.length > 0) {
+    const allRead = Object.keys(unreadable).length === 0;
+    if (!allRead) {
       errors.amounts = unreadable;
     } else if (fixed.length === 0) {
-      errors.split = 'no_amount';
+      errors.split = 'none_checked';
     }
     if (typedTotal !== '') {
       if (total === undefined) {
         errors.amount = 'invalid';
-      } else if (unreadable.length === 0 && total !== fixed.reduce((sum, line) => sum + line.amount, 0)) {
+      } else if (allRead && total !== fixed.reduce((sum, line) => sum + line.amount, 0)) {
         errors.amount = 'mismatch';
       }
     }

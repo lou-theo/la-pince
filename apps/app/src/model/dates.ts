@@ -15,6 +15,19 @@ export function dayHeading(day: string, today: string): string {
   return text.charAt(0).toLocaleUpperCase('fr-FR') + text.slice(1);
 }
 
+const relativeDays = new Intl.RelativeTimeFormat('fr-FR', { numeric: 'auto' });
+const shortDaysOfYear = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const shortDaysWithYear = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+/** A day (`YYYY-MM-DD`) in a few letters, for a narrow box of a form: `aujourd’hui`, `hier`, `17 nov.`, with the year when not that of `today`. */
+export function shortDay(day: string, today: string): string {
+  const days = (midnight(day).getTime() - midnight(today).getTime()) / 86_400_000;
+  if (days === 0 || days === -1) {
+    return relativeDays.format(days, 'day');
+  }
+  return (day.slice(0, 4) === today.slice(0, 4) ? shortDaysOfYear : shortDaysWithYear).format(midnight(day));
+}
+
 /** The day of `now` on this phone's calendar, `YYYY-MM-DD`: the day a person sees when entering an expense, not the UTC one. */
 export function localDay(now: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
