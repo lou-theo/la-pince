@@ -28,7 +28,10 @@ export function Transfers({ view }: { readonly view: GroupView }): ReactNode {
         <ul className={styles.debtors}>
           {debtors.map(({ debtor, total, transfers }) => (
             <li key={debtor} className={styles.card}>
-              <h2 className={styles.cardHead}>
+              <h2
+                className={styles.cardHead}
+                aria-label={m.balances_line({ name: view.nameOf(debtor), standing: m.balances_owes(), amount: formatCents(total) })}
+              >
                 <Avatar member={memberOf(view, debtor)} view={view} />
                 <span className={styles.name} title={view.nameOf(debtor)}>
                   {shortName(view, debtor)}

@@ -306,7 +306,7 @@ describe('a group as one of its members', () => {
     ]);
     expect(screen.getByText('Les rentiers')).toBeDefined();
     expect(screen.getByText('Au bagne')).toBeDefined();
-    expect(screen.getByRole('link', { name: /^Pour tout solder/ }).textContent).toBe('Pour tout solder2 virements suggérés');
+    expect(screen.getByRole('link', { name: 'Pour tout solder · 2 virements suggérés' }).getAttribute('href')).toBe(`/g/${token}/soldes/virements`);
     cleanup();
     // The same screen with a trailing slash keeps its tab.
     await openAsBruno(`/g/${token}/soldes/`);
@@ -319,9 +319,9 @@ describe('a group as one of its members', () => {
     expect(location.history.at(-1)).toBe(`/g/${token}/soldes/virements`);
     expect(screen.getByRole('heading', { level: 1, name: 'Remboursements suggérés' })).toBeDefined();
     expect(screen.getByRole('link', { name: 'Soldes' }).getAttribute('aria-current')).toBe('page');
-    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual([
-      'BToidoit13,00\u00a0€',
-      'CChloédoit10,00\u00a0€',
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.getAttribute('aria-label'))).toStrictEqual([
+      'Bruno (toi), doit, 13,00\u00a0€',
+      'Chloé, doit, 10,00\u00a0€',
     ]);
     expect(screen.getAllByRole('link', { name: /^Enregistrer ce remboursement/ }).map((link) => link.getAttribute('aria-label'))).toStrictEqual([
       'Enregistrer ce remboursement : Bruno (toi) doit 13,00\u00a0€ à Alice',

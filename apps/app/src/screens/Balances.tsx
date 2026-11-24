@@ -20,6 +20,7 @@ export function Balances({ view }: { readonly view: GroupView }): ReactNode {
   const title = useId();
   const scale = decorScale(view.balances);
   const count = view.transfers.length;
+  const countText = count === 1 ? m.balances_transfers_one() : m.balances_transfers({ count: String(count) });
   return (
     <>
       <section className={styles.card} aria-labelledby={title}>
@@ -48,9 +49,10 @@ export function Balances({ view }: { readonly view: GroupView }): ReactNode {
       {count === 0 ? (
         <p className={styles.settleAll}>{m.balances_all_settled()}</p>
       ) : (
-        <Link className={styles.settleAll} href="/soldes/virements">
+        // Named in full: a screen reader would join the two spans into one word.
+        <Link className={styles.settleAll} href="/soldes/virements" aria-label={`${m.balances_settle_all()} · ${countText}`}>
           <span className={styles.settleAllTitle}>{m.balances_settle_all()}</span>
-          <span className={styles.settleAllCount}>{count === 1 ? m.balances_transfers_one() : m.balances_transfers({ count: String(count) })}</span>
+          <span className={styles.settleAllCount}>{countText}</span>
           <Chevron />
         </Link>
       )}
@@ -89,12 +91,12 @@ function RankingLine({ view, line, scale }: { readonly view: GroupView; readonly
 }
 
 /** Link to a member's sheet; an identifier needs no escaping (`memberIdSchema`). */
-export function memberHref(member: MemberId): string {
+function memberHref(member: MemberId): string {
   return `/soldes/membres/${member}`;
 }
 
 /** The arrow that says a line leads further. */
-export function Chevron(): ReactNode {
+function Chevron(): ReactNode {
   return (
     <svg
       className={styles.chevron}
