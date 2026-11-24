@@ -45,7 +45,9 @@ describe('frame of a group', () => {
     const server = fakeServer({ token, group });
     for (const path of ['/nouvelle-depense', '/nouveau-remboursement/', '/operations/op-1/modifier']) {
       renderApp(`/g/${token}${path}`, server.fetch);
-      await screen.findByText('Tu es Bruno');
+      // The band of a form holds its own bar, the way out first.
+      await screen.findByRole(path.endsWith('modifier') ? 'link' : 'button', { name: 'Fermer' });
+      expect(screen.queryByText('Tu es Bruno')).toBeNull();
       expect(screen.queryByRole('navigation')).toBeNull();
       cleanup();
     }
