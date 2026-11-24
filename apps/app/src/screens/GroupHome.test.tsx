@@ -3,7 +3,7 @@ import { cleanup, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { fakeServer, json } from '../testing/fake-server.ts';
+import { change, fakeServer, json } from '../testing/fake-server.ts';
 import { rememberMember } from '../testing/groupDb.ts';
 import { renderApp } from '../testing/render.tsx';
 
@@ -42,11 +42,11 @@ describe('frame of a group', () => {
 
   it('hides the menu on the forms, which take the whole screen, and keeps it elsewhere', async () => {
     await rememberMember(token, 'm2');
-    const server = fakeServer({ token, group });
+    const server = fakeServer({ token, group, changes: [change({ id: 'op-1', date: '2026-11-05', payer: 'm1', lines: [['m2', 500]] })] });
     for (const path of ['/nouvelle-depense', '/nouveau-remboursement/', '/operations/op-1/modifier']) {
       renderApp(`/g/${token}${path}`, server.fetch);
       // The band of a form holds its own bar, the way out first.
-      await screen.findByRole(path.endsWith('modifier') ? 'link' : 'button', { name: 'Fermer' });
+      await screen.findByRole('button', { name: 'Fermer' });
       expect(screen.queryByText('Tu es Bruno')).toBeNull();
       expect(screen.queryByRole('navigation')).toBeNull();
       cleanup();
