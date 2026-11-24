@@ -147,16 +147,30 @@ describe('noticesByMember', () => {
     const addedAgain = [revision({ author: 'max' }), revision({ deleted: true, author: 'max' }), revision({ title: 'Pizzas', author: 'max' })];
     expect(notified(noticesByMember(new Map(), addedAgain))).toStrictEqual({ lea: ['added op1 Pizzas'] });
 
-    // Whoever it concerned along the way, and whoever wrote each revision.
+    // Whoever it concerned along the way, and whoever entered each revision.
     const movedThenDeleted = [
       revision({ lines: [{ member: 'lea', weight: 1 }], author: 'max' }),
-      revision({ lines: [{ member: 'tom', weight: 1 }], author: 'lea' }),
-      revision({ deleted: true, author: 'tom' }),
+      revision({ lines: [{ member: 'tom', weight: 1 }], author: 'max' }),
+      revision({ deleted: true, author: 'max' }),
     ];
     expect(notified(noticesByMember(new Map(), movedThenDeleted))).toStrictEqual({});
+    const deletedByAnother = [revision({ author: 'max' }), revision({ deleted: true, author: 'lea' })];
+    expect(notified(noticesByMember(new Map(), deletedByAnother))).toStrictEqual({});
     // Restored then deleted again: it was deleted before the batch, still nobody saw it.
     const restored = [revision({ author: 'max' }), revision({ deleted: true, author: 'max' })];
     expect(notified(noticesByMember(previousOf(revision({ deleted: true })), restored))).toStrictEqual({});
+  });
+
+  it('tells each member what changed for them between the version before the batch and the last one, not what came between', () => {
+    const forLea = revision({ lines: [{ member: 'lea', weight: 1 }], author: 'max' });
+    const forTom = revision({ lines: [{ member: 'tom', weight: 1 }], author: 'max' });
+    const deletion = revision({ deleted: true, author: 'max' });
+    // Lived for Léa, moved to Tom then deleted: Léa sees it go, Tom never saw it.
+    expect(notified(noticesByMember(previousOf(forLea), [forTom, deletion]))).toStrictEqual({ lea: ['deleted op1 Pizza'] });
+    expect(notified(noticesByMember(previousOf(forLea), [deletion, forTom, deletion]))).toStrictEqual({ lea: ['deleted op1 Pizza'] });
+    // New, for Léa then for Tom: only Tom has something new.
+    expect(notified(noticesByMember(new Map(), [forLea, forTom]))).toStrictEqual({ tom: ['added op1 Pizza'] });
+    expect(notified(noticesByMember(new Map(), [forLea, deletion, forTom]))).toStrictEqual({ tom: ['added op1 Pizza'] });
   });
 
   it('tells an addition then its deletion when they come in two batches', () => {

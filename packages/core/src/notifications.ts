@@ -23,61 +23,49 @@ function affectedMembers(operation: Operation | undefined): MemberId[] {
   return effect === undefined ? [] : [effect.payer, ...effect.shares.map((share) => share.member)];
 }
 
-function kindOf(operation: Operation, before: Operation | undefined): NoticeKind {
-  if ('deleted' in operation) {
-    return 'deleted';
-  }
-  return before === undefined || 'deleted' in before ? 'added' : 'changed';
-}
+const lives = (version: Operation | undefined) => version !== undefined && !('deleted' in version);
 
-// Two revisions of one operation in the same batch make one notice: an operation added then changed is still new to the member, a deletion wins.
-function merge(earlier: Notice, later: Notice): Notice {
-  return earlier.kind === 'added' && later.kind === 'changed' ? { ...later, kind: 'added' } : later;
-}
-
-// Operations the batch leaves deleted that did not live before it (a reimbursement recorded then undone before it left the phone): nobody saw them,
-// whoever they concerned along the way and whoever wrote each revision.
-function cancelledIn(previous: ReadonlyMap<OperationId, Operation>, written: readonly Operation[]): Set<OperationId> {
-  const last = new Map(written.map((operation) => [operation.id, operation]));
-  const cancelled = new Set<OperationId>();
-  for (const [id, operation] of last) {
-    const before = previous.get(id);
-    if ('deleted' in operation && (before === undefined || 'deleted' in before)) {
-      cancelled.add(id);
-    }
+// What one member is told about an operation the batch wrote: the revisions entered by others than them, from the version just before the first of
+// them to the last of them, when one of these two versions affects them.
+function noticeFor(member: MemberId, versions: readonly [Operation | undefined, ...Operation[]]): Notice | undefined {
+  const byOthers = (version: Operation | undefined, index: number) => index > 0 && version?.author !== undefined && version.author !== member;
+  const first = versions.findIndex(byOthers);
+  const before = versions[first - 1];
+  const after = versions[versions.findLastIndex(byOthers)];
+  if (first === -1 || after?.author === undefined) {
+    return undefined;
   }
-  return cancelled;
+  if (!affectedMembers(before).includes(member) && !affectedMembers(after).includes(member)) {
+    return undefined;
+  }
+  // A deletion affects no one: told about only by a member the version before it affected, who saw it live.
+  const kind = 'deleted' in after ? 'deleted' : lives(before) ? 'changed' : 'added';
+  return { kind, operationId: after.id, title: after.title, author: after.author };
 }
 
 /**
- * Notices of each member about the revisions written by one batch, in the order written: a member is told about a revision when the operation
- * affects them before or after it (payer or non-zero share), unless they entered it. `previous` holds the version of each operation before the batch. A revision without
- * an author, which only an import writes, tells no one, so that importing a group again does not notify every member of its whole history; nor
- * does an operation the batch adds then deletes.
+ * Notices of each member about the revisions written by one batch, one per operation, in the order first written: a member is told about an
+ * operation when it affects them (payer or non-zero share) before or after the revisions others entered in the batch, which `noticeFor` details.
+ * `previous` holds the version of each operation before the batch. A revision without an author, which only an import writes, tells no one, so
+ * that importing a group again does not notify every member of its whole history.
  */
 export function noticesByMember(previous: ReadonlyMap<OperationId, Operation>, written: readonly Operation[]): Map<MemberId, Notice[]> {
-  const current = new Map(previous);
-  const cancelled = cancelledIn(previous, written);
-  const byMember = new Map<MemberId, Map<OperationId, Notice>>();
-  for (const operation of written) {
-    const before = current.get(operation.id);
-    current.set(operation.id, operation);
-    const author = operation.author;
-    if (author === undefined || cancelled.has(operation.id)) {
+  const revisions = Map.groupBy(written, (operation) => operation.id);
+  const byMember = new Map<MemberId, Notice[]>();
+  for (const [id, ofOperation] of revisions) {
+    const versions = [previous.get(id), ...ofOperation] as const;
+    // Added then deleted by the batch: whoever entered which revision, they came from one phone and nobody else saw any of them.
+    if (!lives(versions[0]) && !lives(ofOperation.at(-1))) {
       continue;
     }
-    const notice: Notice = { kind: kindOf(operation, before), operationId: operation.id, title: operation.title, author };
-    for (const member of new Set([...affectedMembers(before), ...affectedMembers(operation)])) {
-      if (member === author) {
-        continue;
+    for (const member of new Set(versions.flatMap(affectedMembers))) {
+      const notice = noticeFor(member, versions);
+      if (notice !== undefined) {
+        byMember.set(member, [...(byMember.get(member) ?? []), notice]);
       }
-      const notices = byMember.get(member) ?? new Map<OperationId, Notice>();
-      const earlier = notices.get(operation.id);
-      notices.set(operation.id, earlier === undefined ? notice : merge(earlier, notice));
-      byMember.set(member, notices);
     }
   }
-  return new Map([...byMember].map(([member, notices]) => [member, [...notices.values()]]));
+  return byMember;
 }
 
 /** Most notices one push message carries, the server dropping more to fit its push size; `count` tells how many there were. */
