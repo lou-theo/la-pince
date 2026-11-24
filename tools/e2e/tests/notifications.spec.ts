@@ -61,8 +61,18 @@ test('a phone subscribes as who it is, and a push about an expense shows a notif
     .poll(() =>
       page.evaluate(async () => {
         const registration = await navigator.serviceWorker.getRegistration();
-        return (await registration?.getNotifications())?.map((shown) => ({ title: shown.title, body: shown.body, data: shown.data as unknown }));
+        return (await registration?.getNotifications())?.map((shown) => ({
+          title: shown.title,
+          body: shown.body,
+          // Exposed by Chromium, but absent from TypeScript's DOM types.
+          badge: (shown as Notification & { readonly badge: string }).badge,
+          data: shown.data as unknown,
+        }));
       }),
     )
-    .toStrictEqual([{ title, body: 'Basile a ajouté « Pizza »', data: { path: `/g/${token}/operations/e2e-pizza` } }]);
+    .toStrictEqual([
+      { title, body: 'Basile a ajouté « Pizza »', badge: `${appUrl()}/badge-96.png`, data: { path: `/g/${token}/operations/e2e-pizza` } },
+    ]);
+  const badge = await page.request.get(`${appUrl()}/badge-96.png`);
+  expect(badge.headers()['content-type']).toBe('image/png');
 });
