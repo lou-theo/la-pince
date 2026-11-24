@@ -28,4 +28,8 @@
       "migrations_dir": "drizzle",
     },
   ],
+  // Workers Logs: keeps a line per API request and per queue message, the `console` output and the unhandled errors, readable afterwards in the
+  // dashboard instead of only live through `wrangler tail`; app pages, served by the assets, do not invoke the Worker. Request lines carry the
+  // token of the group link, as every group route does.
+  "observability": { "enabled": true },
 }
