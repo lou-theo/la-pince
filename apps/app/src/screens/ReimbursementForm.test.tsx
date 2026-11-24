@@ -99,6 +99,15 @@ describe('the reimbursement page', () => {
     expect(batches).toStrictEqual([]);
   });
 
+  it('needs someone to receive it', async () => {
+    const { user, batches } = await openAsBruno(token, '/nouveau-remboursement?de=m2');
+    await user.type(screen.getByLabelText('Montant'), '5');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(screen.getByText('Choisis qui reçoit le remboursement.')).toBeDefined();
+    expect(side(/^À :/).getAttribute('aria-invalid')).toBe('true');
+    expect(batches).toStrictEqual([]);
+  });
+
   it('needs an amount, and ignores a member unknown to the group', async () => {
     const { user } = await openAsBruno(token, '/nouveau-remboursement?de=stranger&a=m1');
     expect(side(/^De :/).getAttribute('aria-label')).toBe('De : à choisir');
