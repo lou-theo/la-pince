@@ -362,6 +362,27 @@ describe('a group as one of its members', () => {
     expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement?de=m3`);
   });
 
+  it('prefills nobody when the group owes me, nor a member who left the group, whom the form would replace by me', async () => {
+    const user = userEvent.setup();
+    await rememberMember(token, 'm2');
+    // Bruno paid 5,00 € for Alice; a member who left paid 3,00 € for Chloé.
+    const owedToMe = [
+      change({ id: 'op-mine', date: '2026-11-02', payer: 'm2', lines: [['m1', 500]] }),
+      change({ id: 'op-left', date: '2026-11-03', payer: 'gone', lines: [['m3', 300]] }),
+    ];
+    renderApp(`/g/${token}/soldes`, fakeServer({ token, group, changes: owedToMe }).fetch);
+    await user.click(await screen.findByRole('link', { name: /^Bruno \(toi\), en positif/ }));
+    expect(screen.getByText(/^Tu es en positif de/).textContent).toBe('Tu es en positif de 5,00 €');
+    expect(screen.getByRole('region', { name: 'Te doivent' }).textContent).toContain('Alice');
+    expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(`/g/${token}/nouveau-remboursement`);
+    await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
+    await user.click(screen.getByRole('link', { name: 'gone, en positif, 3,00\u00a0€' }));
+    // Nobody to prefill: the form would put me in their place.
+    expect(screen.queryByRole('link', { name: 'Déclarer un remboursement' })).toBeNull();
+    // Chloé's transfer to them is shown, without a button that would record it as mine.
+    expect(screen.getByRole('region', { name: 'Lui doivent' }).textContent).toBe('Lui doiventCChloé3,00\u00a0€');
+  });
+
   it('says so for a member who is not in the group', async () => {
     await rememberMember(token, 'm2');
     for (const id of ['nobody', 'not%20an%20id']) {

@@ -10,7 +10,7 @@ import styles from './Balances.module.css';
 import { settleHref } from './Forms.tsx';
 import layout from './Layout.module.css';
 import { BackBar } from './Layout.tsx';
-import { type GroupView, memberOf, shortName, syncLine } from './view.ts';
+import { type GroupView, isMember, memberOf, shortName, syncLine } from './view.ts';
 
 /** The transfers that would settle the group, grouped by who pays them, the largest debt first; my lines in bold. */
 export function Transfers({ view }: { readonly view: GroupView }): ReactNode {
@@ -76,10 +76,16 @@ export function TransferLine({
         {text}
       </span>
       <span className={styles.transferAmount}>{formatCents(transfer.amount)}</span>
-      {/* Opens the reimbursement prefilled with this transfer. */}
-      <Link className={styles.settle} href={settleHref(transfer.from, transfer.to, transfer.amount)} aria-label={`${m.transfer_settle()} : ${line}`}>
-        {m.transfer_settle_short()}
-      </Link>
+      {/* Opens the reimbursement prefilled with this transfer; the form would put me in place of a member who left the group. */}
+      {isMember(view, transfer.from) && isMember(view, transfer.to) ? (
+        <Link
+          className={styles.settle}
+          href={settleHref(transfer.from, transfer.to, transfer.amount)}
+          aria-label={`${m.transfer_settle()} : ${line}`}
+        >
+          {m.transfer_settle_short()}
+        </Link>
+      ) : null}
     </li>
   );
 }

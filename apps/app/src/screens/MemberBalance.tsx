@@ -10,7 +10,7 @@ import styles from './Balances.module.css';
 import layout from './Layout.module.css';
 import { BackBar } from './Layout.tsx';
 import { PlusIcon, TransferLine } from './Transfers.tsx';
-import { type GroupView, memberOf, shortName, syncLine } from './view.ts';
+import { type GroupView, isMember, memberOf, shortName, syncLine } from './view.ts';
 
 /** A member's sheet, reached from the ranking: their balance, then the transfers they should make, or those they should receive. */
 export function MemberBalance({ view, id: path }: { readonly view: GroupView; readonly id: string }): ReactNode {
@@ -39,10 +39,13 @@ export function MemberBalance({ view, id: path }: { readonly view: GroupView; re
         <h2 className={styles.sheetName}>{view.nameOf(id)}</h2>
         <StandingLine standing={sheet.standing} balance={sheet.balance} mine={mine} />
       </div>
-      <Link className={styles.declare} href={declareHref(view, id, sheet.standing)}>
-        <PlusIcon />
-        {m.member_declare()}
-      </Link>
+      {/* A member who left the group is not in the form's lists: it would put me in their place. */}
+      {isMember(view, id) ? (
+        <Link className={styles.declare} href={declareHref(view, id, sheet.standing)}>
+          <PlusIcon />
+          {m.member_declare()}
+        </Link>
+      ) : null}
       {sheet.pays.length === 0 && sheet.receives.length === 0 ? <p className={layout.muted}>{m.member_nothing()}</p> : null}
       {sheet.pays.length === 0 ? null : (
         <section className={styles.sheetSection} aria-labelledby={pays}>

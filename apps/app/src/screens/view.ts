@@ -47,6 +47,11 @@ export function memberOf(view: GroupView, id: MemberId): Member {
   return view.members.find((member) => member.id === id) ?? { id, name: id };
 }
 
+/** A member of the group's list, as opposed to one an operation names who left it: the forms only offer the former. */
+export function isMember(view: GroupView, id: MemberId): boolean {
+  return view.members.some((member) => member.id === id);
+}
+
 /** “Toi” for who I am, at the start of a line, or “toi” after “à”; a member's name otherwise. */
 export function shortName(view: GroupView, id: MemberId, place: 'subject' | 'object' = 'subject'): string {
   if (id === view.me) {
