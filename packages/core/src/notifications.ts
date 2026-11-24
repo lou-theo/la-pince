@@ -30,9 +30,13 @@ function kindOf(operation: Operation, before: Operation | undefined): NoticeKind
   return before === undefined || 'deleted' in before ? 'added' : 'changed';
 }
 
-// Two revisions of one operation in the same batch make one notice: an operation added then changed is still new to the member, a deletion wins.
-function merge(earlier: Notice, later: Notice): Notice {
-  return earlier.kind === 'added' && later.kind === 'changed' ? { ...later, kind: 'added' } : later;
+// Two revisions of one operation in the same batch make one notice: an operation added then changed is still new to the member, a deletion wins,
+// and an operation added then deleted (a reimbursement recorded then undone before it left the phone) makes none.
+function merge(earlier: Notice, later: Notice): Notice | undefined {
+  if (earlier.kind === 'added') {
+    return later.kind === 'deleted' ? undefined : { ...later, kind: 'added' };
+  }
+  return later;
 }
 
 /**
@@ -57,11 +61,16 @@ export function noticesByMember(previous: ReadonlyMap<OperationId, Operation>, w
       }
       const notices = byMember.get(member) ?? new Map<OperationId, Notice>();
       const earlier = notices.get(operation.id);
-      notices.set(operation.id, earlier === undefined ? notice : merge(earlier, notice));
+      const merged = earlier === undefined ? notice : merge(earlier, notice);
+      if (merged === undefined) {
+        notices.delete(operation.id);
+      } else {
+        notices.set(operation.id, merged);
+      }
       byMember.set(member, notices);
     }
   }
-  return new Map([...byMember].map(([member, notices]) => [member, [...notices.values()]]));
+  return new Map([...byMember].filter(([, notices]) => notices.size > 0).map(([member, notices]) => [member, [...notices.values()]]));
 }
 
 /** Most notices one push message carries, the server dropping more to fit its push size; `count` tells how many there were. */

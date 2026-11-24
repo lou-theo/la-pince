@@ -133,6 +133,27 @@ describe('noticesByMember', () => {
     expect(notified(noticesByMember(previousOf(before), changedTwice))).toStrictEqual({ lea: ['changed op3 Hôtel 2'] });
   });
 
+  it('tells no one about an operation added then deleted in the same batch, only about the rest of the batch', () => {
+    const undone = [
+      revision({ id: 'op1', author: 'max' }),
+      revision({ id: 'op2', title: 'Train', author: 'max' }),
+      revision({ id: 'op1', deleted: true, author: 'max' }),
+    ];
+    expect(notified(noticesByMember(new Map(), undone))).toStrictEqual({ lea: ['added op2 Train'] });
+    expect(noticesByMember(new Map(), [revision({ author: 'max' }), revision({ deleted: true, author: 'max' })]).size).toBe(0);
+    // Added, changed, then deleted: still nothing; deleted then added again: new to the member.
+    const changedBetween = [revision({ author: 'max' }), revision({ title: 'Pizzas', author: 'max' }), revision({ deleted: true, author: 'max' })];
+    expect(notified(noticesByMember(new Map(), changedBetween))).toStrictEqual({});
+    const addedAgain = [revision({ author: 'max' }), revision({ deleted: true, author: 'max' }), revision({ title: 'Pizzas', author: 'max' })];
+    expect(notified(noticesByMember(new Map(), addedAgain))).toStrictEqual({ lea: ['added op1 Pizzas'] });
+  });
+
+  it('tells an addition then its deletion when they come in two batches', () => {
+    const added = revision({ author: 'max' });
+    expect(notified(noticesByMember(new Map(), [added]))).toStrictEqual({ lea: ['added op1 Pizza'] });
+    expect(notified(noticesByMember(previousOf(added), [revision({ deleted: true, author: 'max' })]))).toStrictEqual({ lea: ['deleted op1 Pizza'] });
+  });
+
   // Decision 46 (h): nothing is sized on the largest group seen (13 members).
   it.each([13, 40])('tells every member of a group of %i but the author, each once', (size) => {
     const members = Array.from({ length: size }, (_, index) => `m${String(index)}`);
