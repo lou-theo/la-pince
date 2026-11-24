@@ -9,8 +9,15 @@ import type { QueueError } from '../sync/groupStore.ts';
 import { useMounted } from './useMounted.ts';
 import type { GroupView } from './view.ts';
 
-/** What the band above the menu says: the last transfer paid, with a way to undo it, or why the phone did not take a payment or its undoing. */
-export type UndoState = { readonly kind: 'saved'; readonly paid: PaidTransfer } | { readonly kind: 'failed'; readonly error: QueueError };
+/** Why the phone did not take a payment: its outbox refused it, or the amount is beyond what an operation holds. */
+export type SettleError = QueueError | 'too_large';
+
+/**
+ * What the band above the menu says: the last transfer paid, with a way to undo it (and why the last try to undo it failed, “Annuler” staying), or
+ * why the phone did not take a payment.
+ */
+export type UndoState =
+  { readonly kind: 'saved'; readonly paid: PaidTransfer; readonly error?: QueueError } | { readonly kind: 'failed'; readonly error: SettleError };
 
 /** “C'est payé” on the screens of the transfers: what was paid here, the band to undo it, and a guard against a second touch while the phone saves. */
 export interface Settle {
@@ -52,6 +59,21 @@ export function useSettle(view: GroupView): Settle {
     }
   };
 
+  // The only transfer an operation cannot hold is one above the largest amount, which balances piled up over years could reach.
+  const settlement = (transfer: SuggestedTransfer) => {
+    try {
+      return settlementOf(transfer, {
+        id: operationIdSchema.parse(crypto.randomUUID()),
+        title: m.operation_reimbursement(),
+        today: localDay(new Date()),
+        revisionId: newRevisionId(),
+        author: view.me,
+      });
+    } catch {
+      return undefined;
+    }
+  };
+
   const live = new Set(view.operations.map((operation) => operation.id));
   if (queuing !== undefined) {
     live.add(queuing);
@@ -64,13 +86,11 @@ export function useSettle(view: GroupView): Settle {
     band,
     pay: (transfer) =>
       void run('pay', async () => {
-        const operation = settlementOf(transfer, {
-          id: operationIdSchema.parse(crypto.randomUUID()),
-          title: m.operation_reimbursement(),
-          today: localDay(new Date()),
-          revisionId: newRevisionId(),
-          author: view.me,
-        });
+        const operation = settlement(transfer);
+        if (operation === undefined) {
+          setBand({ kind: 'failed', error: 'too_large' });
+          return;
+        }
         const line: PaidTransfer = { transfer, operation: { id: operation.id, title: operation.title, date: operation.date } };
         setPaid((lines) => [...lines, line]);
         setQueuing(operation.id);
@@ -85,7 +105,7 @@ export function useSettle(view: GroupView): Settle {
       void run('undo', async () => {
         const result = await view.enqueue(deletionOf(line.operation, { revisionId: newRevisionId(), author: view.me }));
         if (mounted.current) {
-          setBand(result.ok ? undefined : { kind: 'failed', error: result.error });
+          setBand(result.ok ? undefined : { kind: 'saved', paid: line, error: result.error });
         }
       }),
   };

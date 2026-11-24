@@ -19,13 +19,14 @@ export function paidText(view: GroupView, { transfer }: PaidTransfer): string {
  */
 export function UndoBanner({ view, settle }: { readonly view: GroupView; readonly settle: Settle }): ReactNode {
   const { band } = settle;
-  if (band === undefined) {
+  // Its reimbursement gone (deleted elsewhere, or refused by the server), there is nothing left to undo.
+  if (band === undefined || (band.kind === 'saved' && !settle.live.has(band.paid.operation.id))) {
     return null;
   }
   if (band.kind === 'failed') {
     return (
       <div className={styles.band} role="alert">
-        <p className={styles.text}>{queueErrorMessage(band.error)}</p>
+        <p className={styles.text}>{band.error === 'too_large' ? m.form_error_too_large() : queueErrorMessage(band.error)}</p>
       </div>
     );
   }
@@ -34,6 +35,11 @@ export function UndoBanner({ view, settle }: { readonly view: GroupView; readonl
       <p className={styles.text}>
         <strong className={styles.title}>{m.undo_saved()}</strong>
         <span className={styles.detail}>{paidText(view, band.paid)}</span>
+        {band.error === undefined ? undefined : (
+          <span className={styles.detail} role="alert">
+            {queueErrorMessage(band.error)}
+          </span>
+        )}
       </p>
       <button
         className={styles.undo}
