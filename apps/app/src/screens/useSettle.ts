@@ -1,4 +1,4 @@
-import { type OperationId, operationIdSchema, revisionIdSchema, type SuggestedTransfer } from '@la-pince/core';
+import { MAX_CENTS, type OperationId, operationIdSchema, revisionIdSchema, type SuggestedTransfer } from '@la-pince/core';
 import { useRef, useState } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
@@ -59,21 +59,6 @@ export function useSettle(view: GroupView): Settle {
     }
   };
 
-  // The only transfer an operation cannot hold is one above the largest amount, which balances piled up over years could reach.
-  const settlement = (transfer: SuggestedTransfer) => {
-    try {
-      return settlementOf(transfer, {
-        id: operationIdSchema.parse(crypto.randomUUID()),
-        title: m.operation_reimbursement(),
-        today: localDay(new Date()),
-        revisionId: newRevisionId(),
-        author: view.me,
-      });
-    } catch {
-      return undefined;
-    }
-  };
-
   const live = new Set(view.operations.map((operation) => operation.id));
   if (queuing !== undefined) {
     live.add(queuing);
@@ -86,11 +71,18 @@ export function useSettle(view: GroupView): Settle {
     band,
     pay: (transfer) =>
       void run('pay', async () => {
-        const operation = settlement(transfer);
-        if (operation === undefined) {
+        // The only transfer an operation cannot hold is one above the largest amount, which balances piled up over years could reach.
+        if (transfer.amount > MAX_CENTS) {
           setBand({ kind: 'failed', error: 'too_large' });
           return;
         }
+        const operation = settlementOf(transfer, {
+          id: operationIdSchema.parse(crypto.randomUUID()),
+          title: m.operation_reimbursement(),
+          today: localDay(new Date()),
+          revisionId: newRevisionId(),
+          author: view.me,
+        });
         const line: PaidTransfer = { transfer, operation: { id: operation.id, title: operation.title, date: operation.date } };
         setPaid((lines) => [...lines, line]);
         setQueuing(operation.id);
