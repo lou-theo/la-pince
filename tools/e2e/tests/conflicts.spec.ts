@@ -93,7 +93,7 @@ test('a change made offline overwrites, without notice, one made meanwhile in an
       .first()
       .click();
     await on.getByRole('link', { name: 'Modifier' }).click();
-    await on.getByLabel('Titre').fill(title);
+    await on.getByLabel('Quoi', { exact: true }).fill(title);
     await on.getByRole('button', { name: 'Enregistrer' }).click();
     await expect(on.getByRole('heading', { name: title })).toBeVisible();
   };

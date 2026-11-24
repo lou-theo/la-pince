@@ -54,33 +54,44 @@ async function openAsBruno(path = '', options: { down?: (url: string, init?: Req
   };
   await rememberMember(token, 'm2');
   const location = renderApp(`/g/${token}${path}`, fetchFn);
-  await screen.findByText('Tu es Bruno');
+  // On a form, the band holds the form's bar instead of who I am.
+  await screen.findByText(/^(Tu es Bruno|Nouvelle dépense|Nouveau remboursement|Modifier la dépense|Modifier le remboursement)$/);
   return { user: userEvent.setup(), location, posted, changes };
 }
 
 const field = (name: string) => screen.getByLabelText(name);
+const member = (name: string) => screen.getByRole('button', { name });
+const value = (name: string) => (field(name) as HTMLInputElement).value;
 const at = (location: { history: readonly string[] }) => location.history.at(-1)?.replace(`/g/${token}`, '');
 
 describe('adding an expense', () => {
-  it('splits it equally between the members checked, previews each share, and opens it once saved', async () => {
+  it('opens for me alone, splits it equally between the members chosen, says each share, and opens it once saved', async () => {
     const { user, location, posted } = await openAsBruno();
     await user.click(screen.getByRole('link', { name: 'Ajouter une dépense' }));
     expect(screen.getByRole('heading', { name: 'Nouvelle dépense' })).toBeDefined();
-    // Who I am first, as payer and in the split.
+    // Who I am first, as payer and in the grid, short.
     expect(
       within(field('Payé par'))
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toStrictEqual(['Bruno (toi)', 'Alice', 'Chloé']);
+    ).toStrictEqual(['Toi', 'Alice', 'Chloé']);
+    expect(screen.getAllByRole('button', { pressed: true }).map((button) => button.getAttribute('aria-label'))).toStrictEqual(['Bruno (toi)']);
+    expect(screen.getByText('Pour qui · 1 sur 3')).toBeDefined();
+    expect(screen.getByText('aujourd’hui')).toBeDefined();
 
-    await user.type(field('Titre'), 'Péage');
+    await user.type(field('Quoi'), 'Péage');
     await user.type(field('Montant'), '10');
-    fireEvent.change(field('Date'), { target: { value: '2026-11-08' } });
-    await user.click(screen.getByRole('checkbox', { name: /Chloé/ }));
-    const split = within(screen.getByRole('group', { name: 'Répartition' }));
-    expect(split.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual([euros('Bruno (toi)5,00'), euros('Alice5,00'), 'Chloé']);
+    expect(screen.getByText(shown(euros('10,00') + ' chacun'))).toBeDefined();
+    fireEvent.change(field('Quand'), { target: { value: '2026-11-08' } });
+    expect(screen.getByText('8 nov.')).toBeDefined();
+    await user.click(member('Alice'));
+    expect(member('Alice').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText(shown(euros('5,00') + ' chacun'))).toBeDefined();
+    await user.click(member('Chloé'));
+    expect(screen.getByText(shown(`3,33 ou ${euros('3,34')}`))).toBeDefined();
+    await user.click(member('Chloé'));
 
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(await screen.findByRole('heading', { name: 'Péage' })).toBeDefined();
     expect(at(location)).toMatch(/^\/operations\/[0-9a-f-]{36}$/);
     expect(screen.getByText('dimanche 8 novembre 2026')).toBeDefined();
@@ -99,45 +110,66 @@ describe('adding an expense', () => {
           payer: 'm2',
           total: 1_000,
           lines: [
-            { member: 'm1', weight: 1 },
             { member: 'm2', weight: 1 },
+            { member: 'm1', weight: 1 },
           ],
         },
       },
     ]);
   });
 
-  it('tells what is missing before sending anything', async () => {
+  it('greys its button while something is missing, and tells what at the first touch', async () => {
     const { user, location, posted } = await openAsBruno('/nouvelle-depense');
-    await user.click(screen.getByRole('button', { name: 'Tout décocher' }));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(screen.getByRole('button', { name: 'Ajouter' }).getAttribute('aria-disabled')).toBe('true');
+    await user.click(screen.getByRole('button', { name: 'Personne' }));
+    expect(screen.getByText('Pour qui · 0 sur 3')).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(screen.getByText('Donne un titre.')).toBeDefined();
     expect(screen.getByText('Indique le montant.')).toBeDefined();
-    expect(screen.getByText('Coche au moins un membre.')).toBeDefined();
-    expect(field('Titre').getAttribute('aria-invalid')).toBe('true');
-    await user.click(screen.getByRole('button', { name: 'Tout cocher' }));
-    expect(screen.queryByText('Coche au moins un membre.')).toBeNull();
+    expect(screen.getByText('Choisis au moins un membre.')).toBeDefined();
+    expect(field('Quoi').getAttribute('aria-invalid')).toBe('true');
+    await user.click(screen.getByRole('button', { name: 'Tous' }));
+    expect(screen.getByText('Pour qui · 3 sur 3')).toBeDefined();
+    expect(screen.queryByText('Choisis au moins un membre.')).toBeNull();
+    await user.type(field('Quoi'), 'Péage');
+    await user.type(field('Montant'), '9');
+    expect(screen.getByRole('button', { name: 'Ajouter' }).getAttribute('aria-disabled')).toBe('false');
     expect(posted).toStrictEqual([]);
     expect(at(location)).toBe('/nouvelle-depense');
   });
 
-  it('splits it by amounts, checked against a control total', async () => {
+  it('splits it by amounts, one line for each member chosen, checked against a control total', async () => {
     const { user, posted } = await openAsBruno('/nouvelle-depense');
-    await user.type(field('Titre'), 'Restaurant');
-    await user.click(screen.getByRole('button', { name: 'Montants' }));
+    await user.type(field('Quoi'), 'Restaurant');
+    await user.selectOptions(field('Répartition'), 'montants');
     await user.selectOptions(field('Payé par'), 'Alice');
+    // The members not chosen are offered below the lines; nothing to say of the total before any amount.
+    expect(screen.getByText("Ajouter quelqu'un")).toBeDefined();
+    expect(screen.queryByText('Total = somme')).toBeNull();
+    await user.click(member('Alice'));
+    await user.click(member('Chloé'));
+    expect(screen.queryByText("Ajouter quelqu'un")).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Retirer Bruno (toi)' }));
+    expect(screen.queryByLabelText('Montant de Bruno (toi)')).toBeNull();
     await user.type(field('Montant de Alice'), '12,50');
     await user.type(field('Montant de Chloé'), '7');
-    expect(screen.getByText(shown(`Somme des montants : ${euros('19,50')}`))).toBeDefined();
-    await user.type(field('Total, pour contrôle (facultatif)'), '20');
-    expect(screen.getByText(shown(`Somme des montants : ${euros('19,50')} · Reste à répartir : ${euros('0,50')}`))).toBeDefined();
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    // Without a total, the amounts make it.
+    expect(screen.getByText('Total = somme')).toBeDefined();
+    expect(field('Total, calculé').getAttribute('placeholder')).toBe('19,50');
+    await user.type(field('Total, calculé'), '20');
+    expect(screen.getByText(shown(`Reste ${euros('0,50')}`))).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Ajouter' }).getAttribute('aria-disabled')).toBe('true');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(screen.getByText(shown(`La somme des montants (${euros('19,50')}) ne fait pas le total (${euros('20,00')}).`))).toBeDefined();
+    await user.clear(field('Total, contrôle'));
+    await user.type(field('Total, calculé'), '19');
+    expect(screen.getByText(shown(`Dépasse de ${euros('0,50')}`))).toBeDefined();
     expect(posted).toStrictEqual([]);
 
-    await user.clear(field('Total, pour contrôle (facultatif)'));
-    await user.type(field('Total, pour contrôle (facultatif)'), '19,50');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.clear(field('Total, contrôle'));
+    await user.type(field('Total, calculé'), '19,50');
+    expect(screen.getByText('Total = somme')).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(await screen.findByRole('heading', { name: 'Restaurant' })).toBeDefined();
     await waitFor(() => {
       expect(posted).toHaveLength(1);
@@ -158,25 +190,59 @@ describe('adding an expense', () => {
     expect(screen.getByRole('link', { name: /Restaurant/ }).textContent).toContain('Pas concerné');
   });
 
-  it('marks an unreadable member amount', async () => {
+  it('turns equal shares into amounts, each the share it was', async () => {
+    const { user } = await openAsBruno('/nouvelle-depense');
+    await user.click(screen.getByRole('button', { name: 'Tous' }));
+    await user.type(field('Montant'), '10');
+    await user.selectOptions(field('Répartition'), 'montants');
+    const lines = ['Montant de Alice', 'Montant de Bruno (toi)', 'Montant de Chloé'].map(value);
+    expect(lines.toSorted()).toStrictEqual(['3,33', '3,33', '3,34']);
+    expect(value('Total, contrôle')).toBe('10');
+    expect(screen.getByText('Total = somme')).toBeDefined();
+  });
+
+  it('marks a line left empty, and an unreadable one', async () => {
     const { user, posted } = await openAsBruno('/nouvelle-depense');
-    await user.type(field('Titre'), 'Restaurant');
-    await user.click(screen.getByRole('button', { name: 'Montants' }));
+    await user.type(field('Quoi'), 'Restaurant');
+    await user.selectOptions(field('Répartition'), 'montants');
+    await user.click(member('Alice'));
     await user.type(field('Montant de Alice'), '1,234');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(field('Montant de Alice').getAttribute('aria-invalid')).toBe('true');
     expect(screen.getByText('Montant illisible.')).toBeDefined();
+    expect(field('Montant de Bruno (toi)').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByText('Montant manquant.')).toBeDefined();
     expect(posted).toStrictEqual([]);
+  });
+
+  it('asks before closing what was typed, and closes at once otherwise', async () => {
+    const { user, location } = await openAsBruno();
+    await user.click(screen.getByRole('link', { name: 'Ajouter une dépense' }));
+    await user.click(screen.getByRole('button', { name: 'Fermer' }));
+    expect(at(location)).toBe('/');
+
+    await user.click(screen.getByRole('link', { name: 'Ajouter une dépense' }));
+    await user.type(field('Quoi'), 'Péage');
+    await user.click(screen.getByRole('button', { name: 'Fermer' }));
+    expect(screen.getByText('Abandonner cette saisie ? Ce que tu as écrit sera perdu.')).toBeDefined();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Continuer la saisie' }));
+    await user.click(screen.getByRole('button', { name: 'Continuer la saisie' }));
+    expect(value('Quoi')).toBe('Péage');
+    expect(at(location)).toBe('/nouvelle-depense');
+    await user.click(screen.getByRole('button', { name: 'Fermer' }));
+    await user.click(screen.getByRole('button', { name: 'Oui, abandonner' }));
+    expect(at(location)).toBe('/');
+    expect(screen.queryByText('Péage')).toBeNull();
   });
 
   it('saves without network: the expense shows at once, marked pending and counted in the balances, then leaves when the server answers', async () => {
     let offline = false;
     const { user, posted } = await openAsBruno('/nouvelle-depense', { down: () => offline });
     offline = true;
-    await user.type(field('Titre'), 'Péage');
+    await user.type(field('Quoi'), 'Péage');
     await user.type(field('Montant'), '10');
-    await user.click(screen.getByRole('checkbox', { name: /Chloé/ }));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.click(member('Alice'));
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(await screen.findByRole('heading', { name: 'Péage' })).toBeDefined();
     expect(screen.getByText("En attente d'envoi")).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Dépenses' }));
@@ -192,7 +258,7 @@ describe('adding an expense', () => {
     await user.click(screen.getByRole('link', { name: 'Dépenses' }));
     await user.click(screen.getByRole('link', { name: /Péage/ }));
     await user.click(screen.getByRole('link', { name: 'Modifier' }));
-    await user.type(field('Titre'), ' A7');
+    await user.type(field('Quoi'), ' A7');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(await screen.findByRole('heading', { name: 'Péage A7' })).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Soldes' }));
@@ -225,10 +291,10 @@ describe('modifying and deleting', () => {
     const { user, posted } = await openAsBruno('/operations/op-shopping');
     await user.click(screen.getByRole('link', { name: 'Modifier' }));
     expect(screen.getByRole('heading', { name: 'Modifier la dépense' })).toBeDefined();
-    expect((field('Montant de Alice') as HTMLInputElement).value).toBe('10,00');
-    expect((field('Total, pour contrôle (facultatif)') as HTMLInputElement).value).toBe('45,00');
-    await user.clear(field('Titre'));
-    await user.type(field('Titre'), 'Courses du samedi');
+    expect(value('Montant de Alice')).toBe('10,00');
+    expect(value('Total, contrôle')).toBe('45,00');
+    await user.clear(field('Quoi'));
+    await user.type(field('Quoi'), 'Courses du samedi');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(await screen.findByRole('heading', { name: 'Courses du samedi' })).toBeDefined();
     // Every share saved as it was, sent once the store has queued it.
@@ -282,9 +348,9 @@ describe('a send under way', () => {
 
   it('queues once on a double click', async () => {
     const { user, posted } = await openAsBruno('/nouvelle-depense');
-    await user.type(field('Titre'), 'Péage');
+    await user.type(field('Quoi'), 'Péage');
     await user.type(field('Montant'), '10');
-    await user.dblClick(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.dblClick(screen.getByRole('button', { name: 'Ajouter' }));
     expect(await screen.findByRole('heading', { name: 'Péage' })).toBeDefined();
     await waitFor(() => {
       expect(screen.queryByText("En attente d'envoi")).toBeNull();
@@ -294,14 +360,14 @@ describe('a send under way', () => {
 
   it('puts the focus on the first field in error, or on the split when only it is wrong', async () => {
     const { user } = await openAsBruno('/nouvelle-depense');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     await waitFor(() => {
-      expect(document.activeElement).toBe(field('Titre'));
+      expect(document.activeElement).toBe(field('Quoi'));
     });
-    await user.type(field('Titre'), 'Péage');
+    await user.type(field('Quoi'), 'Péage');
     await user.type(field('Montant'), '10');
-    await user.click(screen.getByRole('button', { name: 'Tout décocher' }));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.click(screen.getByRole('button', { name: 'Personne' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     await waitFor(() => {
       expect(document.activeElement?.tagName).toBe('FIELDSET');
     });
@@ -371,11 +437,12 @@ describe('a reimbursement', () => {
     const { user, posted } = await openAsBruno('/soldes');
     await user.click(screen.getByRole('link', { name: /Enregistrer ce remboursement : Bruno \(toi\) doit 20,00/ }));
     expect(screen.getByRole('heading', { name: 'Nouveau remboursement' })).toBeDefined();
-    expect((field('Titre') as HTMLInputElement).value).toBe('Remboursement');
-    expect((field('Montant') as HTMLInputElement).value).toBe('20,00');
-    expect((field('De') as HTMLSelectElement).value).toBe('m2');
-    expect((field('À') as HTMLSelectElement).value).toBe('m1');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(value('Quoi')).toBe('Remboursement');
+    expect(value('Montant')).toBe('20,00');
+    expect(value('De')).toBe('m2');
+    expect(value('À')).toBe('m1');
+    expect(screen.queryByRole('group')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(await screen.findByText('Bruno (toi) a remboursé Alice')).toBeDefined();
     await waitFor(() => {
       expect(posted).toHaveLength(1);
@@ -389,13 +456,13 @@ describe('a reimbursement', () => {
 
   it('needs someone to receive it', async () => {
     const { user, posted } = await openAsBruno('/nouveau-remboursement?de=stranger&montant=1.5');
-    expect((field('De') as HTMLSelectElement).value).toBe('m2');
-    expect((field('Montant') as HTMLInputElement).value).toBe('');
+    expect(value('De')).toBe('m2');
+    expect(value('Montant')).toBe('');
     await user.type(field('Montant'), '5');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(screen.getByText('Choisis qui reçoit le remboursement.')).toBeDefined();
-    await user.selectOptions(field('À'), 'Bruno (toi)');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await user.selectOptions(field('À'), 'Toi');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
     expect(screen.getByText('On ne se rembourse pas soi-même : choisis un autre membre.')).toBeDefined();
     expect(posted).toStrictEqual([]);
   });

@@ -56,19 +56,20 @@ export async function synced(page: Page): Promise<void> {
   await expect(page.getByText(/^Dernière synchro à \d\d:\d\d\.$/)).toBeVisible({ timeout: 20_000 });
 }
 
-/** Enters an expense split equally between some members, from the expenses tab. */
+/** Enters an expense split equally between some members, from the expenses tab, by the add button and the grid of avatars. */
 export async function enterExpense(
   page: Page,
   expense: { readonly title: string; readonly amount: string; readonly between: readonly string[] },
 ): Promise<void> {
   await page.getByRole('link', { name: 'Dépenses', exact: true }).click();
   await page.getByRole('link', { name: 'Ajouter une dépense' }).click();
-  await page.getByLabel('Titre').fill(expense.title);
-  await page.getByLabel('Montant').fill(expense.amount);
-  await page.getByRole('button', { name: 'Tout décocher' }).click();
+  await page.getByLabel('Quoi', { exact: true }).fill(expense.title);
+  await page.getByLabel('Montant', { exact: true }).fill(expense.amount);
+  await page.getByRole('button', { name: 'Personne', exact: true }).click();
   for (const member of expense.between) {
-    await page.getByRole('checkbox', { name: new RegExp(`^${member}`) }).check();
+    // Who I am is named « (toi) » in the grid.
+    await page.getByRole('button', { name: new RegExp(`^${member}( \\(toi\\))?$`) }).click();
   }
-  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByRole('button', { name: 'Ajouter', exact: true }).click();
   await expect(page.getByRole('heading', { name: expense.title })).toBeVisible();
 }

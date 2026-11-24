@@ -70,13 +70,13 @@ test('catching up from 0, opening offline up to the balances, an entry shown', a
 
   await page.getByRole('link', { name: 'Dépenses', exact: true }).click();
   await page.getByRole('link', { name: 'Ajouter une dépense' }).click();
-  await page.getByLabel('Titre').fill('Mesure');
-  await page.getByLabel('Montant').fill('12,00');
+  await page.getByLabel('Quoi', { exact: true }).fill('Mesure');
+  await page.getByLabel('Montant', { exact: true }).fill('12,00');
   // Measured in the page, from the click to the expense on screen, without the round trips of the test driver.
   const shown = await page.evaluate(
     () =>
       new Promise<number>((resolve) => {
-        const button = [...document.querySelectorAll('button')].find((candidate) => candidate.textContent === 'Enregistrer');
+        const button = [...document.querySelectorAll('button')].find((candidate) => candidate.textContent === 'Ajouter');
         const clicked = performance.now();
         const look = () => {
           if ([...document.querySelectorAll('h1, h2')].some((heading) => heading.textContent === 'Mesure')) {

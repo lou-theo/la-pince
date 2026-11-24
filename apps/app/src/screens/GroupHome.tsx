@@ -103,6 +103,7 @@ export function GroupHome({
         </>
       }
       nav={section === 'form' ? undefined : <BottomNav section={section} />}
+      formBar={section === 'form'}
     >
       {readError === 'network' ? (
         // Without network the app keeps working: the outbox leaves on its own once the server answers.

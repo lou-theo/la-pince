@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { dayHeading, formatDay, localDay, momentOf } from './dates.ts';
+import { dayHeading, formatDay, localDay, momentOf, shortDay } from './dates.ts';
 
 describe('formatDay', () => {
   it('writes the calendar day in full as entered, never the day before', () => {
@@ -13,6 +13,16 @@ describe('dayHeading', () => {
   it('capitalizes the day, never the day before, and gives the year only for another year than today', () => {
     expect(dayHeading('2026-11-17', '2026-11-23')).toBe('Mardi 17 novembre');
     expect(dayHeading('2025-12-31', '2026-11-23')).toBe('Mercredi 31 décembre 2025');
+  });
+});
+
+describe('shortDay', () => {
+  it('says today and yesterday in words, another day short, with the year only for another year than today', () => {
+    expect(shortDay('2026-11-24', '2026-11-24')).toBe('aujourd’hui');
+    expect(shortDay('2026-11-23', '2026-11-24')).toBe('hier');
+    expect(shortDay('2026-11-25', '2026-11-24')).toBe('25 nov.');
+    expect(shortDay('2026-03-01', '2026-11-24')).toBe('1 mars');
+    expect(shortDay('2025-12-30', '2026-01-01')).toBe('30 déc. 2025');
   });
 });
 

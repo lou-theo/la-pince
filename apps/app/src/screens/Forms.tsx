@@ -6,16 +6,16 @@ import { m } from '../i18n/paraglide/messages.js';
 import { localDay } from '../model/dates.ts';
 import { editForm, newExpense, newReimbursement } from '../model/operationForm.ts';
 import layout from './Layout.module.css';
-import { OperationForm } from './OperationForm.tsx';
+import { FormBar } from './Layout.tsx';
+import styles from './OperationForm.module.css';
+import { CloseIcon, OperationForm } from './OperationForm.tsx';
 import type { GroupView } from './view.ts';
 
 // A new operation gets its identifier once, when its form opens: the preview's leftover cent depends on it.
 const newId = () => operationIdSchema.parse(crypto.randomUUID());
 
 export function NewExpense({ view }: { readonly view: GroupView }): ReactNode {
-  const [initial] = useState(() =>
-    newExpense({ id: newId(), me: view.me, members: view.members.map((member) => member.id), today: localDay(new Date()) }),
-  );
+  const [initial] = useState(() => newExpense({ id: newId(), me: view.me, today: localDay(new Date()) }));
   return <OperationForm view={view} initial={initial} editing={false} />;
 }
 
@@ -47,6 +47,7 @@ export function EditOperation({ view, id }: { readonly view: GroupView; readonly
   if (operation === undefined) {
     return (
       <>
+        <CloseBar href="/" heading={m.form_edit_expense()} />
         <p className={layout.muted}>{m.operation_not_found()}</p>
         <Link className={layout.link} href="/">
           {m.operation_back()}
@@ -58,12 +59,22 @@ export function EditOperation({ view, id }: { readonly view: GroupView; readonly
   if (operation.kind === 'reimbursement' && operation.effect.shares.length > 1) {
     return (
       <>
+        <CloseBar href={`/operations/${operation.id}`} heading={m.form_edit_reimbursement()} />
         <p className={layout.muted}>{m.form_reimbursement_several()}</p>
-        <Link className={layout.link} href={`/operations/${operation.id}`}>
-          {m.form_cancel()}
-        </Link>
       </>
     );
   }
   return <OperationForm view={view} initial={editForm(operation)} editing />;
+}
+
+/** The band of a form that cannot open: the way back and the title, without a button to save. */
+function CloseBar({ href, heading }: { readonly href: string; readonly heading: string }) {
+  return (
+    <FormBar>
+      <Link className={layout.iconButton} href={href} aria-label={m.form_close()}>
+        <CloseIcon />
+      </Link>
+      <h1 className={`${layout.name ?? ''} ${styles.heading ?? ''}`}>{heading}</h1>
+    </FormBar>
+  );
 }
