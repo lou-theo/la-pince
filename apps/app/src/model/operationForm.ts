@@ -187,7 +187,8 @@ export function typedSum(state: FormState): number {
 
 /**
  * What the split says next to “For whom”: with equal shares, each one, `low` and `high` differing by the leftover cent; with amounts, what is
- * left to share or what goes over a typed total, or that the amounts make the total. None while the shares or the total cannot be read.
+ * left to share or what goes over a typed total, or that the amounts make the total. None while the shares or the total cannot be read, or
+ * before any amount.
  */
 export type SplitStatus =
   | { readonly kind: 'each'; readonly low: number; readonly high: number }
@@ -196,11 +197,19 @@ export type SplitStatus =
 
 export function splitStatus(state: FormState): SplitStatus | undefined {
   if (state.mode === 'equal') {
-    const amounts = previewEffect(state)?.shares.map((share) => share.amount);
-    return amounts === undefined ? undefined : { kind: 'each', low: Math.min(...amounts), high: Math.max(...amounts) };
+    const shares = previewEffect(state)?.shares;
+    if (shares === undefined) {
+      return undefined;
+    }
+    const amounts = shares.map((share) => share.amount);
+    // A total under one cent each leaves some members a share of 0, which the effect leaves out.
+    const low = shares.length < state.checked.length ? 0 : Math.min(...amounts);
+    return { kind: 'each', low, high: Math.max(...amounts) };
   }
+  // The amounts make the total only once every line reads: an empty line would be missing from the sum.
+  const allRead = state.checked.every((member) => (typedCents(state.amounts[member] ?? '') ?? 0) > 0);
   if (state.amount.trim() === '') {
-    return { kind: 'matches' };
+    return allRead && state.checked.length > 0 ? { kind: 'matches' } : undefined;
   }
   const total = typedCents(state.amount);
   if (total === undefined) {
@@ -208,7 +217,7 @@ export function splitStatus(state: FormState): SplitStatus | undefined {
   }
   const sum = typedSum(state);
   if (total === sum) {
-    return { kind: 'matches' };
+    return allRead ? { kind: 'matches' } : undefined;
   }
   return total > sum ? { kind: 'left', amount: total - sum } : { kind: 'over', amount: sum - total };
 }

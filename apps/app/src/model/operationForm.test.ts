@@ -123,6 +123,8 @@ describe('a new expense', () => {
     expect(splitStatus(apply(expense(), everyone, { type: 'amount', value: '9' }))).toStrictEqual({ kind: 'each', low: 300, high: 300 });
     expect(splitStatus(apply(expense(), everyone, { type: 'amount', value: '10' }))).toStrictEqual({ kind: 'each', low: 333, high: 334 });
     expect(splitStatus(apply(expense(), { type: 'amount', value: 'abc' }))).toBeUndefined();
+    // 0,02 € for three: one member's share is 0.
+    expect(splitStatus(apply(expense(), everyone, { type: 'amount', value: '0,02' }))).toStrictEqual({ kind: 'each', low: 0, high: 1 });
   });
 });
 
@@ -161,7 +163,14 @@ describe('an expense split by amounts', () => {
       { type: 'memberAmount', member: alice, value: '12,50' },
       { type: 'memberAmount', member: chloe, value: '7' },
     );
+    expect(splitStatus(byAmounts())).toBeUndefined();
+    expect(splitStatus(apply(state, { type: 'uncheckAll' }))).toBeUndefined();
     expect(splitStatus(state)).toStrictEqual({ kind: 'matches' });
+    // A line left empty is missing from the sum: the amounts do not make the total yet.
+    const withEmpty = apply(state, { type: 'toggle', member: bruno });
+    expect(splitStatus(withEmpty)).toBeUndefined();
+    expect(splitStatus(apply(withEmpty, { type: 'amount', value: '19,50' }))).toBeUndefined();
+    expect(splitStatus(apply(withEmpty, { type: 'amount', value: '20' }))).toStrictEqual({ kind: 'left', amount: 50 });
     expect(readEntry(apply(state, { type: 'amount', value: '19,50' })).ok).toBe(true);
     expect(splitStatus(apply(state, { type: 'amount', value: '19,50' }))).toStrictEqual({ kind: 'matches' });
     expect(readEntry(apply(state, { type: 'amount', value: '19,49' }))).toStrictEqual({ ok: false, errors: { amount: 'mismatch' } });
