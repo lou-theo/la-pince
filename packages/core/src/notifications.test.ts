@@ -146,6 +146,17 @@ describe('noticesByMember', () => {
     expect(notified(noticesByMember(new Map(), changedBetween))).toStrictEqual({});
     const addedAgain = [revision({ author: 'max' }), revision({ deleted: true, author: 'max' }), revision({ title: 'Pizzas', author: 'max' })];
     expect(notified(noticesByMember(new Map(), addedAgain))).toStrictEqual({ lea: ['added op1 Pizzas'] });
+
+    // Whoever it concerned along the way, and whoever wrote each revision.
+    const movedThenDeleted = [
+      revision({ lines: [{ member: 'lea', weight: 1 }], author: 'max' }),
+      revision({ lines: [{ member: 'tom', weight: 1 }], author: 'lea' }),
+      revision({ deleted: true, author: 'tom' }),
+    ];
+    expect(notified(noticesByMember(new Map(), movedThenDeleted))).toStrictEqual({});
+    // Restored then deleted again: it was deleted before the batch, still nobody saw it.
+    const restored = [revision({ author: 'max' }), revision({ deleted: true, author: 'max' })];
+    expect(notified(noticesByMember(previousOf(revision({ deleted: true })), restored))).toStrictEqual({});
   });
 
   it('tells an addition then its deletion when they come in two batches', () => {
