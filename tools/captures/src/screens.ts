@@ -22,10 +22,20 @@ const operationLink = 'main a[href*="/operations/"]';
 const balancesTab = 'nav a[href$="/soldes"]';
 const newExpenseLink = 'main a[href$="/nouvelle-depense"]';
 
+// The button that saves a form: in the band since the full-screen form, in the form before.
+const saveButton = 'button[type="submit"]';
+
 const chooseFirstMember = async (page: Page, demo: Demo): Promise<void> => {
   await page.goto(`${demo.appUrl}/g/${demo.token}`);
   await page.getByRole('list').getByRole('button').first().click();
   await settle(page);
+};
+
+/** Opens the form of a new expense, ready once its fields are there. */
+const openNewExpense = async (page: Page, demo: Demo): Promise<void> => {
+  await chooseFirstMember(page, demo);
+  await page.locator(newExpenseLink).click();
+  await page.locator('form input[inputmode="decimal"]').first().waitFor();
 };
 
 /** Screens of the app, in the order of the board; a PR that adds a screen adds it here. */
@@ -98,18 +108,39 @@ export const screens: readonly Screen[] = [
     name: 'nouvelle-depense',
     label: 'Nouvelle dépense',
     reach: async (page: Page, demo: Demo): Promise<void> => {
-      await chooseFirstMember(page, demo);
-      await page.locator(newExpenseLink).click();
-      await page.locator('form').waitFor();
+      await openNewExpense(page, demo);
+      await page.locator('form input[type="text"]').first().fill('Pizzas');
+      await page.locator('form input[inputmode="decimal"]').first().fill('26,00');
+    },
+  },
+  {
+    name: 'nouvelle-depense-sombre',
+    label: 'Nouvelle dépense, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openNewExpense(page, demo);
     },
   },
   {
     name: 'depense-par-montants',
-    label: 'Dépense par montants',
+    label: 'Dépense par montants, total en contrôle',
     reach: async (page: Page, demo: Demo): Promise<void> => {
-      await chooseFirstMember(page, demo);
-      await page.locator(newExpenseLink).click();
-      await page.locator('fieldset button[aria-pressed]').nth(1).click();
+      await openNewExpense(page, demo);
+      const mode = page.locator('form select:has(option[value="amounts"])');
+      if ((await mode.count()) > 0) {
+        await mode.selectOption('amounts');
+        // Two more members, from the avatars offered below the lines.
+        for (let added = 0; added < 2; added += 1) {
+          await page.locator('form button[aria-pressed="false"]').first().click();
+        }
+      } else {
+        await page.locator('fieldset button[aria-pressed]').nth(1).click();
+      }
+      // The control total, then the first lines: what is left shows.
+      const amounts = page.locator('form input[inputmode="decimal"]');
+      await amounts.nth(0).fill('26,00');
+      await amounts.nth(1).fill('8,00');
+      await amounts.nth(2).fill('6,00');
     },
   },
   {
@@ -171,8 +202,14 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.locator(newExpenseLink).click();
   await page.locator('form input[type="text"]').first().pressSequentially('Glaces', { delay: 40 });
   await page.locator('form input[inputmode="decimal"]').first().pressSequentially('12,60', { delay: 40 });
-  await page.waitForTimeout(1200);
-  await page.locator('form button[type="submit"]').click();
+  await page.waitForTimeout(600);
+  // Two more members in the grid, who I am being checked already.
+  for (let added = 0; added < 2; added += 1) {
+    await page.locator('form button[aria-pressed="false"]').first().click();
+    await page.waitForTimeout(500);
+  }
+  await page.waitForTimeout(800);
+  await page.locator(saveButton).click();
   await page.locator('article').waitFor();
   await page.waitForTimeout(2000);
 }

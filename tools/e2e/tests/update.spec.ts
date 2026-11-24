@@ -13,7 +13,7 @@ test('a new version of the app installs without reloading the page while an expe
   }
   await openAs(page, tokenFor(info.project.name, 'update'), 'Agathe');
   await page.getByRole('link', { name: 'Ajouter une dépense' }).click();
-  await page.getByLabel('Titre').fill('Saisie en cours');
+  await page.getByLabel('Quoi', { exact: true }).fill('Saisie en cours');
   // Lost if the page reloads.
   await page.evaluate(() => {
     Object.assign(window, { e2eSamePage: true, e2eControllerChanged: false });
@@ -30,6 +30,6 @@ test('a new version of the app installs without reloading the page while an expe
   await page.waitForFunction(() => 'e2eControllerChanged' in window && window.e2eControllerChanged === true);
 
   expect(await page.evaluate(() => 'e2eSamePage' in window)).toBe(true);
-  await expect(page.getByLabel('Titre')).toHaveValue('Saisie en cours');
+  await expect(page.getByLabel('Quoi', { exact: true })).toHaveValue('Saisie en cours');
   await expect(page.getByRole('heading', { name: 'Nouvelle dépense' })).toBeVisible();
 });
