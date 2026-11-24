@@ -22,9 +22,12 @@ export function sectionOf(location: string): Section {
   return /^\/(nouvelle-depense|nouveau-remboursement|operations\/[^/]+\/modifier)$/.test(path) ? 'form' : 'operations';
 }
 
-/** A screen under a tab (the transfers, a member's sheet), which puts a way back and its title in the band, the menu staying. */
+/**
+ * A screen under a tab (the transfers, a member's sheet), which puts a way back and its title in the band, the menu staying; an unknown path under
+ * the balances keeps the group's band, nothing filling a screen's own.
+ */
 export function isSubScreen(location: string): boolean {
-  return trimmed(location).startsWith('/soldes/');
+  return /^\/soldes\/(virements|membres\/[^/]+)$/.test(trimmed(location));
 }
 
 /** Menu at the bottom of the group's screens: the expenses and the balances, the current one marked. */

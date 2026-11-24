@@ -367,8 +367,12 @@ describe('a group as one of its members', () => {
     for (const id of ['nobody', 'not%20an%20id']) {
       renderApp(`/g/${token}/soldes/membres/${id}`, fakeServer({ token, group, changes }).fetch);
       expect(await screen.findByText("Ce membre n'est pas dans le groupe.")).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Retour aux soldes' })).toBeDefined();
       cleanup();
     }
+    // An unknown path under the balances keeps the group's band, a way out included.
+    renderApp(`/g/${token}/soldes/membres`, fakeServer({ token, group, changes }).fetch);
+    expect(await screen.findByText('Tu es Bruno')).toBeDefined();
   });
 
   it('tells an empty group, settled', async () => {
