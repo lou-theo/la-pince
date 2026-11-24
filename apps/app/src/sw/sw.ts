@@ -40,6 +40,8 @@ async function show(data: PushMessageData | null): Promise<void> {
   await self.registration.showNotification(notification.title, {
     body: notification.body,
     icon: '/icon-192.png',
+    // Android draws it in the status bar from its alpha alone: a white silhouette on transparency.
+    badge: '/badge-96.png',
     data: { path: notification.path },
   });
 }
