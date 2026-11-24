@@ -134,6 +134,7 @@ export const screens: readonly Screen[] = [
           await page.locator('form button[aria-pressed="false"]').first().click();
         }
       } else {
+        // shortcut: the form before the full-screen one, with mode buttons; to remove once no compared version has it.
         await page.locator('fieldset button[aria-pressed]').nth(1).click();
       }
       // The control total, then the first lines: what is left shows.
