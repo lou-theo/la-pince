@@ -70,7 +70,7 @@
   "form_payer": "Payé par",
   "form_from": "De",
   "form_to": "À",
-  "form_to_placeholder": "Choisir",
+  "form_choose": "Choisir",
   "form_split": "Répartition",
   "form_mode_equal": "parts égales",
   "form_mode_amounts": "montants",

@@ -7,6 +7,7 @@ import { localDay } from '../model/dates.ts';
 import { editForm, newExpense, newReimbursement } from '../model/operationForm.ts';
 import layout from './Layout.module.css';
 import { FormBar } from './Layout.tsx';
+import styles from './OperationForm.module.css';
 import { CloseIcon, OperationForm } from './OperationForm.tsx';
 import type { GroupView } from './view.ts';
 
@@ -73,7 +74,7 @@ function CloseBar({ href, heading }: { readonly href: string; readonly heading: 
       <Link className={layout.iconButton} href={href} aria-label={m.form_close()}>
         <CloseIcon />
       </Link>
-      <h1 className={layout.name}>{heading}</h1>
+      <h1 className={`${layout.name ?? ''} ${styles.heading ?? ''}`}>{heading}</h1>
     </FormBar>
   );
 }

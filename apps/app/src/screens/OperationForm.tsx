@@ -40,11 +40,13 @@ interface OperationFormProps {
 /** Form of an expense or a reimbursement, new or to modify, on the whole screen; saved, it opens the operation's detail. */
 export function OperationForm({ view, initial, editing }: OperationFormProps): ReactNode {
   const [state, dispatch] = useReducer(formReducer, initial);
+  // As opened: a parent may pass a new `initial` when the group is read again, which is not a change made here.
+  const [opened] = useState(initial);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [closing, setClosing] = useState(false);
   const [queueError, setQueueError] = useState<QueueError>();
-  // The day the box of the date reads from: today, yesterday.
+  // The day against which the date box says “aujourd’hui” or “hier”.
   const [today] = useState(() => localDay(new Date()));
   const [, navigate] = useLocation();
   const mounted = useMounted();
@@ -93,7 +95,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
 
   const close = () => {
     // What was typed is lost on leaving: asked first, as a deletion is. The browser's back is not held back.
-    if (hasChanged(initial, state)) {
+    if (hasChanged(opened, state)) {
       setClosing(true);
     } else {
       navigate(back);
@@ -107,6 +109,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
     : editing
       ? m.form_edit_expense()
       : m.form_new_expense();
+  const dateError = errors.date === undefined ? undefined : m.form_error_date_invalid();
   const amountsMode = !reimbursement && state.mode === 'amounts';
 
   return (
@@ -118,7 +121,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
         <h1 className={`${layout.name ?? ''} ${styles.heading ?? ''}`} title={heading}>
           {heading}
         </h1>
-        {/* Out of the form, in the band: tied to it by `form`. Greyed while the form has an error, a touch still shows the errors. */}
+        {/* Out of the form, in the band: tied to it by `form`. */}
         <button className={styles.save} type="submit" form={formId} aria-disabled={!read.ok} disabled={sending}>
           {sending ? m.form_saving() : editing ? m.form_save() : m.form_add()}
         </button>
@@ -190,7 +193,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
             <Case
               id={ids.receiver}
               label={m.form_to()}
-              value={state.checked[0] === undefined ? m.form_to_placeholder() : shortName(state.checked[0])}
+              value={state.checked[0] === undefined ? m.form_choose() : shortName(state.checked[0])}
               error={splitError(errors, state)}
             >
               <MemberSelect
@@ -205,24 +208,19 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
               />
             </Case>
           ) : null}
-          <Case
-            id={ids.date}
-            label={m.form_date()}
-            value={state.date === '' ? m.form_to_placeholder() : shortDay(state.date, today)}
-            error={errors.date === undefined ? undefined : m.form_error_date_invalid()}
-          >
+          <Case id={ids.date} label={m.form_date()} value={state.date === '' ? m.form_choose() : shortDay(state.date, today)} error={dateError}>
             <input
               id={ids.date}
               className={styles.overlay}
               type="date"
               value={state.date}
-              {...labelled(ids.date, errors.date === undefined ? undefined : m.form_error_date_invalid())}
+              {...labelled(ids.date, dateError)}
               onClick={(event) => {
                 // On a computer, a click on the hidden field selects a part of the date instead of opening the calendar.
                 try {
                   event.currentTarget.showPicker();
                 } catch {
-                  // Not allowed here (or not there): the field keeps its own behaviour.
+                  // Thrown without a user gesture or by a browser that lacks it: the field keeps its native behaviour.
                 }
               }}
               onChange={(event) => {
@@ -236,7 +234,7 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
                 id={ids.mode}
                 className={styles.overlay}
                 value={state.mode}
-                {...labelled(ids.mode, undefined)}
+                aria-labelledby={`${ids.mode}-label`}
                 onChange={(event) => {
                   dispatch({ type: 'mode', mode: event.target.value === 'amounts' ? 'amounts' : 'equal' });
                 }}
@@ -413,7 +411,7 @@ function Status({ state }: { readonly state: FormState }) {
   } else if (status?.kind === 'over') {
     text = m.form_over({ amount: formatCents(status.amount) });
     tone = styles.over;
-  } else if (status?.kind === 'matches' && typedSum(state) > 0) {
+  } else if (status?.kind === 'matches') {
     text = m.form_matches();
   }
   return (
@@ -488,7 +486,7 @@ function MemberSelect({ id, members, value, nameOf, error, onChange }: MemberSel
     >
       {value === undefined ? (
         <option value="" disabled>
-          {m.form_to_placeholder()}
+          {m.form_choose()}
         </option>
       ) : null}
       {members.map((member) => (

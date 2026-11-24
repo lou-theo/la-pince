@@ -233,10 +233,6 @@
   stroke: var(--color-background);
 }
 
-.check path {
-  stroke: var(--color-background);
-}
-
 .cellName {
   max-width: 100%;
   overflow: hidden;

@@ -143,8 +143,9 @@ describe('adding an expense', () => {
     await user.type(field('Quoi'), 'Restaurant');
     await user.selectOptions(field('Répartition'), 'montants');
     await user.selectOptions(field('Payé par'), 'Alice');
-    // The members not chosen are offered below the lines.
+    // The members not chosen are offered below the lines; nothing to say of the total before any amount.
     expect(screen.getByText("Ajouter quelqu'un")).toBeDefined();
+    expect(screen.queryByText('Total = somme')).toBeNull();
     await user.click(member('Alice'));
     await user.click(member('Chloé'));
     expect(screen.queryByText("Ajouter quelqu'un")).toBeNull();
