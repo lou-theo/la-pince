@@ -79,7 +79,7 @@ describe("“C'est payé” on the transfers", () => {
 
   it('works without network: paid then undone, both leave in one batch when the server answers', async () => {
     let offline = false;
-    const { user, batches } = await openAsBruno(token, '/soldes/virements', { offline: () => offline });
+    const { user, batches } = await openAsBruno(token, '/soldes/virements', { down: () => offline });
     offline = true;
     await user.click(pay(`Chloé doit ${euros('15,00')} à Alice`));
     expect(heads()).toStrictEqual([`Bruno (toi), doit, ${euros('20,00')}`, 'Chloé, à jour']);

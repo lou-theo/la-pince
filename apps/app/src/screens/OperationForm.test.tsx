@@ -1,63 +1,16 @@
-import { type Change, groupResponseSchema, operationBatchSchema } from '@la-pince/core';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import type { Fetch } from '../sync/client.ts';
-import { change, fakeServer } from '../testing/fake-server.ts';
-import { rememberMember } from '../testing/groupDb.ts';
-import { renderApp } from '../testing/render.tsx';
+import { change } from '../testing/fake-server.ts';
+import { openAsBruno as openGroup } from '../testing/group.ts';
 
 const token = 'demo-token-of-the-form-tests-0123456789';
-const group = groupResponseSchema.parse({
-  title: 'Week-end',
-  members: [
-    { id: 'm1', name: 'Alice' },
-    { id: 'm2', name: 'Bruno' },
-    { id: 'm3', name: 'Chloé' },
-  ],
-});
 const nbsp = ' ';
 const euros = (amount: string) => `${amount}${nbsp}€`;
 // `getByText` collapses the spaces of the page, no-break ones included, but not those of the text looked for.
 const shown = (text: string) => text.replace(/\s+/g, ' ');
 
-/** Opens the group as Bruno on a fake server holding one expense of Alice, and records what the app posts. */
-async function openAsBruno(path = '', options: { down?: (url: string, init?: RequestInit) => boolean; hold?: Promise<void>; more?: Change[] } = {}) {
-  const changes: Change[] = [
-    change({
-      id: 'op-shopping',
-      date: '2026-11-05',
-      title: 'Courses',
-      payer: 'm1',
-      lines: [
-        ['m1', 1_000],
-        ['m2', 2_000],
-        ['m3', 1_500],
-      ],
-    }),
-  ];
-  changes.push(...(options.more ?? []));
-  const server = fakeServer({ token, group, changes });
-  const posted: unknown[] = [];
-  const fetchFn: Fetch = (url, init) => {
-    if (options.down?.(url, init) === true) {
-      return Promise.reject(new TypeError('Failed to fetch'));
-    }
-    if (init?.method === 'POST' && typeof init.body === 'string') {
-      posted.push(...operationBatchSchema.parse(JSON.parse(init.body)).operations);
-      if (options.hold !== undefined) {
-        return options.hold.then(() => server.fetch(url, init));
-      }
-    }
-    return server.fetch(url, init);
-  };
-  await rememberMember(token, 'm2');
-  const location = renderApp(`/g/${token}${path}`, fetchFn);
-  // On a form or a screen under a tab, the band holds that screen's bar instead of who I am.
-  await screen.findByText(/^(Tu es Bruno|Nouvelle dépense|Modifier la dépense|Remboursement|Remboursements suggérés)$/);
-  return { user: userEvent.setup(), location, posted, changes };
-}
+const openAsBruno = (path = '', options: Parameters<typeof openGroup>[2] = {}) => openGroup(token, path, options);
 
 const field = (name: string) => screen.getByLabelText(name);
 const member = (name: string) => screen.getByRole('button', { name });

@@ -17,14 +17,15 @@ export const testGroup = groupResponseSchema.parse({
 });
 
 /**
- * Opens the group as Bruno on a fake server holding one expense of Alice (45,00 €: 10,00 on her, 20,00 on Bruno, 15,00 on Chloé), and records the
- * batches the app posts; `offline` makes every request fail until it returns false.
+ * Opens the group as Bruno on a fake server holding one expense of Alice (45,00 €: 10,00 on her, 20,00 on Bruno, 15,00 on Chloé), and records what
+ * the app posts, batch by batch and one after the other; `down` makes the requests it picks fail, `hold` keeps the server's answer to a post until
+ * it settles.
  */
 export async function openAsBruno(
   token: string,
   path: string,
-  options: { offline?: () => boolean; more?: Change[] } = {},
-): Promise<{ user: ReturnType<typeof userEvent.setup>; location: ReturnType<typeof renderApp>; batches: Operation[][] }> {
+  options: { down?: (url: string, init?: RequestInit) => boolean; hold?: Promise<void>; more?: Change[] } = {},
+): Promise<{ user: ReturnType<typeof userEvent.setup>; location: ReturnType<typeof renderApp>; batches: Operation[][]; posted: Operation[] }> {
   const changes: Change[] = [
     change({
       id: 'op-shopping',
@@ -41,18 +42,24 @@ export async function openAsBruno(
   ];
   const server = fakeServer({ token, group: testGroup, changes });
   const batches: Operation[][] = [];
+  const posted: Operation[] = [];
   const fetchFn: Fetch = (url, init) => {
-    if (options.offline?.() === true) {
+    if (options.down?.(url, init) === true) {
       return Promise.reject(new TypeError('Failed to fetch'));
     }
     if (init?.method === 'POST' && typeof init.body === 'string') {
-      batches.push(operationBatchSchema.parse(JSON.parse(init.body)).operations);
+      const { operations } = operationBatchSchema.parse(JSON.parse(init.body));
+      batches.push(operations);
+      posted.push(...operations);
+      if (options.hold !== undefined) {
+        return options.hold.then(() => server.fetch(url, init));
+      }
     }
     return server.fetch(url, init);
   };
   await rememberMember(token, 'm2');
   const location = renderApp(`/g/${token}${path}`, fetchFn);
   // The band says who I am, or the title of the screen below a tab or of a form.
-  await screen.findAllByText(/^(Tu es Bruno|Remboursement|Remboursements suggérés|Soldes)$/);
-  return { user: userEvent.setup(), location, batches };
+  await screen.findAllByText(/^(Tu es Bruno|Nouvelle dépense|Modifier la dépense|Remboursement|Remboursements suggérés|Soldes)$/);
+  return { user: userEvent.setup(), location, batches, posted };
 }
