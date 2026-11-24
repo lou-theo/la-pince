@@ -54,8 +54,10 @@ async function openAsBruno(path = '', options: { down?: (url: string, init?: Req
   };
   await rememberMember(token, 'm2');
   const location = renderApp(`/g/${token}${path}`, fetchFn);
-  // On a form, the band holds the form's bar instead of who I am.
-  await screen.findByText(/^(Tu es Bruno|Nouvelle dépense|Nouveau remboursement|Modifier la dépense|Modifier le remboursement)$/);
+  // On a form or a screen under a tab, the band holds that screen's bar instead of who I am.
+  await screen.findByText(
+    /^(Tu es Bruno|Nouvelle dépense|Nouveau remboursement|Modifier la dépense|Modifier le remboursement|Remboursements suggérés)$/,
+  );
   return { user: userEvent.setup(), location, posted, changes };
 }
 
@@ -249,8 +251,7 @@ describe('adding an expense', () => {
     expect(within(screen.getByRole('link', { name: /Péage/ })).getByText("En attente d'envoi")).toBeDefined();
     await user.click(screen.getByRole('link', { name: 'Soldes' }));
     // Alice paid 45,00 € with 20,00 € on Bruno, who paid 10,00 € split with Alice: 10,00 - 20,00 - 5,00.
-    const line = (name: string) => screen.getByText(name).closest('li')?.textContent;
-    expect(line('Bruno (toi)')).toBe(euros('Bruno (toi)-15,00'));
+    expect(screen.getByRole('link', { name: `Bruno (toi), doit, ${euros('15,00')}` })).toBeDefined();
     expect(screen.getByText(/^Ces soldes comptent 1 saisie non envoyée\. Dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
     expect(posted).toHaveLength(0);
 
@@ -434,7 +435,7 @@ describe('modifying or deleting what is gone', () => {
 
 describe('a reimbursement', () => {
   it('opens prefilled from a suggested transfer, and settles the balances once saved', async () => {
-    const { user, posted } = await openAsBruno('/soldes');
+    const { user, posted } = await openAsBruno('/soldes/virements');
     await user.click(screen.getByRole('link', { name: /Enregistrer ce remboursement : Bruno \(toi\) doit 20,00/ }));
     expect(screen.getByRole('heading', { name: 'Nouveau remboursement' })).toBeDefined();
     expect(value('Quoi')).toBe('Remboursement');
@@ -451,7 +452,7 @@ describe('a reimbursement', () => {
       { title: 'Remboursement', entry: { kind: 'reimbursement', payer: 'm2', lines: [{ member: 'm1', amount: 2_000 }] } },
     ]);
     await user.click(screen.getByRole('link', { name: 'Soldes' }));
-    expect(screen.getAllByText('Bruno (toi)').at(0)?.nextSibling?.textContent).toBe(euros('0,00'));
+    expect(screen.getByRole('link', { name: 'Bruno (toi), à jour' })).toBeDefined();
   });
 
   it('needs someone to receive it', async () => {

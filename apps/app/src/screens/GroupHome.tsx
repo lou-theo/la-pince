@@ -10,15 +10,17 @@ import type { LoadError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
 import { Avatar } from './Avatar.tsx';
 import { Balances } from './Balances.tsx';
-import { BottomNav, sectionOf } from './BottomNav.tsx';
+import { BottomNav, isSubScreen, sectionOf } from './BottomNav.tsx';
 import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
+import { MemberBalance } from './MemberBalance.tsx';
 import { Notifications } from './Notifications.tsx';
 import { OperationDetail } from './OperationDetail.tsx';
 import { OperationList } from './OperationList.tsx';
 import { ShareLink } from './ShareLink.tsx';
+import { Transfers } from './Transfers.tsx';
 import type { GroupView } from './view.ts';
 
 interface GroupHomeProps {
@@ -103,7 +105,7 @@ export function GroupHome({
         </>
       }
       nav={section === 'form' ? undefined : <BottomNav section={section} />}
-      formBar={section === 'form'}
+      screenBar={section === 'form' || isSubScreen(location)}
     >
       {readError === 'network' ? (
         // Without network the app keeps working: the outbox leaves on its own once the server answers.
@@ -138,6 +140,10 @@ export function GroupHome({
         <Route path="/soldes">
           <Balances view={view} />
         </Route>
+        <Route path="/soldes/virements">
+          <Transfers view={view} />
+        </Route>
+        <Route path="/soldes/membres/:id">{({ id }) => <MemberBalance view={view} id={id} />}</Route>
         <Route path="/moi">
           <section className={styles.me}>
             <h2 className={layout.title}>{m.group_you_are({ name: currentMember.name })}</h2>

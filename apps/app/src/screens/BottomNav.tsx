@@ -7,16 +7,24 @@ import styles from './BottomNav.module.css';
 /** Part of the group a screen belongs to: the expenses (list and detail), the balances, who I am, or a form, which takes the whole screen. */
 export type Section = 'operations' | 'balances' | 'me' | 'form';
 
-/** Section of a path under the group's link; the routes match with or without a trailing slash, an unknown path belonging to the expenses. */
+// The routes match with or without a trailing slash.
+const trimmed = (location: string) => location.replace(/(.)\/+$/, '$1');
+
+/** Section of a path under the group's link, the screens under the balances included; an unknown path belongs to the expenses. */
 export function sectionOf(location: string): Section {
-  const path = location.replace(/(.)\/+$/, '$1');
-  if (path === '/soldes') {
+  const path = trimmed(location);
+  if (path === '/soldes' || path.startsWith('/soldes/')) {
     return 'balances';
   }
   if (path === '/moi') {
     return 'me';
   }
   return /^\/(nouvelle-depense|nouveau-remboursement|operations\/[^/]+\/modifier)$/.test(path) ? 'form' : 'operations';
+}
+
+/** A screen under a tab (the transfers, a member's sheet), which puts a way back and its title in the band, the menu staying. */
+export function isSubScreen(location: string): boolean {
+  return trimmed(location).startsWith('/soldes/');
 }
 
 /** Menu at the bottom of the group's screens: the expenses and the balances, the current one marked. */
