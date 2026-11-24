@@ -41,7 +41,7 @@
   border: none;
   border-radius: 0.5rem;
   background: transparent;
-  color: var(--undo-accent);
+  color: var(--color-undo);
   font-weight: 700;
   cursor: pointer;
 }
