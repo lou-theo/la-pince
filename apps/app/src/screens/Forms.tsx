@@ -6,7 +6,7 @@ import { m } from '../i18n/paraglide/messages.js';
 import { localDay } from '../model/dates.ts';
 import { editForm, newExpense, newReimbursement } from '../model/operationForm.ts';
 import layout from './Layout.module.css';
-import { FormBar } from './Layout.tsx';
+import { ScreenBar } from './Layout.tsx';
 import styles from './OperationForm.module.css';
 import { CloseIcon, OperationForm } from './OperationForm.tsx';
 import type { GroupView } from './view.ts';
@@ -70,11 +70,11 @@ export function EditOperation({ view, id }: { readonly view: GroupView; readonly
 /** The band of a form that cannot open: the way back and the title, without a button to save. */
 function CloseBar({ href, heading }: { readonly href: string; readonly heading: string }) {
   return (
-    <FormBar>
+    <ScreenBar>
       <Link className={layout.iconButton} href={href} aria-label={m.form_close()}>
         <CloseIcon />
       </Link>
       <h1 className={`${layout.name ?? ''} ${styles.heading ?? ''}`}>{heading}</h1>
-    </FormBar>
+    </ScreenBar>
   );
 }
