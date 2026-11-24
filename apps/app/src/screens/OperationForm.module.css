@@ -17,6 +17,11 @@
   cursor: pointer;
 }
 
+/* Smaller than the group's title: “Modifier le remboursement” beside the button, on a phone. */
+.heading {
+  font-size: 1.0625rem;
+}
+
 /* Greyed while the form has an error, still touchable: a touch shows what is wrong. */
 .save[aria-disabled='true'] {
   background: var(--color-border);
@@ -87,6 +92,14 @@
   outline: none;
 }
 
+.moneyLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
 .money {
   text-align: right;
   font-weight: 700;
@@ -94,11 +107,13 @@
 }
 
 .case {
+  padding: var(--space-1) 0.625rem;
   cursor: pointer;
 }
 
 .caseValue {
   overflow: hidden;
+  font-size: 0.9375rem;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -130,7 +145,7 @@
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
-  margin: var(--space-2) 0 0;
+  margin: 0;
   padding: 0;
   border: none;
 }
@@ -139,10 +154,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0 var(--space-3);
+  gap: 0 var(--space-2);
 }
 
 .forWhom {
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 
@@ -152,13 +168,14 @@
   border: none;
   background: none;
   color: var(--color-accent);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .status {
   margin-left: auto;
+  font-size: 0.9375rem;
   color: var(--color-muted);
   font-variant-numeric: tabular-nums;
 }

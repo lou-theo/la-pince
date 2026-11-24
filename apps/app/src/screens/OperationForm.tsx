@@ -115,7 +115,9 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
         <button className={layout.iconButton} type="button" aria-label={m.form_close()} disabled={sending} onClick={close}>
           <CloseIcon />
         </button>
-        <h1 className={layout.name}>{heading}</h1>
+        <h1 className={`${layout.name ?? ''} ${styles.heading ?? ''}`} title={heading}>
+          {heading}
+        </h1>
         {/* Out of the form, in the band: tied to it by `form`. Greyed while the form has an error, a touch still shows the errors. */}
         <button className={styles.save} type="submit" form={formId} aria-disabled={!read.ok} disabled={sending}>
           {sending ? m.form_saving() : editing ? m.form_save() : m.form_add()}
@@ -153,20 +155,23 @@ export function OperationForm({ view, initial, editing }: OperationFormProps): R
             error={amountError(errors, state)}
             money
           >
-            <input
-              id={ids.amount}
-              className={`${styles.input ?? ''} ${styles.money ?? ''}`}
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              // Without a control total, the amounts make it: shown as it will be saved.
-              placeholder={amountsMode ? centsToInput(typedSum(state)) : '0,00'}
-              value={state.amount}
-              {...labelled(ids.amount, amountError(errors, state))}
-              onChange={(event) => {
-                dispatch({ type: 'amount', value: event.target.value });
-              }}
-            />
+            <span className={styles.moneyLine}>
+              <input
+                id={ids.amount}
+                className={`${styles.input ?? ''} ${styles.money ?? ''}`}
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                // Without a control total, the amounts make it: shown as it will be saved.
+                placeholder={amountsMode ? centsToInput(typedSum(state)) : '0,00'}
+                value={state.amount}
+                {...labelled(ids.amount, amountError(errors, state))}
+                onChange={(event) => {
+                  dispatch({ type: 'amount', value: event.target.value });
+                }}
+              />
+              <span aria-hidden="true">€</span>
+            </span>
           </Box>
         </div>
         <div className={styles.cases}>
