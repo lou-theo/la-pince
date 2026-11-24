@@ -207,9 +207,9 @@ export function splitStatus(state: FormState): SplitStatus | undefined {
     return { kind: 'each', low, high: Math.max(...amounts) };
   }
   // The amounts make the total only once every line reads: an empty line would be missing from the sum.
-  const allRead = state.checked.every((member) => (typedCents(state.amounts[member] ?? '') ?? 0) > 0);
+  const allRead = state.checked.length > 0 && state.checked.every((member) => (typedCents(state.amounts[member] ?? '') ?? 0) > 0);
   if (state.amount.trim() === '') {
-    return allRead && state.checked.length > 0 ? { kind: 'matches' } : undefined;
+    return allRead ? { kind: 'matches' } : undefined;
   }
   const total = typedCents(state.amount);
   if (total === undefined) {

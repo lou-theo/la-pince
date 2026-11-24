@@ -165,6 +165,7 @@ describe('an expense split by amounts', () => {
     );
     expect(splitStatus(byAmounts())).toBeUndefined();
     expect(splitStatus(apply(state, { type: 'uncheckAll' }))).toBeUndefined();
+    expect(splitStatus(apply(state, { type: 'uncheckAll' }, { type: 'amount', value: '0' }))).toBeUndefined();
     expect(splitStatus(state)).toStrictEqual({ kind: 'matches' });
     // A line left empty is missing from the sum: the amounts do not make the total yet.
     const withEmpty = apply(state, { type: 'toggle', member: bruno });
