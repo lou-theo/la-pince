@@ -7,8 +7,8 @@ import styles from './BottomNav.module.css';
 /** Part of the group a screen belongs to: the expenses (list and detail), the balances, who I am, or a form, which takes the whole screen. */
 export type Section = 'operations' | 'balances' | 'me' | 'form';
 
-// The routes match with or without a trailing slash.
-const trimmed = (location: string) => location.replace(/(.)\/+$/, '$1');
+// The routes match with or without one trailing slash, as wouter's do.
+const trimmed = (location: string) => location.replace(/(.)\/$/, '$1');
 
 /** Section of a path under the group's link, the screens under the balances included; an unknown path belongs to the expenses. */
 export function sectionOf(location: string): Section {

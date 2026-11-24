@@ -369,6 +369,7 @@ describe('a group as one of its members', () => {
     const owedToMe = [
       change({ id: 'op-mine', date: '2026-11-02', payer: 'm2', lines: [['m1', 500]] }),
       change({ id: 'op-left', date: '2026-11-03', payer: 'gone', lines: [['m3', 300]] }),
+      change({ id: 'op-left-owes', date: '2026-11-04', payer: 'm1', lines: [['gone-too', 100]] }),
     ];
     renderApp(`/g/${token}/soldes`, fakeServer({ token, group, changes: owedToMe }).fetch);
     await user.click(await screen.findByRole('link', { name: /^Bruno \(toi\), en positif/ }));
@@ -381,6 +382,10 @@ describe('a group as one of its members', () => {
     expect(screen.queryByRole('link', { name: 'Déclarer un remboursement' })).toBeNull();
     // Chloé's transfer to them is shown, without a button that would record it as mine.
     expect(screen.getByRole('region', { name: 'Lui doivent' }).textContent).toBe('Lui doiventCChloé3,00\u00a0€');
+    // Nor on the transfer of a member who left and owes.
+    await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
+    await user.click(screen.getByRole('link', { name: 'gone-too, doit, 1,00\u00a0€' }));
+    expect(screen.getByRole('region', { name: 'Ses remboursements à faire' }).textContent).toBe('Ses remboursements à faireBà toi1,00\u00a0€');
   });
 
   it('says so for a member who is not in the group', async () => {

@@ -29,13 +29,8 @@ describe('isSubScreen', () => {
       true,
       true,
     ]);
-    expect(['/soldes', '/soldes/', '/soldes/xyz', '/soldes/membres', '/soldes/membres/m1/x', '/nouvelle-depense'].map(isSubScreen)).toStrictEqual([
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-    ]);
+    expect(
+      ['/soldes', '/soldes/', '/soldes/xyz', '/soldes/membres', '/soldes/membres/m1/x', '/soldes/virements//', '/nouvelle-depense'].map(isSubScreen),
+    ).toStrictEqual([false, false, false, false, false, false, false]);
   });
 });
