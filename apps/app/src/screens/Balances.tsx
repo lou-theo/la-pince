@@ -37,6 +37,10 @@ export function Balances({ view }: { readonly view: GroupView }): ReactNode {
         <h2 id={transfersTitle} className={styles.sectionTitle}>
           {m.transfers_title()}
         </h2>
+        {/* A reimbursement other than the suggested ones, reached from the balances since the list's button adds an expense. */}
+        <Link className={layout.link} href="/nouveau-remboursement">
+          {m.operations_add_reimbursement()}
+        </Link>
         {suggested.length === 0 ? (
           <p className={layout.muted}>{m.transfers_none()}</p>
         ) : (

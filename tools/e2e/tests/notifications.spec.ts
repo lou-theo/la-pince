@@ -26,6 +26,8 @@ test('a phone subscribes as who it is, and a push about an expense shows a notif
   await openAs(page, token, 'Agathe');
   const title = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
 
+  // The notifications live with who I am, behind the avatar of the band.
+  await page.getByRole('link', { name: 'Tu es Agathe' }).click();
   const subscribed = page.waitForResponse(`${appUrl()}/api/groups/${token}/subscription`);
   await page.getByRole('button', { name: 'Activer les notifications' }).click();
   const response = await subscribed;

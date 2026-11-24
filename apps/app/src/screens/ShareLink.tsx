@@ -52,11 +52,13 @@ export function ShareLink({ token, title }: { readonly token: string; readonly t
 
   return (
     <div className={styles.share}>
-      <button className={layout.link} type="button" onClick={() => void share()}>
-        {m.share_link()}
+      <button className={layout.iconButton} type="button" aria-label={m.share_link()} onClick={() => void share()}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+        </svg>
       </button>
       {/* Always rendered, only its text changing: a live region inserted already filled is announced unevenly, VoiceOver included. */}
-      <p className={layout.muted} aria-live="polite">
+      <p className={`${layout.muted ?? ''} ${styles.status ?? ''}`} aria-live="polite">
         {outcome === 'copied' ? m.share_copied() : outcome === 'manual' ? m.share_manual() : null}
       </p>
       {outcome === 'manual' ? (

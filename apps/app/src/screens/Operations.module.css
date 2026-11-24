@@ -1,4 +1,3 @@
-.list,
 .lines,
 .transfers {
   list-style: none;
@@ -6,65 +5,11 @@
   padding: 0;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--color-border);
-}
-
-.list > li {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-height: 3.5rem;
-  padding: var(--space-3) 0;
-  color: inherit;
-  text-decoration: none;
-}
-
-.main,
-.amounts {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.amounts {
-  align-items: flex-end;
-  flex-shrink: 0;
-  text-align: right;
-}
-
-.title {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.meta {
-  color: var(--color-muted);
-  font-size: 0.875rem;
-}
-
 /* An operation entered on this phone and not yet sent. */
 .pending {
   color: var(--color-muted);
   font-size: 0.875rem;
   font-style: italic;
-}
-
-.total {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.share {
-  color: var(--color-text);
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
 .detail,

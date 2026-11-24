@@ -8,7 +8,9 @@ import { m } from '../i18n/paraglide/messages.js';
 import { liveOperations, overlay, sortedBalances, transfers } from '../model/group.ts';
 import type { LoadError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
+import { Avatar } from './Avatar.tsx';
 import { Balances } from './Balances.tsx';
+import { BottomNav, sectionOf } from './BottomNav.tsx';
 import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
 import layout from './Layout.module.css';
@@ -52,6 +54,8 @@ export function GroupHome({
   // A remembered member who left the group is asked again.
   const currentMember = group.members.find((member) => member.id === remembered);
   const [choosing, setChoosing] = useState(false);
+  const [location] = useLocation();
+  const section = sectionOf(location);
   const computed = useMemo(() => {
     // Balances count what this phone entered and has not sent yet, computed by the same core.
     const { revisions, pending } = overlay(changes, outbox);
@@ -85,29 +89,21 @@ export function GroupHome({
     enqueue,
     readAt,
   };
+  const notificationsShown = section === 'me';
   return (
-    <Layout>
-      <header className={styles.groupHeader}>
-        <h1 className={layout.title}>{group.title}</h1>
-        <p className={styles.me}>
-          <span>{m.group_you_are({ name: currentMember.name })}</span>
-          <button
-            className={layout.link}
-            type="button"
-            onClick={() => {
-              setChoosing(true);
-            }}
-          >
-            {m.group_change_member()}
-          </button>
-        </p>
-        <ShareLink token={token} title={group.title} />
-        <Notifications token={token} title={group.title} member={currentMember.id} />
-      </header>
-      <nav className={styles.tabs} aria-label={m.tabs_label()}>
-        <Tab href="/">{m.tab_operations()}</Tab>
-        <Tab href="/soldes">{m.tab_balances()}</Tab>
-      </nav>
+    <Layout
+      title={group.title}
+      actions={
+        <>
+          <ShareLink token={token} title={group.title} />
+          <Link className={layout.iconButton} href="/moi" aria-current={section === 'me' ? 'page' : undefined}>
+            <Avatar member={currentMember} view={view} />
+            <span className={layout.visuallyHidden}>{m.group_you_are({ name: currentMember.name })}</span>
+          </Link>
+        </>
+      }
+      nav={section === 'form' ? undefined : <BottomNav section={section} />}
+    >
       {readError === 'network' ? (
         // Without network the app keeps working: the outbox leaves on its own once the server answers.
         <div className={styles.offline} role="status">
@@ -141,23 +137,30 @@ export function GroupHome({
         <Route path="/soldes">
           <Balances view={view} />
         </Route>
+        <Route path="/moi">
+          <section className={styles.me}>
+            <h2 className={layout.title}>{m.group_you_are({ name: currentMember.name })}</h2>
+            <p className={layout.muted}>{m.me_explanation()}</p>
+            <button
+              className={layout.link}
+              type="button"
+              onClick={() => {
+                setChoosing(true);
+              }}
+            >
+              {m.group_change_member()}
+            </button>
+          </section>
+        </Route>
         <Route>
           <p className={layout.muted}>{m.not_found()}</p>
         </Route>
       </Switch>
+      {/* Mounted on every screen of the group, shown with who I am only: each opening saves the subscription again (decision 47 d). */}
+      <div hidden={!notificationsShown}>
+        <Notifications token={token} title={group.title} member={currentMember.id} />
+      </div>
     </Layout>
-  );
-}
-
-function Tab({ href, children }: { readonly href: string; readonly children: ReactNode }) {
-  const [location] = useLocation();
-  // The routes match with or without a trailing slash; every screen but the balances belongs to the operations (detail, forms).
-  const path = location.replace(/(.)\/+$/, '$1');
-  const active = href === '/soldes' ? path === href : path !== '/soldes';
-  return (
-    <Link className={active ? `${styles.tab ?? ''} ${styles.active ?? ''}` : styles.tab} href={href} aria-current={active ? 'page' : undefined}>
-      {children}
-    </Link>
   );
 }
 
