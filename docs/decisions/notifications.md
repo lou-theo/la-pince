@@ -1,6 +1,6 @@
 # Notifications
 
-19/11/2026, besoin dit par le mainteneur le 16/11 : « notifications seulement pour [les dépenses qui me concernent] » ; points a à c dits par le mainteneur le 19/11, d à f proposés par l'assistant et présentés dans le plan validé le 19/11 : « ok go » ; g à i, choix techniques de l'assistant, h répondant à une demande de le mainteneur citée dans le point.
+19/11/2026, besoin dit par le mainteneur le 16/11 : « notifications seulement pour [les dépenses qui me concernent] » ; points a à c dits par le mainteneur le 19/11, d à f proposés par l'assistant et présentés dans le plan validé le 19/11 : « ok go » ; g à i, choix techniques de l'assistant, h répondant à une demande du mainteneur citée dans le point.
 
 - (a) déclencheurs par défaut : ajout, modification (titre compris) et suppression d'une opération dont le membre est payeur ou a une part non nulle, avant ou après la modification, auteur exclu (« aussi la modif d'une dépense qui me concerne ») ; conception extensible (type d'avis, message par abonnement) pour des réglages à venir, sans les construire (« peut etre que certaines personnes veulent etre notifier sur tout comme dans tricount mais ça ne doit pas etre le defaut », « il faut que ça soit paramétrable »)
 - (b) pas de réglage ni de seuil de solde en version 2 (« ok pour la config de notif plus tard, essayons déjà pour voir si ça foncitonne »)
