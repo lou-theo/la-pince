@@ -7,8 +7,11 @@ import {
   type GroupId,
   groupIdSchema,
   type GroupResponse,
+  groupUpdateSchema,
   MAX_BATCH_REVISIONS,
   memberIdSchema,
+  memberUpdateSchema,
+  newMemberSchema,
   type OperationBatchResponse,
   type PushKeyResponse,
   revisionIdSchema,
@@ -20,6 +23,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { type Context, Hono } from 'hono';
 import { z } from 'zod';
 
+import { addMember, readMembers, updateMember } from './members.ts';
 import {
   deleteSubscription,
   deliverBatch,
@@ -70,7 +74,8 @@ async function readGroup(db: ReturnType<typeof drizzle>, groupId: GroupId): Prom
     .select({ id: members.id, name: members.name })
     .from(members)
     .where(eq(members.groupId, groupId))
-    .orderBy(asc(members.position));
+    // Two members may share a position when the admin route and the app add one at the same time: the id settles the order the same way each time.
+    .orderBy(asc(members.position), asc(members.id));
   // Read back from what the server wrote, which went through the same schemas.
   return { title: group?.title ?? '', members: rows.map((row) => ({ id: memberIdSchema.parse(row.id), name: row.name })) };
 }
@@ -81,6 +86,58 @@ app.get('/api/groups/:token', async (context) => {
   const groupId = await findGroup(context);
   if (groupId === undefined) {
     return apiError(context, 'group_not_found', 404);
+  }
+  return context.json(await readGroup(drizzle(context.env.DB), groupId));
+});
+
+// The routes that edit the group answer with the whole group, as `GET` does, so that the phone shows what the server holds. The last write wins
+// when two phones rename the same thing; neither an added member nor a renaming notifies anyone.
+app.patch('/api/groups/:token', async (context) => {
+  const update = groupUpdateSchema.safeParse(await context.req.json().catch(() => undefined));
+  if (!update.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  const db = drizzle(context.env.DB);
+  await db.update(groups).set({ title: update.data.title }).where(eq(groups.id, groupId));
+  return context.json(await readGroup(db, groupId));
+});
+
+app.post('/api/groups/:token/members', async (context) => {
+  const member = newMemberSchema.safeParse(await context.req.json().catch(() => undefined));
+  if (!member.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  const outcome = await addMember(context.env.DB, groupId, member.data, await readMembers(context.env.DB, groupId));
+  if (outcome === 'too_many_members' || outcome === 'member_name_taken') {
+    return apiError(context, outcome, 409);
+  }
+  return context.json(await readGroup(drizzle(context.env.DB), groupId), outcome === 'added' ? 201 : 200);
+});
+
+app.patch('/api/groups/:token/members/:id', async (context) => {
+  const memberId = memberIdSchema.safeParse(context.req.param('id'));
+  const update = memberUpdateSchema.safeParse(await context.req.json().catch(() => undefined));
+  if (!memberId.success || !update.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  const outcome = await updateMember(context.env.DB, groupId, memberId.data, update.data, await readMembers(context.env.DB, groupId));
+  if (outcome === 'member_not_found') {
+    return apiError(context, outcome, 404);
+  }
+  if (outcome === 'member_name_taken') {
+    return apiError(context, outcome, 409);
   }
   return context.json(await readGroup(drizzle(context.env.DB), groupId));
 });

@@ -118,7 +118,9 @@ export type OperationBatchResponse = z.infer<typeof operationBatchResponseSchema
  * link; `unknown_cursor`: the group no longer has the revision named at the cursor (the database was restored to an earlier point), so the phone
  * drops its copy of the group and reads again from 0; `unauthorized`: missing or wrong admin token; `token_in_use`: the admin route was given the
  * link token of another group; `notifications_disabled`: the instance has no push keys or no queue; `subscription_not_found`: no subscription of
- * the group behind the endpoint; `too_many_subscriptions`: the group holds the most subscriptions the server keeps for it.
+ * the group behind the endpoint; `too_many_subscriptions`: the group holds the most subscriptions the server keeps for it; `member_not_found`: the
+ * group has no member with that id; `too_many_members`: the group already holds `MAX_GROUP_MEMBERS`;
+ * `member_name_taken`: another member of the group has the same name (`memberNameKey`).
  */
 export const apiErrorSchema = z.strictObject({
   error: z.enum([
@@ -130,6 +132,9 @@ export const apiErrorSchema = z.strictObject({
     'notifications_disabled',
     'subscription_not_found',
     'too_many_subscriptions',
+    'member_not_found',
+    'too_many_members',
+    'member_name_taken',
   ]),
 });
 export type ApiError = z.infer<typeof apiErrorSchema>;

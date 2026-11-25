@@ -3,6 +3,8 @@ import {
   type Change,
   cursorSchema,
   groupResponseSchema,
+  memberIdSchema,
+  newMemberSchema,
   operationSchema,
   revisionIdSchema,
   subscribeRequestSchema,
@@ -30,6 +32,11 @@ describe('fetchGroup', () => {
     const server = fakeServer({ token, group });
     expect(await createApiClient(server.fetch).fetchGroup(token)).toStrictEqual({ ok: true, value: group });
     expect(server.calls).toStrictEqual([`/api/groups/${token}`]);
+  });
+
+  it('reads the answer of a newer server that adds a field to a member, leaving that field out', async () => {
+    const newer = { ...group, members: group.members.map((member) => ({ ...member, picture: 'x' })) };
+    expect(await answering(json(newer)).fetchGroup(token)).toStrictEqual({ ok: true, value: group });
   });
 
   it('tells an unknown link from a server out of reach and from an answer outside the contract', async () => {
@@ -231,5 +238,50 @@ describe('notifications', () => {
       ok: false,
       error: 'unexpected',
     });
+  });
+});
+
+describe('editing the group', () => {
+  it('renames the group, adds a member at the end and renames a member, each giving the whole group back', async () => {
+    const server = fakeServer({ token, group });
+    const client = createApiClient(server.fetch);
+    expect(await client.renameGroup(token, ' Mer ')).toStrictEqual({ ok: true, value: { ...group, title: 'Mer' } });
+    const chloe = newMemberSchema.parse({ id: 'm3', name: 'Chloé' });
+    const withChloe = { title: 'Mer', members: [...group.members, chloe] };
+    expect(await client.addMember(token, chloe)).toStrictEqual({ ok: true, value: withChloe });
+    // A new try after a lost answer, under the same id: the same group, no second member.
+    expect(await client.addMember(token, chloe)).toStrictEqual({ ok: true, value: withChloe });
+    expect(await client.renameMember(token, memberIdSchema.parse('m3'), 'Chloe')).toStrictEqual({
+      ok: true,
+      value: { title: 'Mer', members: [...group.members, { id: 'm3', name: 'Chloe' }] },
+    });
+    expect(server.calls).toStrictEqual([
+      `/api/groups/${token}`,
+      `/api/groups/${token}/members`,
+      `/api/groups/${token}/members`,
+      `/api/groups/${token}/members/m3`,
+    ]);
+  });
+
+  it('passes on the errors of the edit routes, and refuses an answer outside the contract', async () => {
+    const client = createApiClient(fakeServer({ token, group }).fetch);
+    expect(await client.addMember(token, newMemberSchema.parse({ id: 'm9', name: 'alice' }))).toStrictEqual({
+      ok: false,
+      error: 'member_name_taken',
+    });
+    expect(await client.renameMember(token, memberIdSchema.parse('m2'), 'ALICE')).toStrictEqual({ ok: false, error: 'member_name_taken' });
+    expect(await client.renameMember(token, memberIdSchema.parse('nobody'), 'Zoé')).toStrictEqual({ ok: false, error: 'member_not_found' });
+    expect(await client.renameGroup(token, ' ')).toStrictEqual({ ok: false, error: 'invalid_request' });
+    expect(await client.renameGroup('another-token-of-the-client-tests-0123', 'Mer')).toStrictEqual({ ok: false, error: 'group_not_found' });
+    const member = newMemberSchema.parse({ id: 'm9', name: 'Zoé' });
+    expect(await answering(json({ error: 'too_many_members' } satisfies ApiError, 409)).addMember(token, member)).toStrictEqual({
+      ok: false,
+      error: 'too_many_members',
+    });
+    expect(await answering(json({ error: 'unknown_cursor' } satisfies ApiError, 409)).addMember(token, member)).toStrictEqual({
+      ok: false,
+      error: 'unexpected',
+    });
+    expect(await answering(json({ title: 'Mer', members: [] }, 201)).addMember(token, member)).toStrictEqual({ ok: false, error: 'unexpected' });
   });
 });
