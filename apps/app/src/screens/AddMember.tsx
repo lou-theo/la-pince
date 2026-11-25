@@ -10,8 +10,8 @@ import type { EditResult } from './view.ts';
 
 interface AddMemberProps {
   readonly online: boolean;
-  /** Whether a member already has the name, which the server would refuse. */
-  readonly taken: (name: string) => boolean;
+  /** Whether another member than `self` already has the name, which the server would refuse. */
+  readonly taken: (name: string, self: MemberId | undefined) => boolean;
   readonly onAdd: (member: NewMember) => Promise<EditResult>;
 }
 
@@ -38,7 +38,8 @@ export function AddMember({ online, taken, onAdd }: AddMemberProps): ReactNode {
   const mounted = useMounted();
 
   const name = draft.trim();
-  const isTaken = name !== '' && taken(name);
+  // The member of this sheet, made by a try whose answer was lost, does not block the try that finds it.
+  const isTaken = name !== '' && taken(name, id);
   const blocked = busy || !online || name === '' || isTaken;
   const message = isTaken ? m.error_member_name_taken() : error;
 

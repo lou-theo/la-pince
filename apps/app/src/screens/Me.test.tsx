@@ -288,8 +288,9 @@ describe('adding a member', () => {
     expect(within(sheet).getByRole('button', { name: 'Ajouter au groupe' }).getAttribute('aria-disabled')).toBe('false');
   });
 
-  it('reads the group again when the answer to an addition is lost, the member it made showing at once', async () => {
-    const { user } = await open('/moi/groupe', { lose: () => true });
+  it('reads the group again when the answer to an addition is lost, the member it made showing at once, and the next try finds it', async () => {
+    let lost = true;
+    const { user, edits } = await open('/moi/groupe', { lose: () => lost });
     await user.click(screen.getByRole('button', { name: 'Ajouter un membre' }));
     const sheet = screen.getByRole('dialog', { name: 'Nouveau membre' });
     await user.type(within(sheet).getByRole('textbox', { name: 'Prénom' }), 'Zoé{Enter}');
@@ -297,6 +298,14 @@ describe('adding a member', () => {
     await waitFor(() => {
       expect(memberLines()).toContain('Zoé');
     });
+    lost = false;
+    await user.click(within(sheet).getByRole('button', { name: 'Ajouter au groupe' }));
+    await waitFor(() => {
+      expect(sheet.hasAttribute('open')).toBe(false);
+    });
+    const [first, second] = edits.map((sent) => newMemberSchema.parse(sent.body));
+    expect(second).toStrictEqual(first);
+    expect(memberLines().filter((name) => name === 'Zoé')).toHaveLength(1);
   });
 
   it('stays open on a text selection released over the backdrop, and says why it cannot add once the network is gone', async () => {

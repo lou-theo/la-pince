@@ -1,4 +1,4 @@
-import { MAX_GROUP_TITLE_LENGTH, memberNameKey } from '@la-pince/core';
+import { MAX_GROUP_TITLE_LENGTH, type MemberId, memberNameKey } from '@la-pince/core';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'wouter';
 
@@ -45,7 +45,8 @@ export function You({ view }: { readonly view: GroupView }): ReactNode {
 /** The tab “Le groupe” of my page: its name to rename, its members, each opening their sheet, and a way to add one. */
 export function GroupMembers({ view }: { readonly view: GroupView }): ReactNode {
   const count = useId();
-  const taken = (text: string) => view.members.some((member) => memberNameKey(member.name) === memberNameKey(text));
+  const taken = (text: string, self?: MemberId) =>
+    view.members.some((member) => member.id !== self && memberNameKey(member.name) === memberNameKey(text));
   return (
     <>
       <MeBar view={view} tab="group" />
