@@ -1,6 +1,6 @@
 # Hébergement et stack (relevé du 16/11/2026)
 
-**Retenu le 16/11/2026 : Cloudflare Workers et D1, juridiction UE, offre gratuite (README, décision 7).** Les autres options restent documentées ici comme alternatives écartées.
+**Retenu le 16/11/2026 : Cloudflare Workers et D1, juridiction UE, offre gratuite (décision [Hébergement et stack](../decisions/hebergement-et-stack.md)).** Les autres options restent documentées ici comme alternatives écartées.
 
 Statut : recherche d'un sous-agent le 16/11/2026, non contre-vérifiée ; chiffres clés relus dans leur page le 16/11 (sections suivantes). [L] lu dans la page de l'éditeur (par un modèle de résumé, pas un relevé brut), [NL] non lu dans la source, [D] déduit.
 
