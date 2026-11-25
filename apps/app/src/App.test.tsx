@@ -3,6 +3,7 @@ import { cleanup, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
+import avatarStyles from './screens/Avatar.module.css';
 import type { Fetch } from './sync/client.ts';
 import { change, fakeServer, json } from './testing/fake-server.ts';
 import { rememberMember } from './testing/groupDb.ts';
@@ -192,13 +193,13 @@ describe('a group as one of its members', () => {
           .filter((span) => span.childElementCount === 0 && span.closest('[aria-hidden]') === null)
           .map((span) => span.textContent),
       );
-  // The initial of each row's avatar, and whether it takes my color (class `me` of `Avatar.module.css`, hashed by Vite).
+  // The initial of each row's avatar, and whether it takes my color.
   const payerAvatarsOf = (list: HTMLElement) =>
     within(list)
       .getAllByRole('listitem')
       .map((row) => {
         const avatar = row.querySelector('[aria-hidden]');
-        return [avatar?.textContent, /(^|\s)_me_/.test(avatar?.className ?? '')];
+        return [avatar?.textContent, avatar?.classList.contains(avatarStyles.me ?? '') ?? false];
       });
 
   it('lists the operations under their day, the latest first, each saying in words what it means for me', async () => {
