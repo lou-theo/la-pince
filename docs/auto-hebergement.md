@@ -124,7 +124,7 @@ Une instance déjà installée l'active comme tout changement du modèle (sectio
 
 ## Sauvegarde
 
-D1 garde de quoi restaurer la base à la minute près sur les 7 derniers jours (Time Travel, inclus dans l'offre gratuite) :
+D1 garde de quoi restaurer la base à la minute près sur les 7 derniers jours (Time Travel, inclus dans l'offre gratuite, sans réglage : la base distante rend des points de restauration pour des instants passés, constaté le 19/11/2026) :
 
 ```sh
 pnpm --filter @la-pince/server exec wrangler d1 time-travel info la-pince --config wrangler.production.jsonc
@@ -135,9 +135,9 @@ Après une fusion qui a abîmé la base, avec le déploiement automatique : annu
 
 ### Copie quotidienne, au-delà de 7 jours
 
-Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi de la perte du compte doit vivre ailleurs. `tools/sauvegarde/sauvegarde.yml` est une tâche planifiée GitHub qui exporte la base chaque nuit et commite une copie dans un repo privé, seulement si la base a changé : l'historique du repo donne la base à toute date passée. Le fichier est compressé puis chiffré avec age (https://age-encryption.org) vers une clé publique : la tâche et le repo ne peuvent pas le relire, seule la clé privée, gardée dans un gestionnaire de mots de passe, l'ouvre. Cette clé perdue, aucune copie ne se restaure plus. À côté de la copie, la tâche commite la clé publique utilisée et l'empreinte SHA-256 de l'export en clair, qui lui sert à voir si la base a changé ; cette empreinte ne permet que de confirmer qu'une base entière qu'on détient déjà est celle de la copie. Elle tient dans les minutes gratuites de GitHub Actions pour un repo privé ; l'export bloque la base le temps qu'il tourne, quelques secondes pour un groupe.
+Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi de la perte du compte doit vivre ailleurs. `tools/sauvegarde/sauvegarde.yml` est une tâche planifiée GitHub qui exporte la base chaque nuit et commite une copie dans un repo privé, seulement si la base a changé : l'historique du repo donne la base à toute date passée. Le fichier est compressé puis chiffré avec age (https://age-encryption.org) vers une clé publique : la tâche et le repo ne peuvent pas le relire, seule la clé privée, gardée dans un gestionnaire de mots de passe, l'ouvre. Cette clé perdue, aucune copie ne se restaure plus. À côté de la copie, la tâche commite la clé publique utilisée et l'empreinte SHA-256 de l'export en clair, qui lui sert à voir si la base a changé : deux exports d'une base inchangée sont identiques, mais deux chiffrements du même export diffèrent (constaté le 19/11/2026) ; cette empreinte ne permet que de confirmer qu'une base entière qu'on détient déjà est celle de la copie. Elle tient dans les minutes gratuites de GitHub Actions pour un repo privé ; l'export bloque la base le temps qu'il tourne, quelques secondes pour un groupe.
 
-1. Créer un jeton d'API réservé à la sauvegarde, pour que GitHub ne garde pas celui du déploiement : My Profile, API Tokens, Create Token, Custom token, permission Account, D1, Edit (l'export est refusé en lecture seule) ; le récapitulatif doit montrer « D1: Edit » seul.
+1. Créer un jeton d'API réservé à la sauvegarde, pour que GitHub ne garde pas celui du déploiement : My Profile, API Tokens, Create Token, Custom token, permission Account, D1, Edit (l'export est refusé en lecture seule, constaté le 19/11/2026) ; le récapitulatif doit montrer « D1: Edit » seul.
 2. Créer le repo privé à côté du dossier du code, pas dedans, et y mettre la tâche (`<compte>` étant son compte GitHub) :
 
    ```sh
@@ -181,7 +181,7 @@ Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi d
    cat ../la-pince-sauvegardes/la-pince.sql.sha256
    ```
 
-GitHub prévient par mail d'une copie en échec la personne qui a poussé la tâche, selon ses réglages de notifications. Une tâche planifiée peut partir en retard, ou plus rarement sauter un jour, quand GitHub est chargé.
+GitHub prévient par mail d'une copie en échec la personne qui a poussé la tâche, selon ses réglages de notifications. Une tâche planifiée peut partir en retard, ou plus rarement sauter un jour, quand GitHub est chargé : planifiée la nuit, elle est partie en journée chaque jour du 20 au 24/11/2026 sur une instance.
 
 ### Restaurer une copie
 
@@ -202,3 +202,5 @@ rm "$PWD/temp/la-pince-restauree.sql" "$PWD/temp/la-pince-restauree.sql.gz.age"
 ```
 
 Enfin, dans `apps/server/wrangler.production.jsonc`, remplacer seulement `database_id` par celui de la base neuve (donné par `d1 create`), en gardant `database_name` à `la-pince` : le déploiement et les commandes Time Travel trouvent la base par ce nom dans la config, et viseraient sinon l'ancienne base ou échoueraient ; redéployer (section 4, et reposer `WRANGLER_PRODUCTION_JSONC_BASE64` si la CI déploie), et donner `la-pince-restauree` à la variable `D1_DATABASE` du repo de sauvegarde. Les téléphones voient que la base a changé et relisent leur groupe en entier ; ce qui a été saisi après la copie est perdu, sauf ce qui attendait encore dans la file d'envoi d'un téléphone.
+
+Ce qui a été vérifié de la restauration, le 19/11/2026 sur le groupe de démo : un export rejoué dans une D1 locale, puis dans une base D1 neuve sur Cloudflare, redonne les mêmes nombres de versions et d'opérations et le même compteur `sqlite_sequence`, dont dépend la détection d'une base restaurée par les téléphones (`docs/architecture.md`, Synchronisation hors ligne) ; une copie chiffrée, déchiffrée par `age -d -i -` avec la clé lue dans le presse-papiers, redonne l'export à l'octet près et, rejouée dans une D1 locale, les mêmes nombres que la base en ligne.
