@@ -38,6 +38,18 @@ describe('groupResponseSchema', () => {
     const newer = { ...group, picture: 'x', members: group.members.map((member) => ({ ...member, picture: 'x' })) };
     expect(groupResponseSchema.parse(newer)).toStrictEqual(group);
   });
+
+  it('keeps the photo of a member and the photos of the instance', () => {
+    const withPhotos = { ...group, photos: true, members: [{ id: 'alice', name: 'Alice', photo: 'a'.repeat(22) }, group.members[1]] };
+    expect(groupResponseSchema.parse(withPhotos)).toStrictEqual(withPhotos);
+  });
+
+  it.each([
+    ['a photo that is not a version', { ...group, members: [{ id: 'alice', name: 'Alice', photo: 'x' }] }],
+    ['photos set to false', { ...group, photos: false }],
+  ])('rejects %s', (_, response) => {
+    expect(groupResponseSchema.safeParse(response).success).toBe(false);
+  });
 });
 
 describe('adminGroupSchema', () => {
@@ -54,6 +66,8 @@ describe('adminGroupSchema', () => {
     ['no token', group],
     ['an unknown field', { ...group, token, picture: 'x' }],
     ['an unknown field on a member', { ...group, token, members: [{ id: 'alice', name: 'Alice', picture: 'x' }] }],
+    ['a photo on a member, which changes by its own routes', { ...group, token, members: [{ id: 'alice', name: 'Alice', photo: 'a'.repeat(22) }] }],
+    ['photos', { ...group, token, photos: true }],
   ])('rejects %s', (_, request) => {
     expect(adminGroupSchema.safeParse(request).success).toBe(false);
   });

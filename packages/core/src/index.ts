@@ -66,6 +66,16 @@ export {
   unknownMembers,
 } from './operation.ts';
 export {
+  isAcceptedPhoto,
+  jpegSize,
+  MAX_PHOTO_BYTES,
+  MAX_PHOTO_SIDE,
+  type PhotoUndo,
+  photoUndoSchema,
+  type PhotoVersion,
+  photoVersionSchema,
+} from './photo.ts';
+export {
   type ApiError,
   apiErrorSchema,
   type ChangesQuery,

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { memberIdSchema } from './ids.ts';
+import { photoVersionSchema } from './photo.ts';
 import { enteredTextSchema, textSchema, withoutInvisible } from './text.ts';
 
 // Far above the names (8 characters) and the title (12) of the group's history; exported for the app's fields.
@@ -18,7 +19,8 @@ export const groupTitleSchema = textSchema(MAX_GROUP_TITLE_LENGTH);
 const enteredMemberNameSchema = enteredTextSchema(MAX_MEMBER_NAME_LENGTH);
 const enteredGroupTitleSchema = enteredTextSchema(MAX_GROUP_TITLE_LENGTH);
 
-// Read and written members share their fields: the read drops a field it does not know, sent by a newer server, where the server refuses one.
+// Read and written members share their fields: the read drops a field it does not know, sent by a newer server, where the server refuses one. The
+// photo is read only: the admin route refuses it, a photo changing by its own routes.
 const memberShape = { id: memberIdSchema, name: memberNameSchema };
 
 /**
@@ -26,7 +28,7 @@ const memberShape = { id: memberIdSchema, name: memberNameSchema };
  * running the previous version of the app, and a copy saved on the phone before a field existed must still load, so a field added to a member later
  * is optional.
  */
-export const memberSchema = z.object(memberShape);
+export const memberSchema = z.object({ ...memberShape, photo: photoVersionSchema.optional() });
 export type Member = z.infer<typeof memberSchema>;
 
 const memberInputSchema = z.strictObject(memberShape);
@@ -40,9 +42,10 @@ const membersOf = <T extends { id: string }>(member: z.ZodType<T>) =>
 
 /**
  * A group as the server sends it (`GET /api/groups/:token` and the routes that edit it): its title and its members in the order they were added;
- * operations come by the changes. Tolerant of unknown fields, like `memberSchema`.
+ * operations come by the changes. Tolerant of unknown fields, like `memberSchema`. `photos` tells that the instance keeps photos: without it, the
+ * app offers none and no member has one.
  */
-export const groupResponseSchema = z.object({ title: groupTitleSchema, members: membersOf(memberSchema) });
+export const groupResponseSchema = z.object({ title: groupTitleSchema, members: membersOf(memberSchema), photos: z.literal(true).optional() });
 export type GroupResponse = z.infer<typeof groupResponseSchema>;
 
 /** Secret of a group's link: whoever has it reads and writes the group. Long and random, so that it cannot be guessed. */

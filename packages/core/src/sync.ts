@@ -120,7 +120,9 @@ export type OperationBatchResponse = z.infer<typeof operationBatchResponseSchema
  * link token of another group; `notifications_disabled`: the instance has no push keys or no queue; `subscription_not_found`: no subscription of
  * the group behind the endpoint; `too_many_subscriptions`: the group holds the most subscriptions the server keeps for it; `member_not_found`: the
  * group has no member with that id; `too_many_members`: the group already holds `MAX_GROUP_MEMBERS`;
- * `member_name_taken`: another member of the group has the same name (`memberNameKey`).
+ * `member_name_taken`: another member of the group has the same name (`memberNameKey`); `photos_disabled`: the instance keeps no photos;
+ * `photo_not_found`: no photo stored under that version; `photo_changed`: the photo an undo names was changed in between by someone else;
+ * `photos_unavailable`: the store of the photos refused to write (daily quota spent, or an outage), to try again later.
  */
 export const apiErrorSchema = z.strictObject({
   error: z.enum([
@@ -135,6 +137,10 @@ export const apiErrorSchema = z.strictObject({
     'member_not_found',
     'too_many_members',
     'member_name_taken',
+    'photos_disabled',
+    'photo_not_found',
+    'photo_changed',
+    'photos_unavailable',
   ]),
 });
 export type ApiError = z.infer<typeof apiErrorSchema>;
