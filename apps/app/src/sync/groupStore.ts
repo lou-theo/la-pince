@@ -55,6 +55,11 @@ export interface GroupStore {
   readonly start: () => () => void;
   /** Remembers who I am on this phone. */
   readonly chooseMember: (member: MemberId) => void;
+  /**
+   * Shows the group a route that edits it answered (title, members), then reads it again with its changes. A read that started before keeps this
+   * group when it ends: it would otherwise bring back the members as they were, and an expense on a member just added would be refused.
+   */
+  readonly applyGroup: (group: GroupResponse) => void;
 }
 
 type PassResult = 'empty' | 'sent' | 'failed';
@@ -89,6 +94,8 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
   let failures = 0;
   let retry: ReturnType<typeof setTimeout> | undefined;
   let started = false;
+  // Counts the groups applied from an edit, so that a read started before one does not publish the group it fetched earlier.
+  let applied = 0;
 
   const publish = (next: GroupState) => {
     state = next;
@@ -199,10 +206,17 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       if (state.status === 'error') {
         publish({ status: 'loading' });
       }
+      const appliedBefore = applied;
       reading = read()
         // A group already shown stays on screen when a read fails, with the error beside it.
         .then((next) => {
-          publish(next.status === 'error' && state.status === 'ready' ? { ...state, readError: next.error } : next);
+          if (state.status === 'ready' && next.status === 'error') {
+            publish({ ...state, readError: next.error });
+          } else if (state.status === 'ready' && next.status === 'ready' && applied !== appliedBefore) {
+            publish({ ...next, group: state.group });
+          } else {
+            publish(next);
+          }
         })
         .finally(() => {
           reading = undefined;
@@ -382,6 +396,17 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
         publish({ ...state, currentMember });
       }
       void db.then((opened) => opened?.saveCurrentMember(member)).catch(() => undefined);
+    },
+    applyGroup(group) {
+      applied += 1;
+      if (state.status === 'ready') {
+        publish({ ...state, group });
+      }
+      // After the read running now, if any: that one fetched the group too early.
+      void (async () => {
+        await reading;
+        await load();
+      })();
     },
   };
 }

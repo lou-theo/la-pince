@@ -742,3 +742,79 @@ describe('the copy kept on the phone', () => {
     expect(ids(first.store.getSnapshot())).toStrictEqual(['a', 'b']);
   });
 });
+
+describe('editing the group', () => {
+  it('shows the group an edit answered and keeps it over a read started before, so that an expense on a new member goes through', async () => {
+    const server = fakeServer({ token, group, changes: [] });
+    // Holds the group fetched by the next read, as the server stood then, until the gate opens.
+    let gate: Promise<void> | undefined;
+    let open: () => void = () => undefined;
+    const fetchFn: Fetch = (url, init) => {
+      if (gate !== undefined && url === `/api/groups/${token}` && init?.method === undefined) {
+        const held = gate;
+        gate = undefined;
+        const early = server.fetch(url, init);
+        return held.then(() => early);
+      }
+      return server.fetch(url, init);
+    };
+    const client = createApiClient(fetchFn);
+    const store = createGroupStore(client, token);
+    await store.load();
+    gate = new Promise((resolve) => {
+      open = resolve;
+    });
+    const stale = store.load();
+    // The read has fetched the group before the edit reaches the server.
+    await vi.waitFor(() => {
+      expect(gate).toBeUndefined();
+    });
+
+    const added = await client.addMember(token, { id: memberIdSchema.parse('m9'), name: 'Zoé' });
+    if (!added.ok) {
+      throw new Error(added.error);
+    }
+    store.applyGroup(added.value);
+    const members = () => {
+      const state = store.getSnapshot();
+      return state.status === 'ready' ? state.group.members.map((member) => member.name) : [];
+    };
+    expect(members()).toStrictEqual(['Alice', 'Zoé']);
+    const expense = operationSchema.parse({
+      id: 'with-zoe',
+      revisionId: 'with-zoe-1',
+      title: 'Glaces',
+      date: '2026-11-25',
+      entry: { version: 1, kind: 'expense', payer: 'm9', lines: [{ member: 'm1', amount: 300 }] },
+    });
+    expect(await store.enqueue(expense)).toStrictEqual({ ok: true });
+
+    // The read started before the edit ends with the group as it was: the edit's group stays.
+    open();
+    await stale;
+    expect(members()).toStrictEqual(['Alice', 'Zoé']);
+    await vi.waitFor(() => {
+      const state = store.getSnapshot();
+      expect(state.status === 'ready' && { outbox: state.outbox.length, changes: [...state.changes.keys()] }).toStrictEqual({
+        outbox: 0,
+        changes: ['with-zoe'],
+      });
+    });
+    expect(members()).toStrictEqual(['Alice', 'Zoé']);
+  });
+
+  it('reads the group again after an edit, which brings what changed meanwhile', async () => {
+    const { server, store } = watch([]);
+    await store.load();
+    const calls = server.calls.length;
+    store.applyGroup(groupResponseSchema.parse({ title: 'Renamed', members: group.members }));
+    expect(store.getSnapshot()).toMatchObject({ status: 'ready', group: { title: 'Renamed' } });
+    await vi.waitFor(() => {
+      expect(server.calls.length).toBeGreaterThan(calls);
+    });
+    // The fake server still holds the old title: the read that follows shows it, the last read being what the server holds.
+    await vi.waitFor(() => {
+      expect(store.getSnapshot()).toMatchObject({ status: 'ready', group: { title: 'Week-end' } });
+    });
+  });
+});
