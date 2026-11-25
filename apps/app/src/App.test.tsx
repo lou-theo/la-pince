@@ -208,7 +208,7 @@ describe('a group as one of its members', () => {
     // The year is said only for another year than today's.
     expect(days.map((day) => day.textContent.replace(/ 2026$/, ''))).toStrictEqual(['Samedi 7 novembre', 'Vendredi 6 novembre', 'Jeudi 5 novembre']);
     expect(screen.getAllByRole('list').flatMap(rowsOf)).toStrictEqual([
-      ['Virement', 'Chloé a remboursé 5,00 € à Alice', 'Pas concerné'],
+      ['Virement', 'Chloé a remboursé 5,00 € à\u00a0Alice', 'Pas concerné'],
       ['Péage', 'Tu as payé 7,00 €', 'Tu as avancé', '7,00 €'],
       ['Courses', 'Alice a payé 45,00 €', 'Tu dois', '20,00 €'],
     ]);
