@@ -34,7 +34,7 @@ function GroupLoader({ token }: { readonly token: string }) {
   const [edits] = useState((): Omit<GroupEdit, 'online'> => {
     const shown = (result: ApiResult<GroupResponse, GroupEditError>): EditResult => {
       if (!result.ok) {
-        void store.load();
+        void store.reread();
         return result;
       }
       store.applyGroup(result.value);

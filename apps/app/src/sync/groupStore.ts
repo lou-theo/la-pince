@@ -60,6 +60,8 @@ export interface GroupStore {
    * group when it ends: it would otherwise bring back the members as they were, and an expense on a member just added would be refused.
    */
   readonly applyGroup: (group: GroupResponse) => void;
+  /** Reads the group again once the read running now, if any, is done: that one may have fetched it before what is to be seen. */
+  readonly reread: () => Promise<void>;
 }
 
 type PassResult = 'empty' | 'sent' | 'failed';
@@ -226,6 +228,11 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
         });
     }
     return reading;
+  }
+
+  async function reread(): Promise<void> {
+    await reading;
+    await load();
   }
 
   async function removeFromOutbox(keys: readonly number[]): Promise<void> {
@@ -405,11 +412,8 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       if (state.status === 'ready') {
         publish({ ...state, group });
       }
-      // After the read running now, if any: that one fetched the group too early.
-      void (async () => {
-        await reading;
-        await load();
-      })();
+      void reread();
     },
+    reread,
   };
 }

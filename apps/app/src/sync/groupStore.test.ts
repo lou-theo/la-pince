@@ -847,6 +847,38 @@ describe('editing the group', () => {
     expect(state.status === 'ready' && state.group.members.map((member) => member.name)).toStrictEqual(['Alice', 'Zoé']);
   });
 
+  it('reads again after the read running now, which may have fetched the group before what is to be seen', async () => {
+    const server = fakeServer({ token, group, changes: [] });
+    let gate: Promise<void> | undefined;
+    let open: () => void = () => undefined;
+    let groupReads = 0;
+    const fetchFn: Fetch = (url, init) => {
+      if (url === `/api/groups/${token}` && init?.method === undefined) {
+        groupReads += 1;
+        if (gate !== undefined) {
+          const held = gate;
+          gate = undefined;
+          const early = server.fetch(url, init);
+          return held.then(() => early);
+        }
+      }
+      return server.fetch(url, init);
+    };
+    const store = createGroupStore(createApiClient(fetchFn), token);
+    await store.load();
+    gate = new Promise((resolve) => {
+      open = resolve;
+    });
+    void store.load();
+    await vi.waitFor(() => {
+      expect(gate).toBeUndefined();
+    });
+    const reread = store.reread();
+    open();
+    await reread;
+    expect(groupReads).toBe(3);
+  });
+
   it('reads the group again after an edit, which brings what changed meanwhile', async () => {
     const { server, store } = watch([]);
     await store.load();
