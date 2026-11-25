@@ -30,8 +30,8 @@ pnpm --filter @la-pince/server exec wrangler login
 La commande ouvre le navigateur pour autoriser Wrangler, l'outil en ligne de commande de Cloudflare. Sur une machine sans navigateur, un jeton d'API fait la même chose :
 
 1. My Profile, API Tokens, Create Token, modèle « Edit Cloudflare Workers ».
-2. Dans la carte Account policy, qui porte déjà le compte, ajouter D1 et Queues en cochant Edit pour chacun.
-3. Le récapitulatif doit montrer « D1: Edit », « Queues: Edit » et « Workers Scripts: Edit ».
+2. Dans la carte Account policy, qui porte déjà le compte, ajouter D1 et Queues en cochant Edit pour chacun, et Workers KV Storage si l'instance gardera les photos des membres (section 5, « Photos des membres »).
+3. Le récapitulatif doit montrer « D1: Edit », « Queues: Edit » et « Workers Scripts: Edit », plus « Workers KV Storage: Edit » pour les photos.
 4. Donner le jeton à Wrangler par les variables d'environnement `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` (l'identifiant du compte s'affiche dans Workers & Pages, Account details), ou par un fichier qui les contient, passé à chaque commande `wrangler` par `--env-file <fichier>`.
 
 ## 3. Créer la base et la file
@@ -52,7 +52,7 @@ pnpm --filter @la-pince/server run deploy
 
 `run` est nécessaire : `pnpm deploy` est une autre commande, propre à pnpm. Le script construit l'app, applique à la base les migrations qu'elle n'a pas encore, puis publie le Worker, et affiche l'adresse de l'instance. Au tout premier déploiement, l'adresse peut répondre « 404 Not Found » pendant une minute ou deux, le temps que Cloudflare la propage.
 
-Pour mettre à jour l'instance : `git pull`, `pnpm install`, puis comparer sa config au modèle, qui a pu changer (`diff apps/server/wrangler.production.example.jsonc apps/server/wrangler.production.jsonc` ne doit montrer que l'identifiant de la base), reporter les changements, et relancer le déploiement. Une instance installée avant les notifications voit apparaître le bloc `queues` : avant de le reporter, ajouter « Queues: Edit » au jeton du déploiement (section 2, celui de la CI compris), créer la file (section 3), puis poser les clés (section 5, « Clés des notifications ») ; sans le bloc, l'instance continue de tourner, sans notifications.
+Pour mettre à jour l'instance : `git pull`, `pnpm install`, puis comparer sa config au modèle, qui a pu changer (`diff apps/server/wrangler.production.example.jsonc apps/server/wrangler.production.jsonc` ne doit montrer que l'identifiant de la base, et celui de l'espace des photos s'il est posé), reporter les changements, et relancer le déploiement. Une instance installée avant les notifications voit apparaître le bloc `queues` : avant de le reporter, ajouter « Queues: Edit » au jeton du déploiement (section 2, celui de la CI compris), créer la file (section 3), puis poser les clés (section 5, « Clés des notifications ») ; sans le bloc, l'instance continue de tourner, sans notifications.
 
 ### Déployer à chaque fusion sur `main` (facultatif)
 
@@ -65,7 +65,7 @@ Sur un repo GitHub à soi (un fork, par exemple, dont les workflows sont à acti
    gh api -X POST repos/<compte>/<repo>/environments/production/deployment-branch-policies -f name=main
    ```
 
-2. Y poser les secrets : le jeton d'API de la section 2 (« D1: Edit », « Queues: Edit » et « Workers Scripts: Edit »), l'identifiant du compte, et le contenu de `apps/server/wrangler.production.jsonc` encodé en base64, sur une seule ligne, pour que GitHub ne masque pas chacune de ses lignes dans les journaux. `gh secret set` sans valeur demande de la coller, sans l'afficher :
+2. Y poser les secrets : le jeton d'API de la section 2 (« D1: Edit », « Queues: Edit » et « Workers Scripts: Edit », plus « Workers KV Storage: Edit » avec les photos), l'identifiant du compte, et le contenu de `apps/server/wrangler.production.jsonc` encodé en base64, sur une seule ligne, pour que GitHub ne masque pas chacune de ses lignes dans les journaux. `gh secret set` sans valeur demande de la coller, sans l'afficher :
 
    ```sh
    gh secret set CLOUDFLARE_API_TOKEN --env production -R <compte>/<repo>
@@ -99,6 +99,26 @@ unset keys
 
 Une seule fois par instance : changer de clés désabonne tous les téléphones, qui doivent réactiver les notifications. Sans ces deux secrets, ou sans la file, l'instance tourne sans notifications et l'app ne les propose pas. Avec eux, chaque personne active les notifications sur sa page, ouverte par son avatar en haut de l'écran du groupe ; sur iPhone (iOS 16.4 ou plus), l'app doit d'abord être ajoutée à l'écran d'accueil et ouverte depuis là.
 
+### Photos des membres (facultatif)
+
+Chaque membre peut avoir une photo à la place de son initiale, posée depuis l'app par n'importe qui dans le groupe. Les photos vivent dans un espace KV (stockage clé-valeur de Cloudflare), à part de la base. Sans cet espace, l'instance tourne sans photos et l'app n'en propose pas. Pour l'activer :
+
+1. Donner au jeton du déploiement le droit « Workers KV Storage: Edit » (section 2) : avec `wrangler login`, rien à faire ; pour un jeton existant, My Profile, API Tokens, Edit sur le jeton, sans que sa valeur change.
+2. Créer l'espace :
+
+   ```sh
+   pnpm --filter @la-pince/server exec wrangler kv namespace create la-pince-photos --jurisdiction eu --update-config=false
+   ```
+
+   `--jurisdiction eu` garde les photos stockées dans l'Union européenne, comme la base ; Cloudflare peut en garder des copies en cache hors de l'Union pour les servir plus vite, et ce choix ne se change plus après la création (https://developers.cloudflare.com/kv/reference/data-location/, lu le 25/11/2026). La doc de Cloudflare ne dit pas si l'offre gratuite y a droit : si la commande refuse l'option, l'espace se crée sans elle, les photos étant alors stockées hors de l'Union.
+
+3. Dans `apps/server/wrangler.production.jsonc`, reporter le bloc `kv_namespaces` du modèle et y coller l'identifiant affiché (`id`) à la place de `<kv namespace id>`. L'identifiant est indispensable : sans lui, `wrangler deploy` crée de lui-même un autre espace, hors de l'Union.
+4. Redéployer (section 4), ou, si la CI déploie, reposer `WRANGLER_PRODUCTION_JSONC_BASE64` avec la config à jour (section 4, « Déployer à chaque fusion sur `main` »), le jeton de la CI ayant reçu le droit de l'étape 1.
+
+L'offre gratuite de KV permet par jour 1 000 écritures, 1 000 suppressions et 100 000 lectures, pour tout le compte, et 1 Go stocké ; au-delà, l'opération échoue jusqu'à la remise à zéro de 00:00 UTC (01:00 heure de Paris en hiver, 02:00 en été) (https://developers.cloudflare.com/kv/platform/pricing/, lu le 25/11/2026). Changer une photo coûte une écriture et une suppression ; l'annuler ou la retirer, rien dans KV. Quota épuisé, le serveur refuse l'envoi d'une photo (`503 photos_unavailable`), à refaire plus tard. Une photo pèse au plus 200 Ko, et chaque membre en garde deux au plus (l'actuelle et la précédente, pour « Annuler »), soit 40 Mo au plus pour un groupe de 100 membres.
+
+Les photos ne sont pas dans la sauvegarde (section Sauvegarde), qui ne copie que la base. Après une restauration de la base, un membre dont la photo a changé deux fois depuis l'instant restauré montre son initiale, sa photo d'alors n'étant plus gardée, jusqu'à ce qu'on lui en pose une nouvelle. Retirer le bloc `kv_namespaces` de la config arrête les photos : les membres retrouvent leur initiale, et l'espace garde les photos jusqu'à sa suppression dans le tableau de bord.
+
 ## 6. Créer le groupe
 
 Un groupe se crée en important un export Tricount avec `tools/import-tricount` ; `docs/cadrage/export/lire_tricount.py` lit un groupe Tricount par le lien de partage, au moyen de l'API non officielle de l'app. Pour essayer l'instance avant, le corpus de démonstration du repo, anonymisé, fait un groupe complet :
@@ -124,7 +144,7 @@ Une instance déjà installée l'active comme tout changement du modèle (sectio
 
 ## Sauvegarde
 
-D1 garde de quoi restaurer la base à la minute près sur les 7 derniers jours (Time Travel, inclus dans l'offre gratuite, sans réglage : la base distante rend des points de restauration pour des instants passés, constaté le 19/11/2026) :
+Restauration et copie ne portent que sur la base : les photos des membres, dans KV, n'en font pas partie (section 5, « Photos des membres »). D1 garde de quoi restaurer la base à la minute près sur les 7 derniers jours (Time Travel, inclus dans l'offre gratuite, sans réglage : la base distante rend des points de restauration pour des instants passés, constaté le 19/11/2026) :
 
 ```sh
 pnpm --filter @la-pince/server exec wrangler d1 time-travel info la-pince --config wrangler.production.jsonc

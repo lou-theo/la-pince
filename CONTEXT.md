@@ -5,6 +5,7 @@ Chaque terme du domaine est défini une fois ici ; les docs et l'interface l'emp
 - **Groupe** (`Group`) : ensemble de personnes qui partagent des dépenses, accessible par un lien, sans compte.
 - **Jeton du lien** (`token`) : secret contenu dans le lien d'un groupe ; qui l'a lit et écrit le groupe, le serveur n'en garde qu'un haché.
 - **Membre** (`Member`) : personne d'un groupe, qu'elle ait l'app ou non ; quelqu'un d'autre peut saisir pour elle.
+- **Photo** (`photo`) : image carrée d'un membre, montrée à la place de son initiale ; posée, changée ou retirée par n'importe qui dans le groupe, désignée par sa version (`PhotoVersion`), l'empreinte de son contenu.
 - **Qui je suis** (`currentMember`) : le membre qu'une personne déclare être sur son téléphone ; il détermine « ma part » et les notifications reçues.
 - **Opération** (`Operation`) : ce qu'on enregistre dans un groupe, dépense ou remboursement ; seul objet de la synchronisation.
 - **Nature** (`kind`) : dépense (`expense`) ou remboursement (`reimbursement`) ; sert à l'affichage et, par l'effet, à dire si l'opération compte dans le total dépensé, jamais au calcul des parts, et ne se déduit pas de la forme (une avance pour un ami a la forme d'un remboursement).
