@@ -3,6 +3,7 @@ import { cleanup, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
+import avatarStyles from './screens/Avatar.module.css';
 import type { Fetch } from './sync/client.ts';
 import { change, fakeServer, json } from './testing/fake-server.ts';
 import { rememberMember } from './testing/groupDb.ts';
@@ -183,10 +184,23 @@ describe('a group as one of its members', () => {
     return { user, location };
   }
 
+  // The texts of each row, without the avatar, which is not read.
   const rowsOf = (list: HTMLElement) =>
     within(list)
       .getAllByRole('listitem')
-      .map((row) => [...row.querySelectorAll('span span')].map((span) => span.textContent));
+      .map((row) =>
+        [...row.querySelectorAll('span')]
+          .filter((span) => span.childElementCount === 0 && span.closest('[aria-hidden]') === null)
+          .map((span) => span.textContent),
+      );
+  // The initial of each row's avatar, and whether it takes my color.
+  const payerAvatarsOf = (list: HTMLElement) =>
+    within(list)
+      .getAllByRole('listitem')
+      .map((row) => {
+        const avatar = row.querySelector('[aria-hidden]');
+        return [avatar?.textContent, avatar?.classList.contains(avatarStyles.me ?? '') ?? false];
+      });
 
   it('lists the operations under their day, the latest first, each saying in words what it means for me', async () => {
     await openAsBruno();
@@ -194,12 +208,27 @@ describe('a group as one of its members', () => {
     // The year is said only for another year than today's.
     expect(days.map((day) => day.textContent.replace(/ 2026$/, ''))).toStrictEqual(['Samedi 7 novembre', 'Vendredi 6 novembre', 'Jeudi 5 novembre']);
     expect(screen.getAllByRole('list').flatMap(rowsOf)).toStrictEqual([
-      ['Virement', 'Chloé a remboursé 5,00 € à Alice', 'Pas concerné'],
+      ['Virement', 'Chloé a remboursé 5,00 € à\u00a0Alice', 'Pas concerné'],
       ['Péage', 'Tu as payé 7,00 €', 'Tu as avancé', '7,00 €'],
       ['Courses', 'Alice a payé 45,00 €', 'Tu dois', '20,00 €'],
     ]);
     expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('link', { name: 'Ajouter une dépense' }).getAttribute('href')).toBe(`/g/${token}/nouvelle-depense`);
+  });
+
+  it('shows the avatar of who paid before the words, mine in my color, and keeps the one of a member gone from the list', async () => {
+    await openAsBruno(
+      `/g/${token}`,
+      group.members.filter((member) => member.id !== 'm1'),
+    );
+    // Chloé reimbursing, me paying, then Alice, gone from the list, known by her identifier.
+    expect(screen.getAllByRole('list').flatMap(payerAvatarsOf)).toStrictEqual([
+      ['C', false],
+      ['B', true],
+      ['M', false],
+    ]);
+    // Out of what is read: the line says the same words as without it.
+    expect(screen.getByRole('link', { name: /^Courses m1 a payé 45,00\s€ Tu dois 20,00\s€$/ })).toBeDefined();
   });
 
   it('says who reimbursed whom, “you” standing for who I am', async () => {

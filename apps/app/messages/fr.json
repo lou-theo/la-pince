@@ -31,7 +31,7 @@
   "operation_you_paid": "Tu as payé {amount}",
   "operation_you_reimbursed": "Tu as remboursé {to}",
   "operation_reimbursed_you": "{from} t'a remboursé",
-  "operation_reimbursed_amount": "{from} a remboursé {amount} à {to}",
+  "operation_reimbursed_amount": "{from} a remboursé {amount} à\u00a0{to}",
   "part_owe": "Tu dois",
   "part_advanced": "Tu as avancé",
   "part_own": "Ta part",
