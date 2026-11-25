@@ -1,5 +1,5 @@
 import { type ApiError, groupResponseSchema, MAX_GROUP_MEMBERS, newMemberSchema } from '@la-pince/core';
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,11 +20,16 @@ interface Sent {
 
 /**
  * Opens the group as Bruno at a path, on a fake server that edits the group as the real one does; records the edits sent. `fail` makes the edits it
- * picks fail for want of network, `answer` replaces the server's answer to an edit.
+ * picks fail for want of network, `answer` replaces the server's answer to an edit, `hold` keeps the edits waiting until it settles.
  */
 async function open(
   path: string,
-  options: { fail?: (sent: Sent) => boolean; answer?: (sent: Sent) => Response | undefined; group?: typeof testGroup } = {},
+  options: {
+    fail?: (sent: Sent) => boolean;
+    answer?: (sent: Sent) => Response | undefined;
+    hold?: Promise<void>;
+    group?: typeof testGroup;
+  } = {},
 ) {
   const server = fakeServer({ token, group: options.group ?? testGroup });
   const edits: Sent[] = [];
@@ -43,6 +48,9 @@ async function open(
       const replaced = options.answer?.(sent);
       if (replaced !== undefined) {
         return Promise.resolve(replaced);
+      }
+      if (options.hold !== undefined) {
+        return options.hold.then(() => server.fetch(url, init));
       }
     }
     return server.fetch(url, init);
@@ -233,6 +241,44 @@ describe('adding a member', () => {
     });
     const third = newMemberSchema.parse(edits.at(-1)?.body);
     expect(third.id).not.toBe(first?.id);
+  });
+
+  it('leaves alone a sheet opened again while the answer for the one closed is on its way', async () => {
+    let release = () => undefined as void;
+    const hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { user } = await open('/moi/groupe', { hold });
+    await user.click(screen.getByRole('button', { name: 'Ajouter un membre' }));
+    const sheet = screen.getByRole('dialog', { name: 'Nouveau membre' });
+    await user.type(within(sheet).getByRole('textbox', { name: 'Prénom' }), 'Zoé{Enter}');
+    await user.click(within(sheet).getByRole('button', { name: 'Fermer' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter un membre' }));
+    await user.type(within(sheet).getByRole('textbox', { name: 'Prénom' }), 'Yann');
+    release();
+    await waitFor(() => {
+      expect(memberLines()).toContain('Zoé');
+    });
+    expect(sheet.hasAttribute('open')).toBe(true);
+    expect(within(sheet).getByRole<HTMLInputElement>('textbox', { name: 'Prénom' }).value).toBe('Yann');
+    expect(within(sheet).getByRole('button', { name: 'Ajouter au groupe' }).getAttribute('aria-disabled')).toBe('false');
+  });
+
+  it('stays open on a text selection released over the backdrop, and says why it cannot add once the network is gone', async () => {
+    const { user } = await open('/moi/groupe');
+    await user.click(screen.getByRole('button', { name: 'Ajouter un membre' }));
+    const sheet = screen.getByRole('dialog', { name: 'Nouveau membre' });
+    const field = within(sheet).getByRole('textbox', { name: 'Prénom' });
+    await user.type(field, 'Zoé');
+    fireEvent.pointerDown(field);
+    fireEvent.click(sheet);
+    expect(sheet.hasAttribute('open')).toBe(true);
+
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    window.dispatchEvent(new Event('offline'));
+    const why = await within(sheet).findByRole('status');
+    expect(why.textContent).toMatch(/^Pas de réseau\./);
+    expect(within(sheet).getByRole('button', { name: 'Ajouter au groupe' }).getAttribute('aria-describedby')).toBe(why.id);
   });
 
   it('greys a name already taken and tells a full group', async () => {

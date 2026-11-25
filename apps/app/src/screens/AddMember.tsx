@@ -1,4 +1,4 @@
-import { type MemberId, memberIdSchema, type NewMember } from '@la-pince/core';
+import { MAX_MEMBER_NAME_LENGTH, type MemberId, memberIdSchema, type NewMember } from '@la-pince/core';
 import { type ReactNode, useId, useRef, useState } from 'react';
 
 import { editErrorMessage } from '../i18n/errors.ts';
@@ -7,9 +7,6 @@ import { CloseIcon } from './FormFrame.tsx';
 import styles from './Me.module.css';
 import { useMounted } from './useMounted.ts';
 import type { EditResult } from './view.ts';
-
-// Same bound as the server's (`enteredTextSchema` of a name).
-const MAX_NAME_LENGTH = 50;
 
 interface AddMemberProps {
   readonly online: boolean;
@@ -29,6 +26,11 @@ export function AddMember({ online, taken, onAdd }: AddMemberProps): ReactNode {
   const opener = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const hintId = useId();
+  const offlineId = useId();
+  // The id of the sheet open now: an answer for a sheet closed meanwhile must not close, nor unblock, the next one.
+  const current = useRef<MemberId>(undefined);
+  // Where the press began: a text selection released over the backdrop is not a touch on it.
+  const pressedBackdrop = useRef(false);
   const [id, setId] = useState<MemberId>();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string>();
@@ -41,7 +43,10 @@ export function AddMember({ online, taken, onAdd }: AddMemberProps): ReactNode {
   const message = isTaken ? m.error_member_name_taken() : error;
 
   const open = () => {
-    setId(memberIdSchema.parse(crypto.randomUUID()));
+    const drawn = memberIdSchema.parse(crypto.randomUUID());
+    current.current = drawn;
+    setId(drawn);
+    setBusy(false);
     setDraft('');
     setError(undefined);
     dialog.current?.showModal();
@@ -56,7 +61,7 @@ export function AddMember({ online, taken, onAdd }: AddMemberProps): ReactNode {
     }
     setBusy(true);
     const result = await onAdd({ id, name });
-    if (!mounted.current) {
+    if (!mounted.current || current.current !== id) {
       return;
     }
     setBusy(false);
@@ -80,13 +85,17 @@ export function AddMember({ online, taken, onAdd }: AddMemberProps): ReactNode {
         className={styles.sheet}
         aria-labelledby={titleId}
         onClose={() => {
+          current.current = undefined;
           setId(undefined);
           // Browsers give the focus back to the button by themselves; a test environment may not.
           opener.current?.focus();
         }}
+        onPointerDown={(event) => {
+          pressedBackdrop.current = event.target === dialog.current;
+        }}
         onClick={(event) => {
           // A touch on the backdrop lands on the dialog itself, its content filling the sheet.
-          if (event.target === dialog.current) {
+          if (pressedBackdrop.current && event.target === dialog.current) {
             close();
           }
         }}
@@ -115,7 +124,7 @@ export function AddMember({ online, taken, onAdd }: AddMemberProps): ReactNode {
               type="text"
               placeholder={m.rename_name()}
               value={draft}
-              maxLength={MAX_NAME_LENGTH}
+              maxLength={MAX_MEMBER_NAME_LENGTH}
               autoComplete="off"
               aria-invalid={message === undefined ? undefined : true}
               aria-describedby={hintId}
@@ -133,7 +142,12 @@ export function AddMember({ online, taken, onAdd }: AddMemberProps): ReactNode {
           <p id={hintId} className={styles.hint}>
             {m.add_member_hint()}
           </p>
-          <button className={styles.submit} type="submit" aria-disabled={blocked}>
+          {online || id === undefined ? null : (
+            <p id={offlineId} className={styles.error} role="status">
+              {m.edit_offline()}
+            </p>
+          )}
+          <button className={styles.submit} type="submit" aria-disabled={blocked} aria-describedby={online ? undefined : offlineId}>
             {busy ? m.add_member_sending() : m.add_member_submit()}
           </button>
         </form>
