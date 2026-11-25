@@ -32,6 +32,11 @@ describe('fetchGroup', () => {
     expect(server.calls).toStrictEqual([`/api/groups/${token}`]);
   });
 
+  it('reads the answer of a newer server that adds a field to a member, leaving that field out', async () => {
+    const newer = { ...group, members: group.members.map((member) => ({ ...member, picture: 'x' })) };
+    expect(await answering(json(newer)).fetchGroup(token)).toStrictEqual({ ok: true, value: group });
+  });
+
   it('tells an unknown link from a server out of reach and from an answer outside the contract', async () => {
     expect(await answering(json({ error: 'group_not_found' } satisfies ApiError, 404)).fetchGroup(token)).toStrictEqual({
       ok: false,

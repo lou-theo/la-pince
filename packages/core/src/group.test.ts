@@ -23,9 +23,14 @@ describe('groupResponseSchema', () => {
     ['a name with a lone surrogate', { ...group, members: [{ id: 'alice', name: 'Ali\uD800' }] }],
     ['an empty title', { ...group, title: '' }],
     ['a title over 100 characters', { ...group, title: 'a'.repeat(101) }],
-    ['an unknown field', { ...group, token: 'secret' }],
   ])('rejects %s', (_, response) => {
     expect(groupResponseSchema.safeParse(response).success).toBe(false);
+  });
+
+  // A newer server may send a field this version of the app does not know yet.
+  it('drops a field it does not know, on the group or on a member', () => {
+    const newer = { ...group, picture: 'x', members: group.members.map((member) => ({ ...member, picture: 'x' })) };
+    expect(groupResponseSchema.parse(newer)).toStrictEqual(group);
   });
 });
 
@@ -41,6 +46,8 @@ describe('adminGroupSchema', () => {
     ['a token with a character a link would encode', { ...group, token: `${'a'.repeat(31)}/` }],
     ['a member listed twice', { ...group, token, members: [...group.members, { id: 'bob', name: 'Bob again' }] }],
     ['no token', group],
+    ['an unknown field', { ...group, token, picture: 'x' }],
+    ['an unknown field on a member', { ...group, token, members: [{ id: 'alice', name: 'Alice', picture: 'x' }] }],
   ])('rejects %s', (_, request) => {
     expect(adminGroupSchema.safeParse(request).success).toBe(false);
   });

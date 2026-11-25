@@ -3,7 +3,6 @@ import {
   changesQuerySchema,
   type ChangesResponse,
   changesResponseSchema,
-  groupResponseSchema,
   operationBatchResponseSchema,
   pageFollowsQuery,
 } from '@la-pince/core';
@@ -105,7 +104,7 @@ describe('PUT /api/admin/groups/:id', () => {
         { id: 'alice', name: 'Alicia' },
       ],
     });
-    expect(groupResponseSchema.parse(await response.json())).toStrictEqual({
+    expect(await response.json()).toStrictEqual({
       title: 'Renamed',
       members: [
         { id: 'alice', name: 'Alicia' },
@@ -134,7 +133,14 @@ describe('GET /api/groups/:token', () => {
   it('gives the title and the members of the group behind the link', async () => {
     const { token } = await newGroup(['alice', 'bob']);
     const response = await server.fetch(`/api/groups/${token}`);
-    expect(groupResponseSchema.parse(await response.json()).members.map((member) => member.id)).toStrictEqual(['alice', 'bob']);
+    // The raw JSON, as the app's schema would drop a field the server should not send.
+    expect(await response.json()).toStrictEqual({
+      title: expect.stringMatching(/^Trip /) as unknown,
+      members: [
+        { id: 'alice', name: 'ALICE' },
+        { id: 'bob', name: 'BOB' },
+      ],
+    });
   });
 
   it('answers group_not_found for an unknown link', async () => {
