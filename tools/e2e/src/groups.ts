@@ -1,7 +1,7 @@
 import type { GroupSpec } from './stack.ts';
 
 /** Scenarios that change their group: each gets one per browser, so that no scenario sees another's writes. */
-export const scenarios = ['offline', 'refusal', 'overwrite', 'update', 'restore', 'settle', 'undo', 'declare'] as const;
+export const scenarios = ['offline', 'refusal', 'overwrite', 'update', 'restore', 'settle', 'undo', 'declare', 'members'] as const;
 export type Scenario = (typeof scenarios)[number];
 export const browsers = ['chromium', 'webkit'] as const;
 
