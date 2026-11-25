@@ -96,8 +96,7 @@ describe('newMemberSchema', () => {
     ['an empty name once trimmed', { id: 'm42', name: ' \t ' }],
     ['a name over 50 characters', { id: 'm42', name: 'a'.repeat(51) }],
     ['a control character', { id: 'm42', name: 'Chlo\u0000é' }],
-    ['a zero-width space', { id: 'm42', name: 'Chloé\u200B' }],
-    ['only an invisible character', { id: 'm42', name: '\u2060' }],
+    ['only characters a screen does not draw', { id: 'm42', name: '\u200B\u200D\u3164 ' }],
     ['an unknown field', { id: 'm42', name: 'Chloé', picture: 'x' }],
   ])('rejects %s', (_, request) => {
     expect(newMemberSchema.safeParse(request).success).toBe(false);
@@ -124,6 +123,7 @@ describe('memberNameKey', () => {
     ['the case', 'Élodie', 'éLODIE'],
     ['an accent typed as one character or as a letter and its mark', '\u00C9lodie', 'E\u0301lodie'],
     ['spaces at the ends', ' Paul\t', 'paul'],
+    ['characters a screen does not draw', 'Pa\u200Bul\u200D\uFE0F', 'paul'],
   ])('leaves out %s', (_, a, b) => {
     expect(memberNameKey(a)).toBe(memberNameKey(b));
   });

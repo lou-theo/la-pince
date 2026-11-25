@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { memberIdSchema } from './ids.ts';
-import { enteredTextSchema, textSchema } from './text.ts';
+import { enteredTextSchema, textSchema, withoutInvisible } from './text.ts';
 
 // Far above the names (8 characters) and the title (12) of the group's history.
 const MAX_NAME_LENGTH = 50;
@@ -74,9 +74,10 @@ export type MemberUpdate = z.infer<typeof memberUpdateSchema>;
 
 /**
  * What two names of the same group must not share, the app refusing a second member under a name already taken: the name in Unicode NFC, so that
- * an accent typed as one character or as a letter and its mark compare equal, without spaces at its ends, in lower case as in French. SQLite's
+ * an accent typed as one character or as a letter and its mark compare equal, without the characters a screen does not draw nor spaces at its
+ * ends, in lower case as in French. SQLite's
  * `lower()` changes ASCII letters only, so the comparison runs here, on the server and on the phone alike.
  */
 export function memberNameKey(name: string): string {
-  return name.normalize('NFC').trim().toLocaleLowerCase('fr-FR');
+  return withoutInvisible(name.normalize('NFC')).trim().toLocaleLowerCase('fr-FR');
 }
