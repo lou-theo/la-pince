@@ -1,4 +1,4 @@
-import { type MemberId, memberIdSchema, memberNameKey } from '@la-pince/core';
+import { MAX_MEMBER_NAME_LENGTH, type MemberId, memberIdSchema, memberNameKey } from '@la-pince/core';
 import { type ReactNode, useId } from 'react';
 import { Link, useSearch } from 'wouter';
 
@@ -18,9 +18,6 @@ import { PlusIcon, rowKey, TransferLine } from './Transfers.tsx';
 import { UndoBanner } from './UndoBanner.tsx';
 import { useSettle } from './useSettle.ts';
 import { type GroupView, isMember, memberOf, shortName, syncLine } from './view.ts';
-
-// Same bound as the server's (`enteredTextSchema` of a name).
-const MAX_NAME_LENGTH = 50;
 
 /** Label of a sheet's arrow, after the screen it leads back to. */
 function backLabel(back: string): string {
@@ -100,7 +97,7 @@ export function MemberSheet({ view, id, here, you }: MemberSheetProps): ReactNod
         {inGroup ? (
           <RenameField
             value={member.name}
-            maxLength={MAX_NAME_LENGTH}
+            maxLength={MAX_MEMBER_NAME_LENGTH}
             label={mine ? m.rename_me() : m.rename_member({ name: member.name })}
             field={m.rename_name()}
             taken={(text) => view.members.some((other) => other.id !== id && memberNameKey(other.name) === memberNameKey(text))}

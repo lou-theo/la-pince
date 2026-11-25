@@ -12,6 +12,8 @@ export {
   type GroupUpdate,
   groupUpdateSchema,
   MAX_GROUP_MEMBERS,
+  MAX_GROUP_TITLE_LENGTH,
+  MAX_MEMBER_NAME_LENGTH,
   type Member,
   memberNameKey,
   memberNameSchema,

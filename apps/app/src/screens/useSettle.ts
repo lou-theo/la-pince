@@ -34,7 +34,7 @@ export interface Settle {
 
 const newRevisionId = () => revisionIdSchema.parse(crypto.randomUUID());
 
-/** The state of “C'est payé”, living with its screen: leaving it forgets the band, which goes after 15 s anyway, the reimbursement staying in the list. */
+/** The state of “C'est payé”, living with its screen: leaving it forgets the band, which goes after `BAND_DURATION` anyway, the reimbursement staying in the list. */
 export function useSettle(view: GroupView): Settle {
   const [paid, setPaid] = useState<readonly PaidTransfer[]>([]);
   const [queuing, setQueuing] = useState<OperationId>();

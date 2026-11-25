@@ -14,7 +14,7 @@ export function paidText(view: GroupView, { transfer }: PaidTransfer): string {
 }
 
 /**
- * The band after “C'est payé”: the reimbursement recorded and “Annuler”, for 15 s, until the screen is left, or until another transfer is paid.
+ * The band after “C'est payé”: the reimbursement recorded and “Annuler”, for `BAND_DURATION`, until the screen is left, or until another transfer is paid.
  * `nav`: the screen has the menu at the bottom.
  */
 export function UndoBanner({ view, settle, nav }: { readonly view: GroupView; readonly settle: Settle; readonly nav: boolean }): ReactNode {

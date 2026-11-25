@@ -1,4 +1,4 @@
-import { memberNameKey } from '@la-pince/core';
+import { MAX_GROUP_TITLE_LENGTH, memberNameKey } from '@la-pince/core';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'wouter';
 
@@ -12,9 +12,6 @@ import styles from './Me.module.css';
 import { MemberSheet } from './MemberBalance.tsx';
 import { RenameField } from './RenameField.tsx';
 import type { GroupView } from './view.ts';
-
-// Same bound as the server's (`enteredTextSchema` of a title).
-const MAX_TITLE_LENGTH = 100;
 
 /**
  * The bar of my page: the way back to the expenses, the group's title, and its two tabs, links in the address (`/moi`, `/moi/groupe`) shown as a
@@ -58,7 +55,7 @@ export function GroupMembers({ view }: { readonly view: GroupView }): ReactNode 
           <span className={styles.titleLabel}>{m.members_title()}</span>
           <RenameField
             value={view.title}
-            maxLength={MAX_TITLE_LENGTH}
+            maxLength={MAX_GROUP_TITLE_LENGTH}
             label={m.rename_group()}
             field={m.members_title()}
             online={view.edit.online}

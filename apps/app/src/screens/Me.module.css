@@ -25,7 +25,10 @@
   background: var(--color-surface);
   color: var(--color-text);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgb(28 25 23 / 15%);
+  /* The border keeps it apart in the dark theme, where surface and background are close. */
+  box-shadow:
+    0 1px 2px rgb(28 25 23 / 15%),
+    inset 0 0 0 1px var(--color-border);
 }
 
 .card {
@@ -198,13 +201,7 @@ li:first-child > .member {
 }
 
 .sheet::backdrop {
-  background: rgb(28 25 23 / 45%);
-}
-
-@media (prefers-color-scheme: dark) {
-  .sheet::backdrop {
-    background: rgb(0 0 0 / 65%);
-  }
+  background: var(--color-scrim);
 }
 
 .sheetContent {
