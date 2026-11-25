@@ -59,7 +59,7 @@ async function sha256(text: string): Promise<string> {
 }
 
 /**
- * Overwrites the group on the server with the export (decisions 10 and 28): title and members by the admin route, operations by the sync API, an
+ * Overwrites the group on the server with the export: title and members by the admin route, operations by the sync API, an
  * operation absent from the export being marked deleted. Then reads the group back and stops at the first difference with the export, balances
  * compared to the cent.
  */

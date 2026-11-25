@@ -9,13 +9,13 @@ import { demoGroup } from '../src/corpus.ts';
 import { budgetGroup } from '../src/groups.ts';
 import { appUrl, openAs } from './app.ts';
 
-/** Budgets of decision 35 (g), on the corpus repeated 10 times (about 2,700 operations); limits and the CI measures they rest on: decision 38. */
+/** Budgets on the corpus repeated 10 times (about 2,700 operations); targets and how limits are set: docs/architecture.md, Tests; the CI measures they rest on: PR #14. */
 const budgets = {
   balancesMs: 8,
   offlineOpenMs: 550,
   entryVisibleMs: 45,
   catchUpMs: 1_900,
-  // Twice the measure would pass the target of the decision: the target itself.
+  // Twice the measure would pass the target: the target itself.
   shellKb: 150,
 };
 

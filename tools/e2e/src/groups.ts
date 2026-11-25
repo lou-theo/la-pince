@@ -8,7 +8,7 @@ export const browsers = ['chromium', 'webkit'] as const;
 // Tokens of groups that only live in the local D1 of a run.
 export const tokenFor = (browser: string, scenario: Scenario | 'budgets' | 'notifications'): string => `e2e-${browser}-${scenario}`.padEnd(40, '0');
 
-/** The group the budgets are measured on: the corpus repeated 10 times, about 2,700 operations (decision 35 g). */
+/** The group the budgets are measured on: the corpus repeated 10 times, about 2,700 operations. */
 export const budgetGroup: GroupSpec = { token: tokenFor('chromium', 'budgets'), copies: 10 };
 
 export const groups: readonly GroupSpec[] = [

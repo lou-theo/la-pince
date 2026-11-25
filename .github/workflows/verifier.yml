@@ -1,5 +1,5 @@
 # Safety net: replays the check lefthook runs before every push. The `verifier` job is required by the branch rule on main.
-# The `deployer` job then publishes, on main only, the instance whose secrets are set (docs/auto-hebergement.md, decision 43).
+# The `deployer` job then publishes, on main only, the instance whose secrets are set (docs/auto-hebergement.md, docs/decisions/deploiement-continu.md).
 name: Vérifier
 
 on:
@@ -32,7 +32,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm verifier
-      # End to end (decision 35 f): the app built with its service worker, in Chromium and WebKit, against the Worker on a local D1.
+      # End to end: the app built with its service worker, in Chromium and WebKit, against the Worker on a local D1.
       - run: pnpm --filter @la-pince/e2e exec playwright install --with-deps chromium webkit
       - run: pnpm e2e
 
@@ -85,7 +85,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        # The logs of a public repo are public, and Wrangler prints the instance's address and its database id (decision 40): its output is kept
+        # The logs of a public repo are public, and Wrangler prints the instance's address and its database id (docs/decisions/auto-hebergement.md): its output is kept
         # out of them, and shown on failure only, without addresses, ids nor quoted names (custom domain, subdomain).
         run: |
           status=0

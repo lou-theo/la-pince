@@ -100,7 +100,7 @@
   color: var(--color-positive);
 }
 
-/* My own share of what I paid alone is neither a gain nor a debt: the text color, as « Ta part » (decision 48 b). */
+/* My own share of what I paid alone is neither a gain nor a debt: the text color, as « Ta part ». */
 .own {
   color: var(--color-text);
 }

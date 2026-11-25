@@ -3,11 +3,7 @@ import { expect, test } from '@playwright/test';
 import { tokenFor } from '../src/groups.ts';
 import { enterExpense, openAs, synced, wake } from './app.ts';
 
-test('a revision the server refuses leaves the outbox without notice, the others going through (decision 37)', async ({
-  page,
-  context,
-  browser,
-}, info) => {
+test('a revision the server refuses leaves the outbox without notice, the others going through', async ({ page, context, browser }, info) => {
   const token = tokenFor(info.project.name, 'refusal');
   await openAs(page, token, 'Agathe');
   await context.setOffline(true);
@@ -76,7 +72,7 @@ test('a revision the server refuses leaves the outbox without notice, the others
   await other.close();
 });
 
-test('a change made offline overwrites, without notice, one made meanwhile in another browser: the last to reach the server wins (decision 37)', async ({
+test('a change made offline overwrites, without notice, one made meanwhile in another browser: the last to reach the server wins', async ({
   page,
   context,
   browser,

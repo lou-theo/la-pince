@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
 import { tokenFor } from '../src/groups.ts';
 import { openAs } from './app.ts';
 
-test('a new version of the app installs without reloading the page while an expense is being entered (decision 35 e)', async ({ page }, info) => {
+test('a new version of the app installs without reloading the page while an expense is being entered', async ({ page }, info) => {
   const dist = process.env.E2E_DIST;
   if (dist === undefined) {
     throw new Error('E2E_DIST is set by the global setup');
