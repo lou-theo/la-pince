@@ -33,7 +33,8 @@ export type AddOutcome = 'added' | 'replayed' | 'too_many_members' | 'member_nam
  */
 export async function addMember(db: D1Database, groupId: GroupId, member: NewMember, read: MembersRead): Promise<AddOutcome> {
   let current = read;
-  for (let tries = 0; tries < MAX_TRIES; tries += 1) {
+  // Every read is judged, the last one too: the edit that kept the write out may decide the answer.
+  for (let tries = 0; ; tries += 1) {
     if (current.members.some(({ id }) => id === member.id)) {
       return 'replayed';
     }
@@ -42,6 +43,11 @@ export async function addMember(db: D1Database, groupId: GroupId, member: NewMem
     }
     if (nameTaken(current, member.name, member.id)) {
       return 'member_name_taken';
+    }
+    // Only under a flood of edits of the same group.
+    /* v8 ignore next 3 */
+    if (tries === MAX_TRIES) {
+      throw new Error('member not added: the group changed at each try');
     }
     // SQLite needs a `WHERE` in the `SELECT` of an `INSERT … SELECT … ON CONFLICT`. The position is computed in the statement, and the snapshot keeps
     // the cap and the name judged above true: D1 runs a database's statements one after the other.
@@ -59,9 +65,6 @@ export async function addMember(db: D1Database, groupId: GroupId, member: NewMem
     }
     current = await readMembers(db, groupId);
   }
-  // Only under a flood of edits of the same group.
-  /* v8 ignore next */
-  throw new Error('member not added: the group changed at each try');
 }
 
 export type UpdateOutcome = 'updated' | 'member_not_found' | 'member_name_taken';
@@ -72,12 +75,16 @@ export type UpdateOutcome = 'updated' | 'member_not_found' | 'member_name_taken'
  */
 export async function updateMember(db: D1Database, groupId: GroupId, id: MemberId, update: MemberUpdate, read: MembersRead): Promise<UpdateOutcome> {
   let current = read;
-  for (let tries = 0; tries < MAX_TRIES; tries += 1) {
+  for (let tries = 0; ; tries += 1) {
     if (!current.members.some((member) => member.id === id)) {
       return 'member_not_found';
     }
     if (update.name !== undefined && nameTaken(current, update.name, id)) {
       return 'member_name_taken';
+    }
+    /* v8 ignore next 3 */
+    if (tries === MAX_TRIES) {
+      throw new Error('member not updated: the group changed at each try');
     }
     const updated = await db
       .prepare(`UPDATE members SET name = COALESCE(?3, name) WHERE group_id = ?1 AND id = ?2 AND ${MEMBERS_SNAPSHOT} = ?4 RETURNING id`)
@@ -88,7 +95,4 @@ export async function updateMember(db: D1Database, groupId: GroupId, id: MemberI
     }
     current = await readMembers(db, groupId);
   }
-  // Only under a flood of edits of the same group.
-  /* v8 ignore next */
-  throw new Error('member not updated: the group changed at each try');
 }
