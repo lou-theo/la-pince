@@ -181,7 +181,7 @@ Au-delà de 7 jours, Cloudflare ne garde rien, et une copie qui protège aussi d
    cat ../la-pince-sauvegardes/la-pince.sql.sha256
    ```
 
-GitHub prévient par mail d'une copie en échec la personne qui a poussé la tâche, selon ses réglages de notifications. Une tâche planifiée peut partir en retard, ou plus rarement sauter un jour, quand GitHub est chargé : planifiée la nuit, celle de l'instance du mainteneur est partie en journée du 20 au 24/11/2026.
+GitHub prévient par mail d'une copie en échec la personne qui a poussé la tâche, selon ses réglages de notifications. Une tâche planifiée peut partir en retard, ou plus rarement sauter un jour, quand GitHub est chargé : planifiée la nuit, elle est partie en journée chaque jour du 20 au 24/11/2026 sur une instance.
 
 ### Restaurer une copie
 
