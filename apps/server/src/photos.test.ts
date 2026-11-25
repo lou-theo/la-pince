@@ -35,12 +35,14 @@ const newGroup = async (): Promise<GroupId> => {
 
 class MemoryStore implements PhotoStore {
   readonly bytes = new Map<string, Uint8Array>();
+  puts = 0;
   /** Runs after the next write of bytes, before the caller goes on. */
   afterPut: (() => Promise<void>) | undefined;
   putError: Error | undefined;
   deleteError: Error | undefined;
 
   async put(key: string, value: Uint8Array): Promise<void> {
+    this.puts += 1;
     if (this.putError !== undefined) {
       throw this.putError;
     }
@@ -91,8 +93,28 @@ describe('setPhoto', () => {
     const groupId = await newGroup();
     const store = new MemoryStore();
     await setPhoto(db, store, groupId, alice, photo(1));
-    store.putError = new Error('must not write');
     expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'replayed', dropped: [] });
+    expect(store.puts).toBe(1);
+  });
+
+  it('writes back the bytes of the photo sent again when they were lost, after a restore of the database', async () => {
+    const groupId = await newGroup();
+    const store = new MemoryStore();
+    const version = await photoVersion(photo(1));
+    await setPhoto(db, store, groupId, alice, photo(1));
+    store.bytes.clear();
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'replayed', dropped: [] });
+    expect(store.bytes.get(keyOf(groupId, version))).toStrictEqual(photo(1));
+  });
+
+  it('goes on when KV refuses to write bytes already stored under the key, by the same photo sent twice at once', async () => {
+    const groupId = await newGroup();
+    const store = new MemoryStore();
+    const version = await photoVersion(photo(1));
+    store.bytes.set(keyOf(groupId, version), photo(1));
+    store.putError = new Error('KV PUT failed: 429 Too Many Requests');
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'set', dropped: [] });
+    expect(await versions(groupId)).toStrictEqual({ photo: version, previous: null });
   });
 
   it('answers photos_unavailable and changes nothing when KV refuses the write', async () => {

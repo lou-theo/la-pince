@@ -96,9 +96,10 @@ async function change<Outcome>(
 }
 
 /**
- * Makes `bytes` the member's photo, the photo before it becoming the one an undo puts back. The same bytes sent again while they are the photo are
- * a replay: nothing is written, which also keeps clear of KV's limit of one write per second on a key. The bytes are stored before the versions
- * point to them, so that a phone never reads a version whose bytes were not written.
+ * Makes `bytes` the member's photo, the photo before it becoming the one an undo puts back. The same bytes sent again while they are the photo and
+ * stored are a replay: nothing is written, which also keeps clear of KV's limit of one write per second on a key; bytes lost meanwhile (a database
+ * restored, a deletion crossing this photo set again) are written back. The bytes are stored before the versions point to them, so that a phone
+ * never reads a version whose bytes were not written.
  */
 export async function setPhoto(
   db: D1Database,
@@ -112,15 +113,19 @@ export async function setPhoto(
   if (current === undefined) {
     return { outcome: 'member_not_found', dropped: [] };
   }
-  if (current.photo === version) {
+  const key = keyOf(groupId, memberId, version);
+  if (current.photo === version && (await store.get(key, 'arrayBuffer')) !== null) {
     return { outcome: 'replayed', dropped: [] };
   }
   try {
-    await store.put(keyOf(groupId, memberId, version), bytes);
+    await store.put(key, bytes);
   } catch (error) {
-    // The daily quota of writes of the free plan, or an outage.
-    log({ photo: 'not_stored', group: groupId, error: String(error) });
-    return { outcome: 'photos_unavailable', dropped: [] };
+    // A key names its content: bytes already there are these bytes, written by the same photo sent twice at once, whose second write KV refuses
+    // within the second. Otherwise the daily quota of writes of the free plan, or an outage.
+    if ((await store.get(key, 'arrayBuffer')) === null) {
+      log({ photo: 'not_stored', group: groupId, error: String(error) });
+      return { outcome: 'photos_unavailable', dropped: [] };
+    }
   }
   return change(
     db,
