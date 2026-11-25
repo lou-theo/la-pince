@@ -227,7 +227,7 @@ describe('a group as one of its members', () => {
       ['M', false],
     ]);
     // Out of what is read: the line says the same words as without it.
-    expect(screen.getByText('m1 a payé 45,00 €').closest('[aria-hidden]')).toBeNull();
+    expect(screen.getByRole('link', { name: /^Courses m1 a payé 45,00\s€ Tu dois 20,00\s€$/ })).toBeDefined();
   });
 
   it('says who reimbursed whom, “you” standing for who I am', async () => {
