@@ -12,7 +12,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/api\//] }));
 
-// A new service worker takes over at once, without reloading the open pages, which keep their code until the next start (decision 37 h).
+// A new service worker takes over at once, without reloading the open pages, which keep their code until the next start.
 self.addEventListener('install', () => {
   void self.skipWaiting();
 });

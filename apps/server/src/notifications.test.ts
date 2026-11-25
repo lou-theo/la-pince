@@ -337,7 +337,7 @@ describe('queueNotifications', () => {
     expect(message.type === 'operations' ? message.notices[0]?.authorName : undefined).toBe('tom');
   });
 
-  // Decision 46 (h): past the 13 members of the largest group seen, and past one `sendBatch`.
+  // docs/decisions/notifications.md (h): past the 13 members of the largest group seen, and past one `sendBatch`.
   it('notifies a group of 40 members with 5 phones each, in batches of at most 100 messages', async () => {
     const members = Array.from({ length: 40 }, (_, index) => `m${String(index)}`);
     const groupId = await newGroup(members);

@@ -222,7 +222,7 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
 
   /**
    * Sends the outbox by batches, in the order of entry, one request at a time and without merging revisions of one operation: an old revision
-   * arriving after a newer one would win. Each revision leaves the outbox once answered: refused ones at once, without notice (decision 37);
+   * arriving after a newer one would win. Each revision leaves the outbox once answered: refused ones at once, without notice (docs/decisions/conflits-hors-ligne.md);
    * written ones and resends once a read made after the send has brought the server's copy, and saved it on the phone, so that the operation never
    * disappears from the screen in between, nor from the copy the app opens on. Gives whether the outbox is empty, and whether that took a read.
    */

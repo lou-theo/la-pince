@@ -277,7 +277,7 @@ interface MemberGridProps {
   readonly onToggle: (member: MemberId) => void;
 }
 
-/** Members as round avatars to touch, in the order of decision 24 whatever is checked, so that nobody moves under the finger. */
+/** Members as round avatars to touch, in the order of docs/decisions/ordre-des-membres.md whatever is checked, so that nobody moves under the finger. */
 function MemberGrid({ view, members, checked, shortName, onToggle }: MemberGridProps) {
   return (
     <ul className={styles.grid}>

@@ -1,0 +1,5 @@
+# Modèle de données
+
+18/11/2026, proposé par l'assistant, accepté par le mainteneur.
+
+Montants en centimes entiers ; soldes recalculés à la volée, la performance étant « crucial[e] » et Tricount ne l'ayant pas été initialement (dit par le mainteneur) ; Tricount sert à l'import, pas de modèle ; pour sortir d'une ligne par concerné (« on ne sera plus sur 1 ligne par concerné afin de pouvoir gérer certaines features », dit par le mainteneur), la saisie (forme libre, versionnée, appelée à évoluer : lignes de reçu, frais communs ; une ligne par concerné pour démarrer) est séparée de son effet (payeur et part de chaque membre en centimes, forme fixe), seul lu par les soldes, le filtre, les notifications et les statistiques ; un seul type d'opération, un champ nature (dépense ou remboursement) servant seulement à l'affichage et aux statistiques, impossible à déduire (une avance pour un ami a la forme d'un remboursement). Remboursements saisis en dépenses dans Tricount : le mainteneur pense que « plusieurs » l'ont été (18/11, non vérifié) ; sans effet sur les soldes, ils gonflent le total dépensé des statistiques.

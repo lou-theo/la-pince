@@ -163,7 +163,7 @@ export function GroupHome({
           <p className={layout.muted}>{m.not_found()}</p>
         </Route>
       </Switch>
-      {/* Mounted on every screen of the group, shown with who I am only: each opening saves the subscription again (decision 47 d). */}
+      {/* Mounted on every screen of the group, shown with who I am only: each opening saves the subscription again. */}
       <div hidden={!notificationsShown}>
         <Notifications token={token} title={group.title} member={currentMember.id} />
       </div>

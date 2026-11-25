@@ -44,7 +44,7 @@ export const entrySchema = z
         context.addIssue({ code: 'custom', message: 'total_too_large', path: ['lines'] });
       }
     } else if (weighted ? entry.total <= fixed : entry.total !== fixed) {
-      // With weights, something must be left for them to share; without, the total is only a check of the amounts (decision 9).
+      // With weights, something must be left for them to share; without, the total is only a check of the amounts (docs/decisions/saisie-par-montants.md).
       context.addIssue({ code: 'custom', message: weighted ? 'nothing_left_for_weights' : 'total_mismatch', path: ['total'] });
     }
   })

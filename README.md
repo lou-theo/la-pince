@@ -2,7 +2,7 @@
 
 Partage des dépenses d'un groupe d'amis, en alternative à Tricount : PWA installable sur iOS, Android et ordinateur, sans compte, hors ligne, avec des notifications réservées aux personnes concernées par une dépense. Chaque groupe héberge sa propre instance sur Cloudflare Workers et D1, dans l'offre gratuite.
 
-Projet en construction : l'état, les décisions et le plan sont dans [docs/cadrage/README.md](docs/cadrage/README.md), l'architecture dans [docs/architecture.md](docs/architecture.md).
+Projet en construction : l'état et le plan sont dans [docs/cadrage/README.md](docs/cadrage/README.md), les décisions dans [docs/decisions/](docs/decisions/), l'architecture dans [docs/architecture.md](docs/architecture.md).
 
 ## Développer
 

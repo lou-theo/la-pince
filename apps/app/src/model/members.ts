@@ -6,7 +6,7 @@ const WINDOW_DAYS = 90;
 const DAY_MS = 86_400_000;
 
 /**
- * Order of the members to choose from in a form (decision 24): who I am first, then the members named by the most operations (as payer or with a
+ * Order of the members to choose from in a form (docs/decisions/ordre-des-membres.md): who I am first, then the members named by the most operations (as payer or with a
  * share) over the 90 days before the group's last operation, ties in the order members were added.
  */
 export function selectionOrder(members: readonly Member[], me: MemberId, operations: readonly OperationView[]): Member[] {

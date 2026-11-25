@@ -2,7 +2,7 @@
 
 Statut : recherche documentaire faite par un sous-agent le 16/11/2026, non contre-vérifiée. [L] = lu dans la source citée, [NL] = connu par un résumé de moteur ou une page tierce, [D] = déduit. Une case « ? » veut dire information absente des pages lues, pas « non ».
 
-Décision du 16/11/2026 (README, décisions 5 et 7) : aucune app ne convient, le groupe développe La Pince ; ce panorama sert de référence fonctionnelle.
+Décision du 16/11/2026 (décision [Page blanche plutôt que fork de Spliit](../decisions/page-blanche.md) et décision [Hébergement et stack](../decisions/hebergement-et-stack.md)) : aucune app ne convient, le groupe développe La Pince ; ce panorama sert de référence fonctionnelle.
 
 ## En bref
 

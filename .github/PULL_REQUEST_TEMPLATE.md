@@ -2,7 +2,7 @@
 
 ## Pourquoi
 
-<!-- Le besoin ou le problème, pour qui ; lien vers l'issue ou la décision du cadrage. -->
+<!-- Le besoin ou le problème, pour qui ; lien vers l'issue, l'étape du plan du cadrage ou la décision de `docs/decisions/`. -->
 
 ## Ce que ça change
 

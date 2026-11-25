@@ -2,7 +2,7 @@
 
 Statut : lecture du code par des sous-agents le 16/11/2026, sans rien exécuter, non contre-vérifiée. « lu » = chemin:ligne ou URL lus par le sous-agent, « déduit » = son inférence.
 
-Décision du 16/11/2026 (README, décision 5) : page blanche, pas de fork. Ce fichier sert de référence (calcul, modèle de données, cas de test) ; la colonne Effort chiffre ce qu'aurait coûté un fork.
+Décision du 16/11/2026 (décision [Page blanche plutôt que fork de Spliit](../decisions/page-blanche.md)) : page blanche, pas de fork. Ce fichier sert de référence (calcul, modèle de données, cas de test) ; la colonne Effort chiffre ce qu'aurait coûté un fork.
 
 ## Spliit
 
