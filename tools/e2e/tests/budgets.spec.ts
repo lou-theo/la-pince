@@ -9,7 +9,7 @@ import { demoGroup } from '../src/corpus.ts';
 import { budgetGroup } from '../src/groups.ts';
 import { appUrl, openAs } from './app.ts';
 
-/** Budgets of decision 35 (g), on the corpus repeated 10 times (about 2,500 operations); limits and the CI measures they rest on: decision 38. */
+/** Budgets of decision 35 (g), on the corpus repeated 10 times (about 2,700 operations); limits and the CI measures they rest on: decision 38. */
 const budgets = {
   balancesMs: 8,
   offlineOpenMs: 550,
