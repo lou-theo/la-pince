@@ -116,7 +116,7 @@ describe("“C'est payé” on the transfers", () => {
 
 describe("“C'est payé” on a member's sheet", () => {
   it('records the transfer and offers to undo it, as on the transfers', async () => {
-    const { user, batches } = await openAsBruno(token, '/soldes/membres/m1');
+    const { user, batches } = await openAsBruno(token, '/membres/m1?retour=%2Fsoldes');
     const owed = () => within(screen.getByRole('region', { name: 'Lui doivent' }));
     await user.click(pay(`Chloé doit ${euros('15,00')} à Alice`));
     expect(owed().getByRole('listitem', { name: `Payé : Chloé → Alice · ${euros('15,00')}` })).toBeDefined();

@@ -4,7 +4,7 @@ import { queueErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { formatCents } from '../model/money.ts';
 import type { PaidTransfer } from '../model/settle.ts';
-import styles from './UndoBanner.module.css';
+import { Band, BandDetail, BandTitle } from './Band.tsx';
 import type { Settle } from './useSettle.ts';
 import { type GroupView, shortName } from './view.ts';
 
@@ -14,10 +14,10 @@ export function paidText(view: GroupView, { transfer }: PaidTransfer): string {
 }
 
 /**
- * The band above the menu after “C'est payé”: the reimbursement recorded and “Annuler”, until the screen is left or another transfer is paid. It
- * follows the screen in the flow, sticking above the menu: at the end of the screen it sits below the last line and the line of the last sync.
+ * The band after “C'est payé”: the reimbursement recorded and “Annuler”, for 15 s, until the screen is left, or until another transfer is paid.
+ * `nav`: the screen has the menu at the bottom.
  */
-export function UndoBanner({ view, settle }: { readonly view: GroupView; readonly settle: Settle }): ReactNode {
+export function UndoBanner({ view, settle, nav }: { readonly view: GroupView; readonly settle: Settle; readonly nav: boolean }): ReactNode {
   const { band } = settle;
   // Its reimbursement gone (deleted elsewhere, or refused by the server), there is nothing left to undo.
   if (band === undefined || (band.kind === 'saved' && !settle.live.has(band.paid.operation.id))) {
@@ -25,33 +25,26 @@ export function UndoBanner({ view, settle }: { readonly view: GroupView; readonl
   }
   if (band.kind === 'failed') {
     return (
-      <div className={styles.band} role="alert">
-        <p className={styles.text}>{band.error === 'too_large' ? m.form_error_too_large() : queueErrorMessage(band.error)}</p>
-      </div>
+      <Band nav={nav} alert>
+        {band.error === 'too_large' ? m.form_error_too_large() : queueErrorMessage(band.error)}
+      </Band>
     );
   }
   return (
-    <div className={styles.band} role="status">
-      <p className={styles.text}>
-        <strong className={styles.title}>{m.undo_saved()}</strong>
-        <span className={styles.detail}>{paidText(view, band.paid)}</span>
-        {band.error === undefined ? undefined : (
-          <span className={styles.detail} role="alert">
-            {queueErrorMessage(band.error)}
-          </span>
-        )}
-      </p>
-      <button
-        className={styles.undo}
-        type="button"
-        aria-label={m.undo_label()}
-        disabled={settle.busy !== undefined}
-        onClick={() => {
+    <Band
+      nav={nav}
+      action={{
+        text: settle.busy === 'undo' ? m.undo_cancelling() : m.undo_button(),
+        label: m.undo_label(),
+        disabled: settle.busy !== undefined,
+        onClick: () => {
           settle.undo(band.paid);
-        }}
-      >
-        {settle.busy === 'undo' ? m.undo_cancelling() : m.undo_button()}
-      </button>
-    </div>
+        },
+      }}
+    >
+      <BandTitle>{m.undo_saved()}</BandTitle>
+      <BandDetail>{paidText(view, band.paid)}</BandDetail>
+      {band.error === undefined ? undefined : <BandDetail alert>{queueErrorMessage(band.error)}</BandDetail>}
+    </Band>
   );
 }

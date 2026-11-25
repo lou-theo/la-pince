@@ -73,7 +73,7 @@ export function Transfers({ view }: { readonly view: GroupView }): ReactNode {
         </ul>
       )}
       <p className={layout.muted}>{syncLine(view)}</p>
-      <UndoBanner view={view} settle={settle} />
+      <UndoBanner view={view} settle={settle} nav />
     </>
   );
 }

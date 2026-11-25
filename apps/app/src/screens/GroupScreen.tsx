@@ -1,15 +1,17 @@
-import { groupTokenSchema } from '@la-pince/core';
+import { type GroupResponse, groupTokenSchema } from '@la-pince/core';
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
 import { Link } from 'wouter';
 
 import { loadErrorMessage } from '../i18n/errors.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { saveLastGroup } from '../storage/device.ts';
+import type { ApiResult, GroupEditError } from '../sync/client.ts';
 import { useApiClient } from '../sync/context.ts';
 import { createGroupStore } from '../sync/groupStore.ts';
 import { GroupHome } from './GroupHome.tsx';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
+import type { EditResult, GroupEdit } from './view.ts';
 
 /** Screen of a group link (`/g/:token` and below): checks the token, reads the group from the server, then hands it to the group's home. */
 export function GroupScreen({ token }: { readonly token: string }): ReactNode {
@@ -27,6 +29,21 @@ export function GroupScreen({ token }: { readonly token: string }): ReactNode {
 function GroupLoader({ token }: { readonly token: string }) {
   const client = useApiClient();
   const [store] = useState(() => createGroupStore(client, token));
+  // Each edit answers the whole group, shown at once.
+  const [edits] = useState((): Omit<GroupEdit, 'online'> => {
+    const shown = (result: ApiResult<GroupResponse, GroupEditError>): EditResult => {
+      if (!result.ok) {
+        return result;
+      }
+      store.applyGroup(result.value);
+      return { ok: true };
+    };
+    return {
+      renameGroup: async (title) => shown(await client.renameGroup(token, title)),
+      addMember: async (member) => shown(await client.addMember(token, member)),
+      renameMember: async (id, name) => shown(await client.renameMember(token, id, name)),
+    };
+  });
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const ready = state.status === 'ready';
 
@@ -80,6 +97,7 @@ function GroupLoader({ token }: { readonly token: string }) {
           readError={state.readError}
           onRetry={() => void store.sync()}
           enqueue={store.enqueue}
+          edits={edits}
         />
       );
   }

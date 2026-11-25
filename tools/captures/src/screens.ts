@@ -21,8 +21,8 @@ const settle = (page: Page) => page.waitForLoadState('networkidle');
 const operationLink = 'main a[href*="/operations/"]';
 const balancesTab = 'nav a[href$="/soldes"]';
 const newExpenseLink = 'main a[href$="/nouvelle-depense"]';
-// Lines of the ranking, each opening a member's sheet, the largest balance first.
-const memberLine = 'main a[href*="/soldes/membres/"]';
+// Lines of the ranking, each opening a member's sheet, the largest balance first: under the balances' address before, at their own since.
+const memberLine = 'main a[href*="membres/"]';
 const transfersLink = 'main a[href$="/soldes/virements"]';
 
 // The button that saves a form: in the band since the full-screen form, in the form before.
@@ -83,6 +83,35 @@ const openSheet = async (page: Page, demo: Demo, which: 'first' | 'last'): Promi
   await page.locator('main a[href*="/nouveau-remboursement?"]').first().waitFor();
 };
 
+/** Opens my page by the avatar of the band, ready once the notifications know what to show (mounted but hidden elsewhere, empty while checking). */
+const openMe = async (page: Page, demo: Demo): Promise<void> => {
+  await chooseFirstMember(page, demo);
+  await page.locator('header a[href$="/moi"]').click();
+  await page.locator('main [aria-live="polite"]').locator('..').waitFor();
+};
+
+/** Opens the tab of the group on my page, ready once its members are there. */
+const openGroupTab = async (page: Page, demo: Demo): Promise<void> => {
+  await openMe(page, demo);
+  await page.locator('header a[href$="/moi/groupe"]').click();
+  await page.locator('main li a[href*="membres/"]').first().waitFor();
+};
+
+/** Opens the sheet of the second member of the group from its tab, ready once its button to declare a reimbursement is there. */
+const openSheetFromGroup = async (page: Page, demo: Demo): Promise<void> => {
+  await openGroupTab(page, demo);
+  await page.locator('main li a[href*="membres/"]').nth(1).click();
+  await page.locator('main a[href*="/nouveau-remboursement?"]').first().waitFor();
+};
+
+/** Opens the sheet to add a member, a first name typed and never sent: the demo group stays as it is. */
+const openAddMember = async (page: Page, demo: Demo): Promise<void> => {
+  await openGroupTab(page, demo);
+  await page.route('**/api/groups/*/members', () => new Promise(() => undefined));
+  await page.locator('main li:last-child > button').click();
+  await page.locator('dialog[open] input').fill('Zoé');
+};
+
 /** Opens the form of a new expense, ready once its fields are there. */
 const openNewExpense = async (page: Page, demo: Demo): Promise<void> => {
   await chooseFirstMember(page, demo);
@@ -117,14 +146,50 @@ export const screens: readonly Screen[] = [
       await chooseFirstMember(page, demo);
     },
   },
+  { name: 'moi', label: 'Toi : ta fiche et ce téléphone', reach: openMe },
   {
-    name: 'moi',
-    label: 'Qui je suis, notifications',
+    name: 'moi-sombre',
+    label: 'Toi, thème sombre',
     reach: async (page: Page, demo: Demo): Promise<void> => {
-      await chooseFirstMember(page, demo);
-      await page.locator('header a[href$="/moi"]').click();
-      // Mounted but hidden on the other screens, the notifications render nothing while they check: their block shows once they know, on this page.
-      await page.locator('main [aria-live="polite"]').locator('..').waitFor();
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openMe(page, demo);
+    },
+  },
+  { name: 'moi-groupe', label: 'Le groupe', reach: openGroupTab },
+  {
+    name: 'moi-groupe-sombre',
+    label: 'Le groupe, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openGroupTab(page, demo);
+    },
+  },
+  {
+    name: 'moi-groupe-hors-ligne',
+    label: 'Le groupe, hors ligne : commandes grisées',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openGroupTab(page, demo);
+      await page.context().setOffline(true);
+      await page.locator('main li:last-child > button:disabled').waitFor();
+    },
+  },
+  { name: 'fiche-depuis-groupe', label: 'Fiche ouverte depuis Le groupe', reach: openSheetFromGroup },
+  {
+    name: 'renommage-ouvert',
+    label: 'Renommer un membre sur sa fiche',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openSheetFromGroup(page, demo);
+      await page.locator('main h2 + button').first().click();
+      await page.locator('main form input[type="text"]').waitFor();
+    },
+  },
+  { name: 'ajout-membre', label: 'Nouveau membre, feuille ouverte', reach: openAddMember },
+  {
+    name: 'ajout-membre-sombre',
+    label: 'Nouveau membre, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openAddMember(page, demo);
     },
   },
   {
@@ -175,6 +240,16 @@ export const screens: readonly Screen[] = [
     label: 'Fiche de qui doit',
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await openSheet(page, demo, 'last');
+    },
+  },
+  {
+    name: 'fiche-paye',
+    label: "« C'est payé » sur une fiche, bandeau sans menu",
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openSheet(page, demo, 'last');
+      await page.route('**/api/groups/*/operations', () => new Promise(() => undefined));
+      await page.locator('main li button').first().click();
+      await page.locator('main [role="status"]').waitFor();
     },
   },
   {
@@ -309,6 +384,8 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.waitForTimeout(800);
   await page.locator(memberLine).last().click();
   await page.waitForTimeout(1500);
+  // Back to the balances by the sheet's arrow, then to the expenses by the menu.
+  await page.locator('header a[href$="/soldes"]').click();
   await page.locator('nav a').first().click();
   await page.locator(newExpenseLink).click();
   await page.locator('form input[type="text"]').first().pressSequentially('Glaces', { delay: 40 });

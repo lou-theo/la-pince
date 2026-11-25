@@ -3,6 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { Link, useSearch } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
+import { backOf } from '../model/back.ts';
 import { localDay } from '../model/dates.ts';
 import { editForm, newExpense, newReimbursement } from '../model/operationForm.ts';
 import { CloseIcon } from './FormFrame.tsx';
@@ -21,17 +22,13 @@ export function NewExpense({ view }: { readonly view: GroupView }): ReactNode {
   return <OperationForm view={view} initial={initial} editing={false} />;
 }
 
-// The screens a reimbursement page opens from, where closing it comes back: the balances, the transfers, or a member's sheet.
-const BACK = /^\/soldes(?:\/virements|\/membres\/[^/?#]+)?$/;
-
 /**
  * A new reimbursement, given by who I am unless `?de=` or `?a=` names a member of the group: `?a=` alone leaves who gives it to choose. `?retour=` is
- * where closing it leads, the balances when it is not one of their screens.
+ * where closing it leads (`backOf`).
  */
 export function NewReimbursement({ view }: { readonly view: GroupView }): ReactNode {
   const search = new URLSearchParams(useSearch());
   const member = (key: string) => view.members.find((candidate) => candidate.id === search.get(key))?.id;
-  const back = search.get('retour') ?? '';
   const [initial] = useState(() => {
     const to = member('a');
     return newReimbursement({
@@ -43,7 +40,7 @@ export function NewReimbursement({ view }: { readonly view: GroupView }): ReactN
       amount: undefined,
     });
   });
-  return <ReimbursementForm view={view} initial={initial} back={BACK.test(back) ? back : '/soldes'} />;
+  return <ReimbursementForm view={view} initial={initial} back={backOf('reimbursement', search.get('retour'))} />;
 }
 
 /** Link to the page of a new reimbursement, given by `from` or received by `to`, closing back to `back`. */

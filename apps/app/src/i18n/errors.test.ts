@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { notificationErrorMessage, queueErrorMessage } from './errors.ts';
+import { editErrorMessage, notificationErrorMessage, queueErrorMessage } from './errors.ts';
 
 describe('queueErrorMessage', () => {
   it('tells why a revision could not be queued', () => {
@@ -18,5 +18,15 @@ describe('notificationErrorMessage', () => {
     expect(notificationErrorMessage('invalid_request')).toBe('Le serveur refuse les notifications de ce navigateur.');
     expect(notificationErrorMessage('subscription_not_found')).toBe("Cet appareil n'est plus abonné : active à nouveau les notifications.");
     expect(notificationErrorMessage('network')).toBe('Le serveur ne répond pas : vérifie ta connexion, puis réessaie.');
+  });
+});
+
+describe('editErrorMessage', () => {
+  it('tells why an edit of the group failed, and the read errors as a read tells them', () => {
+    expect(editErrorMessage('member_name_taken')).toBe('Un autre membre du groupe porte déjà ce prénom.');
+    expect(editErrorMessage('too_many_members')).toBe('Le groupe a atteint son nombre maximal de membres.');
+    expect(editErrorMessage('member_not_found')).toBe("Ce membre n'est plus dans le groupe : recharge la page.");
+    expect(editErrorMessage('invalid_request')).toBe("Le serveur refuse ce texte : vérifie qu'il n'est pas vide, puis réessaie.");
+    expect(editErrorMessage('network')).toBe('Le serveur ne répond pas : vérifie ta connexion, puis réessaie.');
   });
 });

@@ -1,4 +1,4 @@
-import type { LoadError, NotificationError } from '../sync/client.ts';
+import type { GroupEditError, LoadError, NotificationError } from '../sync/client.ts';
 import type { QueueError } from '../sync/groupStore.ts';
 import { m } from './paraglide/messages.js';
 
@@ -35,6 +35,24 @@ export function notificationErrorMessage(error: NotificationError): string {
       return m.error_invalid_request();
     case 'subscription_not_found':
       return m.error_subscription_not_found();
+    case 'group_not_found':
+    case 'network':
+    case 'unexpected':
+      return loadErrorMessage(error);
+  }
+}
+
+/** Message shown when an edit of the group failed, under the field, whose text stays to try again. */
+export function editErrorMessage(error: GroupEditError): string {
+  switch (error) {
+    case 'member_name_taken':
+      return m.error_member_name_taken();
+    case 'too_many_members':
+      return m.error_too_many_members();
+    case 'member_not_found':
+      return m.error_member_not_found();
+    case 'invalid_request':
+      return m.error_edit_invalid();
     case 'group_not_found':
     case 'network':
     case 'unexpected':

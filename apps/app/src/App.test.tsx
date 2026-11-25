@@ -35,14 +35,17 @@ describe('opening a group', () => {
     expect(screen.getByRole('heading', { name: 'Week-end' })).toBeDefined();
     expect(screen.getByText('Tu es Bruno')).toBeDefined();
 
-    // The avatar of the band leads to who I am, outside both tabs.
+    // The avatar of the band leads to my page, on its tab “Toi”: my sheet, then this phone, without the menu.
     await user.click(screen.getByRole('link', { name: 'Tu es Bruno' }));
-    expect(screen.getByRole('heading', { name: 'Tu es Bruno' })).toBeDefined();
-    expect(screen.getAllByRole('link', { current: 'page' }).map((link) => link.textContent)).toStrictEqual(['BTu es Bruno']);
+    expect(screen.getByRole('heading', { level: 1, name: 'Week-end' })).toBeDefined();
+    expect(screen.getAllByRole('link', { current: 'page' }).map((link) => link.textContent)).toStrictEqual(['Toi']);
+    expect(screen.getByRole('heading', { level: 2, name: 'Bruno' })).toBeDefined();
+    expect(screen.queryByRole('navigation', { name: 'Sections du groupe' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Sur ce téléphone' })).toBeDefined();
     await user.click(screen.getByRole('button', { name: "Ce n'est pas moi" }));
     expect(screen.getByRole('button', { name: 'Bruno' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Chloé' }));
-    expect(screen.getByRole('heading', { name: 'Tu es Chloé' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 2, name: 'Chloé' })).toBeDefined();
   });
 
   it('opens straight on the group once I said who I am, and asks again if that member is no longer in the group', async () => {
@@ -367,7 +370,10 @@ describe('a group as one of its members', () => {
   it("opens a member's sheet from the ranking: who owes them, or what they owe, in my words on mine", async () => {
     const { user, location } = await openAsBruno(`/g/${token}/soldes`);
     await user.click(screen.getByRole('link', { name: /^Alice,/ }));
-    expect(location.history.at(-1)).toBe(`/g/${token}/soldes/membres/m1`);
+    expect(location.history.at(-1)).toBe(`/g/${token}/membres/m1?retour=%2Fsoldes`);
+    // The sheet takes the whole screen, the group's title in its bar.
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Week-end');
+    expect(screen.queryByRole('navigation', { name: 'Sections du groupe' })).toBeNull();
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Alice');
     expect(screen.getByText(/^en positif de/).textContent).toBe('en positif de 23,00\u00a0€');
     const owed = within(screen.getByRole('region', { name: 'Lui doivent' }));
@@ -376,7 +382,7 @@ describe('a group as one of its members', () => {
       "CChloé10,00\u00a0€C'est payé",
     ]);
     expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(
-      `/g/${token}/nouveau-remboursement?a=m1&retour=%2Fsoldes%2Fmembres%2Fm1`,
+      `/g/${token}/nouveau-remboursement?a=m1&retour=%2Fmembres%2Fm1%3Fretour%3D%252Fsoldes`,
     );
     expect(screen.getByText('Remboursements suggérés pour que tout le groupe soit à jour.')).toBeDefined();
     expect(screen.getByText(/^Dernière synchro à \d\d:\d\d\.$/)).toBeDefined();
@@ -388,14 +394,14 @@ describe('a group as one of its members', () => {
     const mine = within(screen.getByRole('region', { name: 'Tes remboursements à faire' }));
     expect(mine.getAllByRole('listitem').map((line) => line.textContent)).toStrictEqual(["Aà Alice13,00\u00a0€C'est payé"]);
     expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(
-      `/g/${token}/nouveau-remboursement?de=m2&retour=%2Fsoldes%2Fmembres%2Fm2`,
+      `/g/${token}/nouveau-remboursement?de=m2&retour=%2Fmembres%2Fm2%3Fretour%3D%252Fsoldes`,
     );
 
     await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
     await user.click(screen.getByRole('link', { name: /^Chloé,/ }));
     expect(screen.getByRole('region', { name: 'Ses remboursements à faire' }).textContent).toContain('à Alice');
     expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(
-      `/g/${token}/nouveau-remboursement?de=m3&retour=%2Fsoldes%2Fmembres%2Fm3`,
+      `/g/${token}/nouveau-remboursement?de=m3&retour=%2Fmembres%2Fm3%3Fretour%3D%252Fsoldes`,
     );
   });
 
@@ -413,7 +419,7 @@ describe('a group as one of its members', () => {
     expect(screen.getByText(/^Tu es en positif de/).textContent).toBe('Tu es en positif de 5,00 €');
     expect(screen.getByRole('region', { name: 'Te doivent' }).textContent).toContain('Alice');
     expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(
-      `/g/${token}/nouveau-remboursement?a=m2&retour=%2Fsoldes%2Fmembres%2Fm2`,
+      `/g/${token}/nouveau-remboursement?a=m2&retour=%2Fmembres%2Fm2%3Fretour%3D%252Fsoldes`,
     );
     await user.click(screen.getByRole('link', { name: 'Retour aux soldes' }));
     await user.click(screen.getByRole('link', { name: 'gone, en positif, 3,00\u00a0€' }));
@@ -430,7 +436,7 @@ describe('a group as one of its members', () => {
   it('says so for a member who is not in the group', async () => {
     await rememberMember(token, 'm2');
     for (const id of ['nobody', 'not%20an%20id']) {
-      renderApp(`/g/${token}/soldes/membres/${id}`, fakeServer({ token, group, changes }).fetch);
+      renderApp(`/g/${token}/membres/${id}`, fakeServer({ token, group, changes }).fetch);
       expect(await screen.findByText("Ce membre n'est pas dans le groupe.")).toBeDefined();
       expect(screen.getByRole('link', { name: 'Retour aux soldes' })).toBeDefined();
       cleanup();
@@ -438,6 +444,12 @@ describe('a group as one of its members', () => {
     // An unknown path under the balances keeps the group's band, a way out included.
     renderApp(`/g/${token}/soldes/membres`, fakeServer({ token, group, changes }).fetch);
     expect(await screen.findByText('Tu es Bruno')).toBeDefined();
+    cleanup();
+    // The sheet's former address leads to its new one, back to the balances.
+    const location = renderApp(`/g/${token}/soldes/membres/m1`, fakeServer({ token, group, changes }).fetch);
+    expect(await screen.findByRole('heading', { level: 2, name: 'Alice' })).toBeDefined();
+    expect(location.history.at(-1)).toBe(`/g/${token}/membres/m1`);
+    expect(screen.getByRole('link', { name: 'Retour aux soldes' }).getAttribute('href')).toBe(`/g/${token}/soldes`);
   });
 
   it('tells an empty group, settled', async () => {
@@ -458,9 +470,9 @@ describe('a group as one of its members', () => {
     expect(screen.getByText('Tout le monde est à jour').tagName).toBe('P');
     await user.click(screen.getByRole('link', { name: 'Chloé, à jour' }));
     expect(screen.getByText('À jour')).toBeDefined();
-    expect(screen.getByText('Aucun remboursement à faire ni à recevoir.')).toBeDefined();
+    expect(screen.getByText('Rien à rembourser.')).toBeDefined();
     expect(screen.getByRole('link', { name: 'Déclarer un remboursement' }).getAttribute('href')).toBe(
-      `/g/${token}/nouveau-remboursement?de=m3&retour=%2Fsoldes%2Fmembres%2Fm3`,
+      `/g/${token}/nouveau-remboursement?de=m3&retour=%2Fmembres%2Fm3%3Fretour%3D%252Fsoldes`,
     );
     cleanup();
     renderApp(`/g/${token}/soldes/virements`);

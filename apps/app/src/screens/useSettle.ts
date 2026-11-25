@@ -6,6 +6,7 @@ import { localDay } from '../model/dates.ts';
 import { deletionOf } from '../model/operationForm.ts';
 import { type PaidTransfer, settlementOf } from '../model/settle.ts';
 import type { QueueError } from '../sync/groupStore.ts';
+import { useBand } from './Band.tsx';
 import { useMounted } from './useMounted.ts';
 import type { GroupView } from './view.ts';
 
@@ -33,12 +34,12 @@ export interface Settle {
 
 const newRevisionId = () => revisionIdSchema.parse(crypto.randomUUID());
 
-/** The state of “C'est payé”, living with its screen: leaving it forgets the band, the reimbursement staying in the list. */
+/** The state of “C'est payé”, living with its screen: leaving it forgets the band, which goes after 15 s anyway, the reimbursement staying in the list. */
 export function useSettle(view: GroupView): Settle {
   const [paid, setPaid] = useState<readonly PaidTransfer[]>([]);
   const [queuing, setQueuing] = useState<OperationId>();
   const [busy, setBusy] = useState<'pay' | 'undo'>();
-  const [band, setBand] = useState<UndoState>();
+  const [band, setBand] = useBand<UndoState>();
   // A state is read at the next render: a second touch in the same frame would get through it.
   const working = useRef(false);
   const mounted = useMounted();
