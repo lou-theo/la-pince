@@ -69,6 +69,24 @@
   line-height: 1.3;
 }
 
+/* Who paid, in small before the words; a text over several lines wraps beside it, the avatar staying on the first. */
+.sub {
+  --avatar-size: 1.125rem;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  overflow-wrap: anywhere;
+}
+
+/* As high as the first line of text, the avatar centered on it. */
+.payer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 1.3em;
+}
+
 /* An operation entered on this phone and not yet sent. */
 .pending {
   font-style: italic;

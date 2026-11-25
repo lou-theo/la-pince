@@ -183,10 +183,23 @@ describe('a group as one of its members', () => {
     return { user, location };
   }
 
+  // The texts of each row, without the avatar, which is not read.
   const rowsOf = (list: HTMLElement) =>
     within(list)
       .getAllByRole('listitem')
-      .map((row) => [...row.querySelectorAll('span span')].map((span) => span.textContent));
+      .map((row) =>
+        [...row.querySelectorAll('span')]
+          .filter((span) => span.childElementCount === 0 && span.closest('[aria-hidden]') === null)
+          .map((span) => span.textContent),
+      );
+  // The initial of each row's avatar, and whether it takes my color (class `me` of `Avatar.module.css`, hashed by Vite).
+  const payerAvatarsOf = (list: HTMLElement) =>
+    within(list)
+      .getAllByRole('listitem')
+      .map((row) => {
+        const avatar = row.querySelector('[aria-hidden]');
+        return [avatar?.textContent, /(^|\s)_me_/.test(avatar?.className ?? '')];
+      });
 
   it('lists the operations under their day, the latest first, each saying in words what it means for me', async () => {
     await openAsBruno();
@@ -200,6 +213,21 @@ describe('a group as one of its members', () => {
     ]);
     expect(screen.getByRole('link', { name: 'Dépenses' }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('link', { name: 'Ajouter une dépense' }).getAttribute('href')).toBe(`/g/${token}/nouvelle-depense`);
+  });
+
+  it('shows the avatar of who paid before the words, mine in my color, and keeps the one of a member gone from the list', async () => {
+    await openAsBruno(
+      `/g/${token}`,
+      group.members.filter((member) => member.id !== 'm1'),
+    );
+    // Chloé reimbursing, me paying, then Alice, gone from the list, known by her identifier.
+    expect(screen.getAllByRole('list').flatMap(payerAvatarsOf)).toStrictEqual([
+      ['C', false],
+      ['B', true],
+      ['M', false],
+    ]);
+    // Out of what is read: the line says the same words as without it.
+    expect(screen.getByText('m1 a payé 45,00 €').closest('[aria-hidden]')).toBeNull();
   });
 
   it('says who reimbursed whom, “you” standing for who I am', async () => {

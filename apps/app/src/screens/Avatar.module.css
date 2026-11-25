@@ -10,7 +10,8 @@
   height: var(--size);
   border-radius: 50%;
   color: var(--avatar-text);
-  font-size: calc(var(--size) * 0.42);
+  /* A floor, for the initial to stay readable on the smallest avatars. */
+  font-size: max(0.625rem, calc(var(--size) * 0.42));
   font-weight: 700;
   line-height: 1;
 }
