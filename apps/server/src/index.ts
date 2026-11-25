@@ -165,13 +165,9 @@ app.patch('/api/groups/:token/members/:id', async (context) => {
 // Photos of the members: bytes in KV under keys that never change, versions in D1 (`photos.ts`), which holds no image. KV may show a write elsewhere
 // only up to a minute later, which a key that never changes turns into a missing photo for that while, never a stale one. Every route answers
 // `photos_disabled` on an instance without the binding, and no answer but a photo is kept by a cache: a photo missing a moment ago may be there now.
-const photoRoutes: MiddlewareHandler<{ Bindings: Env }> = async (context, next) => {
+const photoRoutes: MiddlewareHandler<{ Bindings: Env }> = (context, next) => {
   context.header('Cache-Control', 'no-store');
-  if (context.env.PHOTOS === undefined) {
-    return apiError(context, 'photos_disabled', 404);
-  }
-  await next();
-  return undefined;
+  return context.env.PHOTOS === undefined ? Promise.resolve(apiError(context, 'photos_disabled', 404)) : next();
 };
 app.use('/api/groups/:token/members/:id/photo', photoRoutes);
 app.use('/api/groups/:token/members/:id/photo/*', photoRoutes);
@@ -186,10 +182,18 @@ function photosOf(env: Env): PhotoStore {
 }
 
 // Answers a photo change with the whole group, as the other routes that edit it do, then deletes the bytes no version points to any more.
-async function answerPhotoChange(context: AppContext, groupId: GroupId, memberId: MemberId, changed: Changed<string>): Promise<Response> {
+const photoErrorStatus = { member_not_found: 404, photo_changed: 409, photos_unavailable: 503 } as const;
+type PhotoError = keyof typeof photoErrorStatus;
+
+async function answerPhotoChange(
+  context: AppContext,
+  groupId: GroupId,
+  memberId: MemberId,
+  changed: Changed<'set' | 'undone' | 'removed' | 'replayed' | PhotoError>,
+): Promise<Response> {
   const { outcome, dropped } = changed;
   if (outcome === 'member_not_found' || outcome === 'photo_changed' || outcome === 'photos_unavailable') {
-    return apiError(context, outcome, outcome === 'member_not_found' ? 404 : outcome === 'photo_changed' ? 409 : 503);
+    return apiError(context, outcome, photoErrorStatus[outcome]);
   }
   if (dropped.length > 0) {
     context.executionCtx.waitUntil(dropPhotos(context.env.DB, photosOf(context.env), groupId, memberId, dropped));
