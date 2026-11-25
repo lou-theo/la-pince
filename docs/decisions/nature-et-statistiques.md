@@ -1,6 +1,6 @@
 # Nature et statistiques
 
-18/11/2026, proposé par l'utilisateur pendant la revue.
+18/11/2026, proposé par le mainteneur pendant la revue.
 
 L'effet porte un booléen `countsAsSpending` (compte dans le total dépensé), décidé par chaque version de saisie (version 1 : vrai pour une dépense, faux pour un remboursement) ; la nature reste dans la saisie, pour l'affichage. Les statistiques ne lisent ainsi que l'effet, et une forme de saisie future (avance, correction) peut se sortir des statistiques sans toucher à leur code.
 

@@ -1,6 +1,6 @@
 # Instance privée et auto-hébergement
 
-19/11/2026, dit par l'utilisateur : « ma config perso cloudflare ne doit de toute façon pas être indiquée », « charge à chaque personne souhaitant s'en servir de l'auto héberger, il faudra faire un guide de setup », « mon instance ne doit pas être publiée » ; mécanisme proposé par l'assistant, accepté.
+19/11/2026, dit par le mainteneur : « ma config perso cloudflare ne doit de toute façon pas être indiquée », « charge à chaque personne souhaitant s'en servir de l'auto héberger, il faudra faire un guide de setup », « mon instance ne doit pas être publiée » ; mécanisme proposé par l'assistant, accepté.
 
 - (a) La Pince est un outil open source que chaque groupe héberge sur son propre compte Cloudflare ; l'instance du mainteneur n'apparaît nulle part dans le repo (ni adresse, ni sous-domaine, ni identifiant de compte ou de base)
 - (b) Config de déploiement : modèle committé `apps/server/wrangler.production.example.jsonc`, copie `wrangler.production.jsonc` ignorée par git qui porte l'identifiant de la base ; `wrangler.jsonc` reste la config du local et des tests

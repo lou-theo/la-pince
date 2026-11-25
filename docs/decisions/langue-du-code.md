@@ -1,6 +1,6 @@
 # Langue du code
 
-18/11/2026, proposé par l'assistant, accepté par l'utilisateur.
+18/11/2026, proposé par l'assistant, accepté par le mainteneur.
 
 Code en anglais (noms, commentaires, intitulés de tests), pour ne pas fermer le projet aux contributeurs non francophones ; docs, messages de commit et descriptions de PR en français, lus par le mainteneur ; `CONTEXT.md` donne pour chaque terme du domaine son nom dans le code, la doc citant l'identifiant entre accents graves.
 

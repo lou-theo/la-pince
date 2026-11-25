@@ -1,6 +1,6 @@
 # Partage du lien du groupe
 
-19/11/2026, demandé par l'utilisateur : « pour moi le lien doit facilement pouvoir se retrouver et être accessible de tous », bouton proposé par l'assistant et accepté : « ok ça me va pour le bouton de partage ».
+19/11/2026, demandé par le mainteneur : « pour moi le lien doit facilement pouvoir se retrouver et être accessible de tous », bouton proposé par l'assistant et accepté : « ok ça me va pour le bouton de partage ».
 
 - (a) l'en-tête du groupe porte « Partager le lien du groupe », qui ouvre la feuille de partage du téléphone (`navigator.share`, titre, phrase et lien) ; sans elle, ou si le navigateur la refuse, le lien est copié dans le presse-papiers et l'app le dit ; si la copie échoue aussi, le lien s'affiche dans un champ à copier à la main ; fermer la feuille sans partager ne fait rien d'autre
 - (b) le lien est rebâti sur le site ouvert (`groupLink`), pas sur l'adresse de la page, qui peut être une sous-page du groupe
