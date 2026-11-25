@@ -27,7 +27,7 @@
   font-weight: 600;
   /* The border keeps it apart in the dark theme, where surface and background are close. */
   box-shadow:
-    0 1px 2px rgb(28 25 23 / 15%),
+    var(--shadow-flat),
     inset 0 0 0 1px var(--color-border);
 }
 
