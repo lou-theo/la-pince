@@ -71,6 +71,12 @@ export function RenameField({ value, maxLength, label, field, taken, online, onS
     setDraft(undefined);
     setError(undefined);
   };
+  // Once sent, the edit goes through whatever the person does: closing then would look like cancelling it.
+  const cancel = () => {
+    if (!busy) {
+      close();
+    }
+  };
   const text = draft.trim();
   const isTaken = text !== value.trim() && taken?.(text) === true;
   const blocked = busy || !online || text === '' || isTaken;
@@ -123,7 +129,7 @@ export function RenameField({ value, maxLength, label, field, taken, online, onS
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               event.preventDefault();
-              close();
+              cancel();
             }
           }}
         />
@@ -140,7 +146,7 @@ export function RenameField({ value, maxLength, label, field, taken, online, onS
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </button>
-        <button className={styles.icon} type="button" aria-label={m.rename_cancel()} onClick={close}>
+        <button className={styles.icon} type="button" aria-label={m.rename_cancel()} aria-disabled={busy} onClick={cancel}>
           <CloseIcon />
         </button>
       </div>

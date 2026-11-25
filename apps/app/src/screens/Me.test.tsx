@@ -20,7 +20,8 @@ interface Sent {
 
 /**
  * Opens the group as Bruno at a path, on a fake server that edits the group as the real one does; records the edits sent. `fail` makes the edits it
- * picks fail for want of network, `answer` replaces the server's answer to an edit, `hold` keeps the edits waiting until it settles.
+ * picks fail for want of network, `answer` replaces the server's answer to an edit, `hold` keeps the edits waiting until it settles, `lose` loses
+ * the answer to the edits it picks once the server made them.
  */
 async function open(
   path: string,
@@ -28,6 +29,7 @@ async function open(
     fail?: (sent: Sent) => boolean;
     answer?: (sent: Sent) => Response | undefined;
     hold?: Promise<void>;
+    lose?: (sent: Sent) => boolean;
     group?: typeof testGroup;
   } = {},
 ) {
@@ -48,6 +50,9 @@ async function open(
       const replaced = options.answer?.(sent);
       if (replaced !== undefined) {
         return Promise.resolve(replaced);
+      }
+      if (options.lose?.(sent) === true) {
+        return server.fetch(url, init).then(() => Promise.reject(new TypeError('Failed to fetch')));
       }
       if (options.hold !== undefined) {
         return options.hold.then(() => server.fetch(url, init));
@@ -187,6 +192,25 @@ describe('renaming in place', () => {
     expect(edits.map((sent) => sent.body)).toStrictEqual([{ title: 'Vacances' }, { title: 'Vacances' }]);
   });
 
+  it('keeps the field open while the new name is on its way: Escape and the cross would look like cancelling it', async () => {
+    let release = () => undefined as void;
+    const hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { user } = await open('/moi/groupe', { hold });
+    await user.click(screen.getByRole('link', { name: 'Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Renommer Alice' }));
+    const field = screen.getByRole('textbox', { name: 'Prénom' });
+    await user.clear(field);
+    await user.type(field, 'Alicia{Enter}');
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(screen.getByRole('textbox', { name: 'Prénom' })).toBe(field);
+    release();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Alicia' })).toBeDefined();
+    expect(screen.queryByRole('textbox', { name: 'Prénom' })).toBeNull();
+  });
+
   it('renames who I am from my tab, the band of the group saying it at once', async () => {
     const { user } = await open('/moi');
     await user.click(screen.getByRole('button', { name: 'Changer ton prénom' }));
@@ -262,6 +286,17 @@ describe('adding a member', () => {
     expect(sheet.hasAttribute('open')).toBe(true);
     expect(within(sheet).getByRole<HTMLInputElement>('textbox', { name: 'Prénom' }).value).toBe('Yann');
     expect(within(sheet).getByRole('button', { name: 'Ajouter au groupe' }).getAttribute('aria-disabled')).toBe('false');
+  });
+
+  it('reads the group again when the answer to an addition is lost, the member it made showing at once', async () => {
+    const { user } = await open('/moi/groupe', { lose: () => true });
+    await user.click(screen.getByRole('button', { name: 'Ajouter un membre' }));
+    const sheet = screen.getByRole('dialog', { name: 'Nouveau membre' });
+    await user.type(within(sheet).getByRole('textbox', { name: 'Prénom' }), 'Zoé{Enter}');
+    expect(await within(sheet).findByRole('alert')).toBeDefined();
+    await waitFor(() => {
+      expect(memberLines()).toContain('Zoé');
+    });
   });
 
   it('stays open on a text selection released over the backdrop, and says why it cannot add once the network is gone', async () => {

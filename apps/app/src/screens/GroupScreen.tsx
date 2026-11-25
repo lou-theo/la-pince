@@ -29,10 +29,12 @@ export function GroupScreen({ token }: { readonly token: string }): ReactNode {
 function GroupLoader({ token }: { readonly token: string }) {
   const client = useApiClient();
   const [store] = useState(() => createGroupStore(client, token));
-  // Each edit answers the whole group, shown at once.
+  // Each edit answers the whole group, shown at once. A refusal or a lost answer reads the group again: the edit may have gone through, or another
+  // phone made the same one, and the next try would be judged on a stale list.
   const [edits] = useState((): Omit<GroupEdit, 'online'> => {
     const shown = (result: ApiResult<GroupResponse, GroupEditError>): EditResult => {
       if (!result.ok) {
+        void store.load();
         return result;
       }
       store.applyGroup(result.value);
