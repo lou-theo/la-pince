@@ -6,9 +6,10 @@ import { dayHeading, localDay } from '../model/dates.ts';
 import type { OperationView } from '../model/group.ts';
 import { byDay, type MyPart, myPart } from '../model/listing.ts';
 import { formatCents } from '../model/money.ts';
+import { Avatar } from './Avatar.tsx';
 import layout from './Layout.module.css';
 import styles from './OperationList.module.css';
-import { type GroupView, sharesInOrder, who } from './view.ts';
+import { type GroupView, memberOf, sharesInOrder, who } from './view.ts';
 
 /** The group's operations, the latest day first, one card each saying in words what it means for me, and the button to add an expense. */
 export function OperationList({ view }: { readonly view: GroupView }): ReactNode {
@@ -49,7 +50,12 @@ function Line({ view, operation }: { readonly view: GroupView; readonly operatio
     <Link className={styles.row} href={`/operations/${operation.id}`}>
       <span className={styles.main}>
         <span className={styles.title}>{operation.title}</span>
-        <span className={styles.sub}>{subLine(view, operation, part)}</span>
+        <span className={styles.sub}>
+          <span className={styles.payer}>
+            <Avatar member={memberOf(view, operation.effect.payer)} view={view} />
+          </span>
+          <span>{subLine(view, operation, part)}</span>
+        </span>
         {operation.pending ? <span className={styles.pending}>{m.operation_pending()}</span> : null}
       </span>
       <span className={`${styles.part ?? ''} ${styles[part.kind] ?? ''}`}>
