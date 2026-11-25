@@ -82,12 +82,22 @@ describe('newMemberSchema', () => {
     expect(newMemberSchema.parse({ id: 'm-42', name: ' Chloé ' })).toStrictEqual({ id: 'm-42', name: 'Chloé' });
   });
 
+  // Built with a zero-width joiner, and with tag characters for the flag of a region.
+  it.each(['Chloé 👩‍🍳', 'Chloé 🏴\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}'])(
+    'keeps an emoji built from several characters: %s',
+    (name) => {
+      expect(newMemberSchema.parse({ id: 'm42', name }).name).toBe(name);
+    },
+  );
+
   it.each([
     ['no id', { name: 'Chloé' }],
     ['an id a link would encode', { id: 'm/42', name: 'Chloé' }],
     ['an empty name once trimmed', { id: 'm42', name: ' \t ' }],
     ['a name over 50 characters', { id: 'm42', name: 'a'.repeat(51) }],
     ['a control character', { id: 'm42', name: 'Chlo\u0000é' }],
+    ['a zero-width space', { id: 'm42', name: 'Chloé\u200B' }],
+    ['only an invisible character', { id: 'm42', name: '\u2060' }],
     ['an unknown field', { id: 'm42', name: 'Chloé', picture: 'x' }],
   ])('rejects %s', (_, request) => {
     expect(newMemberSchema.safeParse(request).success).toBe(false);
