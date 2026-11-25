@@ -164,7 +164,7 @@ describe('openGroupDb', () => {
     expect(await db.loadCurrentMember()).toBeUndefined();
   });
 
-  it('loads a copy whose group carries a field this version does not know, saved by a newer version of the app, without dropping it', async () => {
+  it('loads a copy saved by a newer version of the app, dropping the field this version does not know rather than the copy', async () => {
     const db = await openGroupDb(token);
     await db.saveRead(readOf(0, [change({ id: 'a', date: '2026-11-01' })]));
     const raw = await openDB(await databaseName());
