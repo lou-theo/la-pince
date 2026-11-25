@@ -193,7 +193,7 @@ describe('renaming in place', () => {
   });
 
   it('keeps the field open while the new name is on its way: Escape and the cross would look like cancelling it', async () => {
-    let release = () => undefined as void;
+    let release: () => void = () => undefined;
     const hold = new Promise<void>((resolve) => {
       release = resolve;
     });
@@ -268,7 +268,7 @@ describe('adding a member', () => {
   });
 
   it('leaves alone a sheet opened again while the answer for the one closed is on its way', async () => {
-    let release = () => undefined as void;
+    let release: () => void = () => undefined;
     const hold = new Promise<void>((resolve) => {
       release = resolve;
     });
