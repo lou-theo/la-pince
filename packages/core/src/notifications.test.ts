@@ -179,7 +179,7 @@ describe('noticesByMember', () => {
     expect(notified(noticesByMember(previousOf(added), [revision({ deleted: true, author: 'max' })]))).toStrictEqual({ lea: ['deleted op1 Pizza'] });
   });
 
-  // docs/decisions/notifications.md (h): nothing is sized on the largest group seen (13 members).
+  // docs/decisions/notifications.md (g): nothing is sized on the largest group seen (13 members).
   it.each([13, 40])('tells every member of a group of %i but the author, each once', (size) => {
     const members = Array.from({ length: size }, (_, index) => `m${String(index)}`);
     const dinner = revision({ payer: 'm0', lines: members.map((member) => ({ member, weight: 1 })), author: 'm0' });
