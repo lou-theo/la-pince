@@ -143,6 +143,33 @@ describe('PUT /api/groups/:token/members/:id/photo', () => {
     expect(await keys(id)).toStrictEqual([]);
   });
 
+  // Without a length, the limit is the only thing that stops reading: a body far over it is cut once the limit is passed.
+  it('stops reading a body sent without its length once past 200 KB', async () => {
+    const { token } = await newGroup();
+    const chunk = new Uint8Array(64 * 1024);
+    let pulled = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1;
+        if (pulled > 320) {
+          controller.close();
+        } else {
+          controller.enqueue(chunk);
+        }
+      },
+    });
+    // The Worker answers 400 then drops the rest of the body while the test still writes: on the test's side, the request may then fail (EPIPE)
+    // or come back as a 500 of the local proxy. What tells the limit worked is that the body was not read to its end.
+    const init = { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body, duplex: 'half' as const };
+    const status = await server.fetch(`/api/groups/${token}/members/alice/photo`, init).then(
+      (response) => response.status,
+      () => 'cut',
+    );
+    expect(status).not.toBe(200);
+    expect(pulled).toBeLessThan(320);
+    expect(await photoOf(token, 'alice')).toBeUndefined();
+  });
+
   it('accepts a photo of exactly 256 pixels and 200 KB', async () => {
     const { token } = await newGroup();
     const bytes = jpeg(1, 256, 256, MAX_PHOTO_BYTES - jpeg(1).length);
