@@ -3,19 +3,19 @@ import { z } from 'zod';
 import { memberIdSchema } from './ids.ts';
 import { enteredTextSchema, textSchema, withoutInvisible } from './text.ts';
 
-// Far above the names (8 characters) and the title (12) of the group's history.
-const MAX_NAME_LENGTH = 50;
-const MAX_GROUP_TITLE_LENGTH = 100;
+// Far above the names (8 characters) and the title (12) of the group's history; exported for the app's fields.
+export const MAX_MEMBER_NAME_LENGTH = 50;
+export const MAX_GROUP_TITLE_LENGTH = 100;
 
 /** Most members the app may add to a group: as many as the lines of an entry (`entry.ts`), so that one expense can still be shared among all. */
 export const MAX_GROUP_MEMBERS = 100;
 
 /** Name of a member and title of a group, shared with the Tricount conversion so that an import never sends one the server rejects. */
-export const memberNameSchema = textSchema(MAX_NAME_LENGTH);
+export const memberNameSchema = textSchema(MAX_MEMBER_NAME_LENGTH);
 export const groupTitleSchema = textSchema(MAX_GROUP_TITLE_LENGTH);
 
 // Name and title as typed in the app: trimmed, then refused with a control character; the import and what is stored keep the looser schemas above.
-const enteredMemberNameSchema = enteredTextSchema(MAX_NAME_LENGTH);
+const enteredMemberNameSchema = enteredTextSchema(MAX_MEMBER_NAME_LENGTH);
 const enteredGroupTitleSchema = enteredTextSchema(MAX_GROUP_TITLE_LENGTH);
 
 // Read and written members share their fields: the read drops a field it does not know, sent by a newer server, where the server refuses one.

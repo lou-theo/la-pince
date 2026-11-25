@@ -59,7 +59,7 @@ export async function openAsBruno(
   };
   await rememberMember(token, 'm2');
   const location = renderApp(`/g/${token}${path}`, fetchFn);
-  // The band says who I am, or the title of the screen below a tab or of a form.
-  await screen.findAllByText(/^(Tu es Bruno|Nouvelle dépense|Modifier la dépense|Remboursement|Remboursements suggérés|Soldes)$/);
+  // The band says who I am, or the title of the screen below a tab or of a form, or the group's on a sheet.
+  await screen.findAllByText(/^(Tu es Bruno|Nouvelle dépense|Modifier la dépense|Remboursement|Remboursements suggérés|Soldes|Week-end)$/);
   return { user: userEvent.setup(), location, batches, posted };
 }

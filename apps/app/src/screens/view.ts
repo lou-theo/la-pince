@@ -1,9 +1,22 @@
-import type { Member, MemberId, Operation, Share, SuggestedTransfer } from '@la-pince/core';
+import type { Member, MemberId, NewMember, Operation, Share, SuggestedTransfer } from '@la-pince/core';
 
 import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import type { BalanceLine, OperationView } from '../model/group.ts';
+import type { GroupEditError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
+
+export type EditResult = { readonly ok: true } | { readonly ok: false; readonly error: GroupEditError };
+
+/** Edits of the group, sent at once to the server, whose answer the screens show: they need the network (docs/decisions/edition-du-groupe.md, point h). */
+export interface GroupEdit {
+  /** Whether the server can be reached: no read failed for want of network, and the browser does not say it is offline. */
+  readonly online: boolean;
+  readonly renameGroup: (title: string) => Promise<EditResult>;
+  /** Adds a member whose id was drawn when the sheet to add one opened, sent again with each try. */
+  readonly addMember: (member: NewMember) => Promise<EditResult>;
+  readonly renameMember: (id: MemberId, name: string) => Promise<EditResult>;
+}
 
 /** What the group's screens read: its live operations and balances, the server's copy overlaid with the outbox, seen as “who I am”. */
 export interface GroupView {
@@ -20,6 +33,9 @@ export interface GroupView {
   readonly pendingCount: number;
   /** When the last complete read of the group ended, in milliseconds since the epoch. */
   readonly readAt: number;
+  /** Title of the group, in the bar of the screens that take the whole screen. */
+  readonly title: string;
+  readonly edit: GroupEdit;
 }
 
 /** Shares of an operation in the order members were added, a member missing from the group's list last. */

@@ -1,6 +1,6 @@
 import type { Change, GroupResponse, Member, MemberId, Operation, OperationId } from '@la-pince/core';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Link, Route, Switch, useLocation } from 'wouter';
+import { Link, Redirect, Route, Switch, useLocation } from 'wouter';
 
 import { loadErrorMessage } from '../i18n/errors.ts';
 import { formatMoment } from '../i18n/moment.ts';
@@ -10,18 +10,20 @@ import type { LoadError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
 import { Avatar } from './Avatar.tsx';
 import { Balances } from './Balances.tsx';
-import { BottomNav, isSubScreen, sectionOf } from './BottomNav.tsx';
+import { BottomNav, chromeOf } from './BottomNav.tsx';
 import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
+import { GroupMembers, OnThisPhone, You } from './Me.tsx';
 import { MemberBalance } from './MemberBalance.tsx';
 import { Notifications } from './Notifications.tsx';
 import { OperationDetail } from './OperationDetail.tsx';
 import { OperationList } from './OperationList.tsx';
 import { ShareLink } from './ShareLink.tsx';
 import { Transfers } from './Transfers.tsx';
-import type { GroupView } from './view.ts';
+import { useOnline } from './useOnline.ts';
+import type { GroupEdit, GroupView } from './view.ts';
 
 interface GroupHomeProps {
   /** Token of the group's link, which the members pass on to each other. */
@@ -38,6 +40,8 @@ interface GroupHomeProps {
   readonly readError: LoadError | undefined;
   readonly onRetry: () => void;
   readonly enqueue: (operation: Operation) => Promise<QueueResult>;
+  /** Edits of the group, the network aside, which this screen tells. */
+  readonly edits: Omit<GroupEdit, 'online'>;
 }
 
 /** Home of a group: asks “who I am” until this phone knows it, then shows the group as that member, its operations and its balances. */
@@ -52,12 +56,14 @@ export function GroupHome({
   readError,
   onRetry,
   enqueue,
+  edits,
 }: GroupHomeProps): ReactNode {
   // A remembered member who left the group is asked again.
   const currentMember = group.members.find((member) => member.id === remembered);
   const [choosing, setChoosing] = useState(false);
   const [location] = useLocation();
-  const section = sectionOf(location);
+  const chrome = chromeOf(location);
+  const online = useOnline();
   const computed = useMemo(() => {
     // Balances count what this phone entered and has not sent yet, computed by the same core.
     const { revisions, pending } = overlay(changes, outbox);
@@ -90,22 +96,24 @@ export function GroupHome({
     members: group.members,
     enqueue,
     readAt,
+    title: group.title,
+    // Who has no network cannot edit: a read that failed for that says so, and so does the browser.
+    edit: { ...edits, online: online && readError !== 'network' },
   };
-  const notificationsShown = section === 'me';
   return (
     <Layout
       title={group.title}
       actions={
         <>
           <ShareLink token={token} title={group.title} />
-          <Link className={layout.iconButton} href="/moi" aria-current={section === 'me' ? 'page' : undefined}>
+          <Link className={layout.iconButton} href="/moi">
             <Avatar member={currentMember} view={view} />
             <span className={layout.visuallyHidden}>{m.group_you_are({ name: currentMember.name })}</span>
           </Link>
         </>
       }
-      nav={section === 'form' ? undefined : <BottomNav section={section} />}
-      screenBar={section === 'form' || isSubScreen(location)}
+      nav={chrome.nav ? <BottomNav section={chrome.section} /> : undefined}
+      screenBar={chrome.screenBar}
     >
       {readError === 'network' ? (
         // Without network the app keeps working: the outbox leaves on its own once the server answers.
@@ -143,29 +151,27 @@ export function GroupHome({
         <Route path="/soldes/virements">
           <Transfers view={view} />
         </Route>
-        <Route path="/soldes/membres/:id">{({ id }) => <MemberBalance view={view} id={id} />}</Route>
+        {/* The sheet's former address, which older links may still name. */}
+        <Route path="/soldes/membres/:id">{({ id }) => <Redirect to={`/membres/${encodeURIComponent(id)}`} replace />}</Route>
+        <Route path="/membres/:id">{({ id }) => <MemberBalance view={view} id={id} />}</Route>
         <Route path="/moi">
-          <section className={styles.me}>
-            <h2 className={layout.title}>{m.group_you_are({ name: currentMember.name })}</h2>
-            <p className={layout.muted}>{m.me_explanation()}</p>
-            <button
-              className={layout.link}
-              type="button"
-              onClick={() => {
-                setChoosing(true);
-              }}
-            >
-              {m.group_change_member()}
-            </button>
-          </section>
+          <You view={view} />
+        </Route>
+        <Route path="/moi/groupe">
+          <GroupMembers view={view} />
         </Route>
         <Route>
           <p className={layout.muted}>{m.not_found()}</p>
         </Route>
       </Switch>
-      {/* Mounted on every screen of the group, shown with who I am only: each opening saves the subscription again. */}
-      <div hidden={!notificationsShown}>
-        <Notifications token={token} title={group.title} member={currentMember.id} />
+      {/* Below my sheet on the tab “Toi”; mounted on every screen of the group, at the same place, so that each opening saves the subscription again. */}
+      <div hidden={chrome.section !== 'me'}>
+        <OnThisPhone
+          notifications={<Notifications token={token} title={group.title} member={currentMember.id} />}
+          onChangeMember={() => {
+            setChoosing(true);
+          }}
+        />
       </div>
     </Layout>
   );

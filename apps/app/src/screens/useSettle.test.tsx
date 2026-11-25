@@ -1,8 +1,9 @@
 import { MAX_CENTS, memberIdSchema, type Operation, type SuggestedTransfer } from '@la-pince/core';
 import { act, render, renderHook, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { QueueResult } from '../sync/groupStore.ts';
+import { BAND_DURATION } from './Band.tsx';
 import { UndoBanner } from './UndoBanner.tsx';
 import { useSettle } from './useSettle.ts';
 import type { GroupView } from './view.ts';
@@ -10,6 +11,8 @@ import type { GroupView } from './view.ts';
 const alice = memberIdSchema.parse('m1');
 const bruno = memberIdSchema.parse('m2');
 const transfer = (amount: number): SuggestedTransfer => ({ from: bruno, to: alice, amount });
+
+const unused = () => Promise.reject(new Error('no edit in these tests'));
 
 /** A group seen by Bruno whose outbox answers in turn with `answers`, then takes everything; `queued` records what it was handed. */
 function viewOf(answers: QueueResult[]): { view: GroupView; queued: Operation[] } {
@@ -30,6 +33,8 @@ function viewOf(answers: QueueResult[]): { view: GroupView; queued: Operation[] 
     },
     pendingCount: 0,
     readAt: 0,
+    title: 'Week-end',
+    edit: { online: true, renameGroup: unused, addMember: unused, renameMember: unused },
   };
   return { view, queued };
 }
@@ -65,7 +70,7 @@ describe('useSettle', () => {
     expect(result.current.band).toStrictEqual({ kind: 'saved', paid: line, error: 'not_stored' });
 
     // The fake group shows no operation: the reimbursement is marked live as the outbox would show it.
-    const band = render(<UndoBanner view={view} settle={{ ...result.current, live: new Set([line.operation.id]) }} />);
+    const band = render(<UndoBanner view={view} settle={{ ...result.current, live: new Set([line.operation.id]) }} nav />);
     expect(screen.getByRole('alert').textContent).toContain("Ce téléphone n'a pas pu garder ta saisie");
     expect(screen.getByRole('button', { name: 'Annuler ce remboursement' })).toBeDefined();
     band.unmount();
@@ -78,6 +83,37 @@ describe('useSettle', () => {
     expect(queued.map((operation) => 'deleted' in operation)).toStrictEqual([false, true, true]);
   });
 
+  it('lets the band go after 15 s, a new payment replacing it and starting the time again', async () => {
+    vi.useFakeTimers();
+    try {
+      const { view } = viewOf([]);
+      const { result } = renderHook(() => useSettle(view));
+      const pay = async (amount: number) => {
+        await act(async () => {
+          result.current.pay(transfer(amount));
+          await Promise.resolve();
+        });
+      };
+      await pay(2_000);
+      act(() => {
+        vi.advanceTimersByTime(10_000);
+      });
+      await pay(1_000);
+      act(() => {
+        vi.advanceTimersByTime(BAND_DURATION - 1);
+      });
+      expect(result.current.band).toMatchObject({ kind: 'saved', paid: { transfer: { amount: 1_000 } } });
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(result.current.band).toBeUndefined();
+      // The reimbursements stay paid: only the band goes.
+      expect(result.current.paid).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('records nothing for a transfer beyond the largest amount, and says why', async () => {
     const { view, queued } = viewOf([]);
     const { result } = renderHook(() => useSettle(view));
@@ -88,7 +124,7 @@ describe('useSettle', () => {
     expect(queued).toHaveLength(0);
     expect(result.current.paid).toHaveLength(0);
     expect(result.current.band).toStrictEqual({ kind: 'failed', error: 'too_large' });
-    render(<UndoBanner view={view} settle={result.current} />);
+    render(<UndoBanner view={view} settle={result.current} nav />);
     expect(screen.getByRole('alert').textContent).toBe('Le total dépasse le plus grand montant possible.');
   });
 });

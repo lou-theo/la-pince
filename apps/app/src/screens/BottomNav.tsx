@@ -4,30 +4,42 @@ import { Link } from 'wouter';
 import { m } from '../i18n/paraglide/messages.js';
 import styles from './BottomNav.module.css';
 
-/** Part of the group a screen belongs to: the expenses (list and detail), the balances, who I am, or a form, which takes the whole screen. */
-export type Section = 'operations' | 'balances' | 'me' | 'form';
+/**
+ * Part of the group a screen belongs to: the expenses (list and detail), the balances (the transfers included), the two tabs of my page (who I am
+ * and the group), a member's sheet, or a form.
+ */
+export type Section = 'operations' | 'balances' | 'me' | 'members' | 'sheet' | 'form';
+
+/** What frames a screen: its section, whether the menu at the bottom shows, and whether the band holds the screen's own bar instead of the group's. */
+export interface Chrome {
+  readonly section: Section;
+  readonly nav: boolean;
+  readonly screenBar: boolean;
+}
 
 // The routes match with or without one trailing slash, as wouter's do.
 const trimmed = (location: string) => location.replace(/(.)\/$/, '$1');
 
-/** Section of a path under the group's link, the screens under the balances included; an unknown path belongs to the expenses. */
-export function sectionOf(location: string): Section {
+/**
+ * Frame of a path under the group's link. The menu shows under the two tabs it leads to, the transfers included; my page, a member's sheet and the
+ * forms take the whole screen with their own bar, a sheet opening from several screens, which its arrow leads back to. An unknown path keeps the
+ * group's band, nothing filling a screen's own.
+ */
+export function chromeOf(location: string): Chrome {
   const path = trimmed(location);
   if (path === '/soldes' || path.startsWith('/soldes/')) {
-    return 'balances';
+    return { section: 'balances', nav: true, screenBar: path === '/soldes/virements' };
   }
-  if (path === '/moi') {
-    return 'me';
+  if (path === '/moi' || path === '/moi/groupe') {
+    return { section: path === '/moi' ? 'me' : 'members', nav: false, screenBar: true };
   }
-  return /^\/(nouvelle-depense|nouveau-remboursement|operations\/[^/]+\/modifier)$/.test(path) ? 'form' : 'operations';
-}
-
-/**
- * A screen under a tab (the transfers, a member's sheet), which puts a way back and its title in the band, the menu staying; an unknown path under
- * the balances keeps the group's band, nothing filling a screen's own.
- */
-export function isSubScreen(location: string): boolean {
-  return /^\/soldes\/(virements|membres\/[^/]+)$/.test(trimmed(location));
+  if (/^\/membres\/[^/]+$/.test(path)) {
+    return { section: 'sheet', nav: false, screenBar: true };
+  }
+  if (/^\/(nouvelle-depense|nouveau-remboursement|operations\/[^/]+\/modifier)$/.test(path)) {
+    return { section: 'form', nav: false, screenBar: true };
+  }
+  return { section: 'operations', nav: true, screenBar: false };
 }
 
 /** Menu at the bottom of the group's screens: the expenses and the balances, the current one marked. */

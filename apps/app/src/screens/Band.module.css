@@ -1,7 +1,7 @@
 /* Dark on the light theme, light on the dark one: it stands out from the cards it floats over. */
 .band {
   position: sticky;
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-2));
+  bottom: calc(env(safe-area-inset-bottom) + var(--space-2));
   z-index: 1;
   display: flex;
   align-items: center;
@@ -13,6 +13,10 @@
   color: var(--color-background);
   box-shadow: var(--shadow-raised);
   font-variant-numeric: tabular-nums;
+}
+
+.withNav {
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-2));
 }
 
 .text {
@@ -34,7 +38,7 @@
   white-space: nowrap;
 }
 
-.undo {
+.action {
   flex: none;
   min-height: 2.75rem;
   padding: 0 var(--space-3);
@@ -46,7 +50,7 @@
   cursor: pointer;
 }
 
-.undo:disabled {
+.action:disabled {
   cursor: progress;
   opacity: 0.7;
 }

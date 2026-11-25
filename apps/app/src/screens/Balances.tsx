@@ -1,8 +1,8 @@
-import type { MemberId } from '@la-pince/core';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
+import { sheetHref } from '../model/back.ts';
 import { decorScale, decorSize, standing } from '../model/balances.ts';
 import type { BalanceLine } from '../model/group.ts';
 import { formatCents } from '../model/money.ts';
@@ -73,7 +73,7 @@ function RankingLine({ view, line, scale }: { readonly view: GroupView; readonly
       : m.balances_line({ name: view.nameOf(member.id), standing: word, amount });
   return (
     <li>
-      <Link className={mine ? `${styles.line ?? ''} ${styles.mine ?? ''}` : styles.line} href={memberHref(member.id)} aria-label={label}>
+      <Link className={mine ? `${styles.line ?? ''} ${styles.mine ?? ''}` : styles.line} href={sheetHref(member.id, '/soldes')} aria-label={label}>
         <span className={styles.avatar}>
           <Avatar member={member} view={view} />
           {where === 'ahead' ? <Bag className={styles.decor} size={decorSize(balance, scale)} /> : null}
@@ -88,11 +88,6 @@ function RankingLine({ view, line, scale }: { readonly view: GroupView; readonly
       </Link>
     </li>
   );
-}
-
-/** Link to a member's sheet; an identifier needs no escaping (`memberIdSchema`). */
-function memberHref(member: MemberId): string {
-  return `/soldes/membres/${member}`;
 }
 
 /** The arrow that says a line leads further. */

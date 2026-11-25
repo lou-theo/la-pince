@@ -47,7 +47,7 @@ describe('the reimbursement page', () => {
   });
 
   it('opens from a member the group owes with them receiving, and asks who gives it', async () => {
-    const { user } = await openAsBruno(token, '/soldes/membres/m1');
+    const { user } = await openAsBruno(token, '/membres/m1?retour=%2Fsoldes');
     await user.click(screen.getByRole('link', { name: 'Déclarer un remboursement' }));
     expect(side(/^De :/).getAttribute('aria-label')).toBe('De : à choisir');
     expect(side(/^De :/).getAttribute('aria-pressed')).toBe('true');
@@ -71,7 +71,7 @@ describe('the reimbursement page', () => {
   it('opens from my own sheet in positive with me receiving', async () => {
     // Bruno paid 30,00 € for Chloé: the group owes him 10,00 €.
     const more = [change({ id: 'op-mine', date: '2026-11-06', payer: 'm2', lines: [['m3', 3_000]] })];
-    const { user } = await openAsBruno(token, '/soldes/membres/m2', { more });
+    const { user } = await openAsBruno(token, '/membres/m2?retour=%2Fsoldes', { more });
     await user.click(screen.getByRole('link', { name: 'Déclarer un remboursement' }));
     expect(side(/^À :/).getAttribute('aria-label')).toBe('À : Bruno (toi)');
     expect(screen.getByText(shown(`Tu es en positif de ${euros('10,00')}.`))).toBeDefined();
@@ -117,16 +117,16 @@ describe('the reimbursement page', () => {
   });
 
   it('closes back to the screen it opened from, the balances for any other address, asking first when something was typed', async () => {
-    const { user, location } = await openAsBruno(token, '/soldes/membres/m3');
+    const { user, location } = await openAsBruno(token, '/membres/m3?retour=%2Fsoldes');
     await user.click(screen.getByRole('link', { name: 'Déclarer un remboursement' }));
     await user.click(screen.getByRole('button', { name: 'Fermer' }));
-    expect(at(location)).toBe('/soldes/membres/m3');
+    expect(at(location)).toBe('/membres/m3?retour=%2Fsoldes');
 
     await user.click(screen.getByRole('link', { name: 'Déclarer un remboursement' }));
     await user.type(screen.getByLabelText('Montant'), '3');
     await user.click(screen.getByRole('button', { name: 'Fermer' }));
     await user.click(screen.getByRole('button', { name: 'Oui, abandonner' }));
-    expect(at(location)).toBe('/soldes/membres/m3');
+    expect(at(location)).toBe('/membres/m3?retour=%2Fsoldes');
 
     for (const back of ['', '?retour=https%3A%2F%2Fexample.org', '?retour=%2Foperations%2Fop-shopping']) {
       location.navigate(`/g/${token}/nouveau-remboursement${back}`);

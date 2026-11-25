@@ -56,8 +56,21 @@ export function ScreenBar({ children }: { readonly children: ReactNode }): React
   return bar === null ? null : createPortal(children, bar);
 }
 
-/** The band of a screen under a tab: a link back to the tab (not the browser's back, the screen being reachable by its address) and the title. */
-export function BackBar({ href, label, title }: { readonly href: string; readonly label: string; readonly title: string }): ReactNode {
+/**
+ * The band of a screen under a tab or opened from one: a link back (not the browser's back, the screen being reachable by its address), the title,
+ * and what the screen adds below them (`children`, the tabs of my page).
+ */
+export function BackBar({
+  href,
+  label,
+  title,
+  children,
+}: {
+  readonly href: string;
+  readonly label: string;
+  readonly title: string;
+  readonly children?: ReactNode;
+}): ReactNode {
   return (
     <ScreenBar>
       <Link className={styles.iconButton} href={href} aria-label={label}>
@@ -68,6 +81,7 @@ export function BackBar({ href, label, title }: { readonly href: string; readonl
       <h1 className={`${styles.name ?? ''} ${styles.subTitle ?? ''}`} title={title}>
         {title}
       </h1>
+      {children}
     </ScreenBar>
   );
 }
