@@ -6,6 +6,11 @@ import {
   changesResponseSchema,
   type GroupResponse,
   groupResponseSchema,
+  groupUpdateSchema,
+  MAX_GROUP_MEMBERS,
+  memberNameKey,
+  memberUpdateSchema,
+  newMemberSchema,
   operationBatchResponseSchema,
   operationBatchSchema,
   type RevisionResult,
@@ -27,7 +32,8 @@ export interface FakeServer {
 
 /**
  * Serves one group under its token, its changes by pages of `pageSize` (`unknown_cursor` when no change has the revision named at the cursor), and writes the revisions sent into `changes` (a resent revision is a
- * duplicate, one naming a stranger is rejected); `answer` may replace the answer to a URL (failure, odd page).
+ * duplicate, one naming a stranger is rejected); renames the group, adds and renames its members as the server does; `answer` may replace the
+ * answer to a URL (failure, odd page).
  */
 export function fakeServer({
   token,
@@ -44,6 +50,12 @@ export function fakeServer({
 }): FakeServer {
   const calls: string[] = [];
   const base = `/api/groups/${token}`;
+  let served = group;
+  const bodyOf = (init: RequestInit | undefined): unknown => JSON.parse(typeof init?.body === 'string' ? init.body : 'null');
+  const error = (code: ApiError['error'], status: number) => Promise.resolve(json({ error: code } satisfies ApiError, status));
+  const nameTaken = (name: string, self: string) =>
+    served.members.some((member) => member.id !== self && memberNameKey(member.name) === memberNameKey(name));
+  const answerGroup = (status = 200) => Promise.resolve(json(groupResponseSchema.parse(served), status));
   return {
     calls,
     fetch: (url, init) => {
@@ -52,12 +64,53 @@ export function fakeServer({
       if (replaced !== undefined) {
         return replaced;
       }
+      if (url === base && init?.method === 'PATCH') {
+        const update = groupUpdateSchema.safeParse(bodyOf(init));
+        if (!update.success) {
+          return error('invalid_request', 400);
+        }
+        served = { ...served, title: update.data.title };
+        return answerGroup();
+      }
       if (url === base) {
-        return Promise.resolve(json(groupResponseSchema.parse(group)));
+        return answerGroup();
+      }
+      if (url === `${base}/members` && init?.method === 'POST') {
+        const member = newMemberSchema.safeParse(bodyOf(init));
+        if (!member.success) {
+          return error('invalid_request', 400);
+        }
+        if (served.members.some(({ id }) => id === member.data.id)) {
+          return answerGroup();
+        }
+        if (served.members.length >= MAX_GROUP_MEMBERS) {
+          return error('too_many_members', 409);
+        }
+        if (nameTaken(member.data.name, member.data.id)) {
+          return error('member_name_taken', 409);
+        }
+        served = { ...served, members: [...served.members, member.data] };
+        return answerGroup(201);
+      }
+      if (url.startsWith(`${base}/members/`) && init?.method === 'PATCH') {
+        const id = decodeURIComponent(url.slice(`${base}/members/`.length));
+        const update = memberUpdateSchema.safeParse(bodyOf(init));
+        if (!update.success) {
+          return error('invalid_request', 400);
+        }
+        if (!served.members.some((member) => member.id === id)) {
+          return error('member_not_found', 404);
+        }
+        const { name } = update.data;
+        if (name !== undefined && nameTaken(name, id)) {
+          return error('member_name_taken', 409);
+        }
+        served = { ...served, members: served.members.map((member) => (member.id === id ? { ...member, name: name ?? member.name } : member)) };
+        return answerGroup();
       }
       if (url === `${base}/operations` && init?.method === 'POST') {
         const batch = operationBatchSchema.parse(JSON.parse(typeof init.body === 'string' ? init.body : ''));
-        const members = new Set(group.members.map((member) => member.id));
+        const members = new Set(served.members.map((member) => member.id));
         const results = batch.operations.map((operation): RevisionResult => {
           if (changes.some((current) => current.revisionId === operation.revisionId)) {
             return { revisionId: operation.revisionId, status: 'duplicate' };

@@ -163,6 +163,16 @@ describe('openGroupDb', () => {
     await raw.put('meta', 'not a member id!', 'currentMember');
     expect(await db.loadCurrentMember()).toBeUndefined();
   });
+
+  it('loads a copy saved by a newer version of the app, dropping the field this version does not know rather than the copy', async () => {
+    const db = await openGroupDb(token);
+    await db.saveRead(readOf(0, [change({ id: 'a', date: '2026-11-01' })]));
+    const raw = await openDB(await databaseName());
+    const stored = (await raw.get('meta', 'read')) as { group: object };
+    await raw.put('meta', { ...stored, group: { ...group, members: group.members.map((member) => ({ ...member, picture: 'x' })) } }, 'read');
+    expect((await db.loadCopy())?.group).toStrictEqual(group);
+    expect(await raw.count('operations')).toBe(1);
+  });
 });
 
 describe('the outbox of a group', () => {

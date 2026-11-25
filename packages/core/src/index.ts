@@ -9,9 +9,17 @@ export {
   groupResponseSchema,
   groupTitleSchema,
   groupTokenSchema,
+  type GroupUpdate,
+  groupUpdateSchema,
+  MAX_GROUP_MEMBERS,
   type Member,
+  memberNameKey,
   memberNameSchema,
   memberSchema,
+  type MemberUpdate,
+  memberUpdateSchema,
+  type NewMember,
+  newMemberSchema,
 } from './group.ts';
 export {
   compareIds,
