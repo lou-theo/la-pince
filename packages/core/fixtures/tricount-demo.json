@@ -108,9 +108,981 @@
                 "display_name": "Octave"
               }
             }
+          },
+          {
+            "RegistryMembershipNonUser": {
+              "uuid": "f089a5d3-01b2-4b44-817b-200f94489bbd",
+              "alias": {
+                "display_name": "Philibert"
+              }
+            }
           }
         ],
         "all_registry_entry": [
+          {
+            "RegistryEntry": {
+              "uuid": "235f02a4-5cf1-4bf0-9f3c-a9cd2c95e64d",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-32.00"
+              },
+              "description": "Tapas",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "931f33f5-525b-4613-a5a7-d0e28115dd9a"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.40"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.40"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.40"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5d343b47-fdd0-4802-930b-eadda0ce37d9"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.40"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.40"
+                  }
+                }
+              ],
+              "date": "2026-10-31 00:00:00.000000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "13a39b78-be8f-488f-8420-56617253d021",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-43.50"
+              },
+              "description": "Courses de la semaine",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "931f33f5-525b-4613-a5a7-d0e28115dd9a"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.25"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.25"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.25"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.25"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5d343b47-fdd0-4802-930b-eadda0ce37d9"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.25"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.25"
+                  }
+                }
+              ],
+              "date": "2026-10-31 00:00:00.000000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "17dcd8aa-11b9-4d3d-ae05-a92124201371",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-65.39"
+              },
+              "description": "Barbecue",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "f089a5d3-01b2-4b44-817b-200f94489bbd"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-13.10"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-12.70"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-12.70"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a49b9696-751e-4402-a733-3ad46f48a5a0"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-11.20"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-15.69"
+                  }
+                }
+              ],
+              "date": "2026-11-25 06:49:54.417000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "e8c77007-11fa-4104-8be4-51684d46169a",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-25.00"
+              },
+              "description": "Kebabs",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-25.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "0.00"
+                  }
+                }
+              ],
+              "date": "2026-11-24 21:24:17.638000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "554fc48d-b800-4d41-9c0b-c1200d271763",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-21.00"
+              },
+              "description": "Tapas",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "dfdaba17-d518-42a6-81de-c90c8ec32bcf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.00"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a49b9696-751e-4402-a733-3ad46f48a5a0"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.00"
+                  }
+                }
+              ],
+              "date": "2026-11-24 21:20:43.732000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "67f230ae-dedc-4a0e-b1ce-4a4d43772f77",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-58.95"
+              },
+              "description": "Escape game",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-12.45"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "b006c93f-3057-4f95-8184-9382035e26fb"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-20.75"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-9.35"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-16.40"
+                  }
+                }
+              ],
+              "date": "2026-11-24 19:10:33.424000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "b22ed005-ea66-45c2-86c3-eac5812fc220",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-25.94"
+              },
+              "description": "Remboursement",
+              "type_transaction": "BALANCE",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "d107033f-3a53-4406-af19-13543470ddb2"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-25.94"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "d107033f-3a53-4406-af19-13543470ddb2"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "0.00"
+                  }
+                }
+              ],
+              "date": "2026-11-24 18:41:17.400000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "49cfce7c-f8af-45b6-8d4d-deed6c7af047",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-75.00"
+              },
+              "description": "Restaurant",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "b006c93f-3057-4f95-8184-9382035e26fb"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "d107033f-3a53-4406-af19-13543470ddb2"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "dfdaba17-d518-42a6-81de-c90c8ec32bcf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5d343b47-fdd0-4802-930b-eadda0ce37d9"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a49b9696-751e-4402-a733-3ad46f48a5a0"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-7.50"
+                  }
+                }
+              ],
+              "date": "2026-11-21 00:00:00.000000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "189daa9a-5ded-436a-bb68-10ea53c06974",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-34.74"
+              },
+              "description": "Apéro",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-5.79"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "931f33f5-525b-4613-a5a7-d0e28115dd9a"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-5.79"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-5.79"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-5.79"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "dfdaba17-d518-42a6-81de-c90c8ec32bcf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-5.79"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5d343b47-fdd0-4802-930b-eadda0ce37d9"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-5.79"
+                  }
+                }
+              ],
+              "date": "2026-11-24 07:21:51.242000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "94b54a69-58be-4506-a4a7-37e0e29d4b81",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-36.68"
+              },
+              "description": "Courses",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "5d343b47-fdd0-4802-930b-eadda0ce37d9"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "8080af8d-857a-45c4-8296-ab1301adfa28"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.66"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "b006c93f-3057-4f95-8184-9382035e26fb"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.66"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "d107033f-3a53-4406-af19-13543470ddb2"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "dfdaba17-d518-42a6-81de-c90c8ec32bcf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5d343b47-fdd0-4802-930b-eadda0ce37d9"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a49b9696-751e-4402-a733-3ad46f48a5a0"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-3.67"
+                  }
+                }
+              ],
+              "date": "2026-11-21 19:18:12.985000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "ebd1faf3-06dc-4bfc-856d-dc47c8ff9ce6",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-18.54"
+              },
+              "description": "Crêpes",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.18"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "5b584c94-8fb4-4647-afe6-879085600dbf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.18"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-6.18"
+                  }
+                }
+              ],
+              "date": "2026-11-20 23:01:42.403000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "12eb0585-8ae5-426d-a2b6-3595f3a55e5b",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-49.90"
+              },
+              "description": "Péage",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "a2ac77fd-36c6-4c2a-b238-f89b35daa570"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-49.90"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "565b8fb4-ee30-4ee3-9b5b-e285678f1f9d"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "0.00"
+                  }
+                }
+              ],
+              "date": "2026-11-20 22:42:38.839000"
+            }
+          },
+          {
+            "RegistryEntry": {
+              "uuid": "d2de4164-afeb-4a9b-b6f9-6f3c868108a7",
+              "status": "ACTIVE",
+              "amount": {
+                "currency": "EUR",
+                "value": "-9.90"
+              },
+              "description": "Glaces",
+              "type_transaction": "NORMAL",
+              "membership_owned": {
+                "RegistryMembershipNonUser": {
+                  "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                }
+              },
+              "allocations": [
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "dfdaba17-d518-42a6-81de-c90c8ec32bcf"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "-9.90"
+                  }
+                },
+                {
+                  "membership": {
+                    "RegistryMembershipNonUser": {
+                      "uuid": "904023d8-3eb6-4079-b062-45c68095682e"
+                    }
+                  },
+                  "amount": {
+                    "currency": "EUR",
+                    "value": "0.00"
+                  }
+                }
+              ],
+              "date": "2026-11-20 19:40:28.911000"
+            }
+          },
           {
             "RegistryEntry": {
               "uuid": "cc473f62-fca4-457c-b4bb-891fedd962d1",

@@ -65,16 +65,16 @@ const changes = async (token: string) => {
 };
 
 describe('importTricount', () => {
-  it('imports the demo corpus: 9 756,29 € spent, 1 105,25 € reimbursed, balances read back equal to the export to the cent', async () => {
+  it('imports the demo corpus: 10 226,89 € spent, 1 131,19 € reimbursed, balances read back equal to the export to the cent', async () => {
     const { data, token } = newCorpus();
     const report = await run(data, token);
     const group = convertTricount(data);
     expect(report).toStrictEqual({
       title: 'Groupe de démo',
-      written: 253,
+      written: 266,
       deleted: 0,
-      spent: 975_629,
-      reimbursed: 110_525,
+      spent: 1_022_689,
+      reimbursed: 113_119,
       balances: computeBalances(group.operations.map((operation) => computeEffect(operation.id, operation.entry))),
     });
     // Sent oldest first: operations get their `createdSeq` in the order they were entered, the reverse of Tricount's list.
@@ -94,7 +94,7 @@ describe('importTricount', () => {
       return fetch(url, init);
     };
     await expect(run(data, token, { fetch: cut })).rejects.toThrow('network lost');
-    expect(await run(data, token)).toMatchObject({ written: 153, deleted: 0, spent: 975_629, reimbursed: 110_525 });
+    expect(await run(data, token)).toMatchObject({ written: 166, deleted: 0, spent: 1_022_689, reimbursed: 113_119 });
     const read = await changes(token);
     expect(read.toSorted((a, b) => a.createdSeq - b.createdSeq).map((change) => change.id)).toStrictEqual(
       convertTricount(data)
@@ -165,7 +165,7 @@ describe('importTricount', () => {
     if (changed !== undefined) {
       changed.description = 'Renamed in Tricount';
     }
-    expect(await run(data, token)).toMatchObject({ written: 2, deleted: 1, spent: 975_629 - 8822 });
+    expect(await run(data, token)).toMatchObject({ written: 2, deleted: 1, spent: 1_022_689 - 3200 });
     const read = await changes(token);
     expect(read.find((change) => change.id === removed?.uuid)).toMatchObject({ deleted: true, title: removed?.description });
     expect(read.find((change) => change.id === changed?.uuid)).toMatchObject({ title: 'Renamed in Tricount' });
@@ -177,7 +177,7 @@ describe('importTricount', () => {
     const full = structuredClone(data);
     registryOf(data).all_registry_entry.shift();
     await run(data, token);
-    expect(await run(full, token)).toMatchObject({ written: 1, deleted: 0, spent: 975_629 });
+    expect(await run(full, token)).toMatchObject({ written: 1, deleted: 0, spent: 1_022_689 });
   });
 
   it('marks deleted an operation entered in La Pince, the export overwriting the group', async () => {

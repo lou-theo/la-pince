@@ -18,19 +18,20 @@ describe('demoGroup', () => {
   it('gives the balances of the corpus as computed outside this code', () => {
     // From the test of the conversion in the core, itself checked against a computation made outside the repo.
     expect(Object.fromEntries(balancesOf(demoGroup('a')))).toStrictEqual({
-      Agathe: 0,
-      Basile: 6850,
-      Capucine: -3597,
-      Désiré: -1499,
-      Eulalie: -575,
-      Firmin: -907,
-      Gaspard: 1,
-      Honorine: -3390,
-      Isidore: 2602,
+      Agathe: -9910,
+      Basile: 4576,
+      Capucine: -5541,
+      Désiré: -4690,
+      Eulalie: 6680,
+      Firmin: -300,
+      Gaspard: 13923,
+      Honorine: -2499,
+      Isidore: -384,
       Joséphine: 3548,
-      Léandre: -1555,
+      Léandre: -4092,
       Mélusine: -1,
-      Octave: -1477,
+      Octave: 0,
+      Philibert: -1310,
     });
   });
 
