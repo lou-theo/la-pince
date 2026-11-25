@@ -20,7 +20,9 @@ async function firstTransfer(page: Page) {
     throw new Error(`not a suggested transfer: ${label}`);
   }
   const [, from = '', amount = '', to = ''] = match;
-  return { button, from, to, amount: cents(amount) };
+  // The member who I am is named « Agathe (toi) » here, and « Agathe » in the balances.
+  const member = (name: string) => name.replace(/ \(toi\)$/, '');
+  return { button, from: member(from), to: member(to), amount: cents(amount) };
 }
 
 /** The balances once a reimbursement of `amount` from `from` to `to` is counted: the giver is owed it back, the receiver owes it. */
