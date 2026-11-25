@@ -22,13 +22,23 @@ describe('chromeOf', () => {
 
   it('gives my page, a sheet and the forms the whole screen with their own bar', () => {
     expect(
-      ['/moi', '/moi/', '/moi/groupe', '/membres/m1', '/membres/m1/', '/nouvelle-depense', '/operations/op-1/modifier'].map(frame),
+      [
+        '/moi',
+        '/moi/',
+        '/moi/groupe',
+        '/membres/m1',
+        '/membres/m1/',
+        '/nouvelle-depense',
+        '/nouveau-remboursement/',
+        '/operations/op-1/modifier',
+      ].map(frame),
     ).toStrictEqual([
       ['me', 'no menu', 'own bar'],
       ['me', 'no menu', 'own bar'],
       ['members', 'no menu', 'own bar'],
       ['sheet', 'no menu', 'own bar'],
       ['sheet', 'no menu', 'own bar'],
+      ['form', 'no menu', 'own bar'],
       ['form', 'no menu', 'own bar'],
       ['form', 'no menu', 'own bar'],
     ]);
