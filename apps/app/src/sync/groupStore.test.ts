@@ -803,6 +803,50 @@ describe('editing the group', () => {
     expect(members()).toStrictEqual(['Alice', 'Zoé']);
   });
 
+  it('saves the group an edit answered over the one a read started before fetched, for a restart without network', async () => {
+    const server = fakeServer({ token, group, changes: [] });
+    let gate: Promise<void> | undefined;
+    let open: () => void = () => undefined;
+    let down = false;
+    const fetchFn: Fetch = (url, init) => {
+      const isGroup = url === `/api/groups/${token}` && init?.method === undefined;
+      if (gate !== undefined && isGroup) {
+        const held = gate;
+        gate = undefined;
+        const early = server.fetch(url, init);
+        return held.then(() => early);
+      }
+      // The read that follows the edit finds no network: only the read started before saves.
+      return down && isGroup ? Promise.reject(new TypeError('Failed to fetch')) : server.fetch(url, init);
+    };
+    const client = createApiClient(fetchFn);
+    const store = createGroupStore(client, token);
+    await store.load();
+    gate = new Promise((resolve) => {
+      open = resolve;
+    });
+    const stale = store.load();
+    await vi.waitFor(() => {
+      expect(gate).toBeUndefined();
+    });
+    const added = await client.addMember(token, { id: memberIdSchema.parse('m9'), name: 'Zoé' });
+    if (!added.ok) {
+      throw new Error(added.error);
+    }
+    down = true;
+    store.applyGroup(added.value);
+    open();
+    await stale;
+    await vi.waitFor(() => {
+      expect(store.getSnapshot()).toMatchObject({ status: 'ready', readError: 'network' });
+    });
+
+    const restarted = createGroupStore(client, token);
+    await restarted.load();
+    const state = restarted.getSnapshot();
+    expect(state.status === 'ready' && state.group.members.map((member) => member.name)).toStrictEqual(['Alice', 'Zoé']);
+  });
+
   it('reads the group again after an edit, which brings what changed meanwhile', async () => {
     const { server, store } = watch([]);
     await store.load();

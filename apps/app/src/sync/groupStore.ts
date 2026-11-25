@@ -154,6 +154,7 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
   }
 
   async function read(): Promise<GroupState> {
+    const appliedBefore = applied;
     await restoreOnce();
     const group = await client.fetchGroup(token);
     if (!group.ok) {
@@ -196,7 +197,9 @@ export function createGroupStore(client: ApiClient, token: string, openDb: () =>
       cursor = page.value.cursor;
       revision = page.value.changes.at(-1)?.revisionId ?? revision;
       if (!page.value.hasMore) {
-        return save({ group: group.value, since, changes, cursor, known, reset });
+        // An edit answered meanwhile has the later group: saved in its place, the copy keeps it should the next read fail.
+        const latest = applied !== appliedBefore && state.status === 'ready' ? state.group : group.value;
+        return save({ group: latest, since, changes, cursor, known, reset });
       }
     }
   }
