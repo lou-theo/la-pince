@@ -69,7 +69,7 @@
   line-height: 1.3;
 }
 
-/* Who paid, in small before the words; a text over several lines wraps beside it, the avatar staying on the first. */
+/* Who paid, as a small avatar before the words; a text over several lines wraps beside it, the avatar staying on the first. */
 .sub {
   --avatar-size: 1.125rem;
 
@@ -79,7 +79,7 @@
   overflow-wrap: anywhere;
 }
 
-/* As high as the first line of text, the avatar centered on it. */
+/* As high as the first line of text (the line height of `.sub`), the avatar centered on it. */
 .payer {
   display: flex;
   flex: none;
