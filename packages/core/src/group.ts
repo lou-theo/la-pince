@@ -1,15 +1,22 @@
 import { z } from 'zod';
 
 import { memberIdSchema } from './ids.ts';
-import { textSchema } from './text.ts';
+import { enteredTextSchema, textSchema } from './text.ts';
 
 // Far above the names (8 characters) and the title (12) of the group's history.
 const MAX_NAME_LENGTH = 50;
 const MAX_GROUP_TITLE_LENGTH = 100;
 
+/** Most members the app may add to a group: as many as the lines of an entry (`entry.ts`), so that one expense can still be shared among all. */
+export const MAX_GROUP_MEMBERS = 100;
+
 /** Name of a member and title of a group, shared with the Tricount conversion so that an import never sends one the server rejects. */
 export const memberNameSchema = textSchema(MAX_NAME_LENGTH);
 export const groupTitleSchema = textSchema(MAX_GROUP_TITLE_LENGTH);
+
+// Name and title as typed in the app: trimmed, then refused with a control character; the import and what is stored keep the looser schemas above.
+const enteredMemberNameSchema = enteredTextSchema(MAX_NAME_LENGTH);
+const enteredGroupTitleSchema = enteredTextSchema(MAX_GROUP_TITLE_LENGTH);
 
 // Read and written members share their fields: the read drops a field it does not know, sent by a newer server, where the server refuses one.
 const memberShape = { id: memberIdSchema, name: memberNameSchema };
@@ -32,8 +39,8 @@ const membersOf = <T extends { id: string }>(member: z.ZodType<T>) =>
     .refine((members) => new Set(members.map(({ id }) => id)).size === members.length, 'duplicate_member');
 
 /**
- * A group as the server sends it (`GET /api/groups/:token`): its title and its members in the order they were added; operations come by the changes.
- * Tolerant of unknown fields, like `memberSchema`.
+ * A group as the server sends it (`GET /api/groups/:token` and the routes that edit it): its title and its members in the order they were added;
+ * operations come by the changes. Tolerant of unknown fields, like `memberSchema`.
  */
 export const groupResponseSchema = z.object({ title: groupTitleSchema, members: membersOf(memberSchema) });
 export type GroupResponse = z.infer<typeof groupResponseSchema>;
@@ -47,3 +54,29 @@ export const groupTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{32,128}$/);
  */
 export const adminGroupSchema = z.strictObject({ title: groupTitleSchema, token: groupTokenSchema, members: membersOf(memberInputSchema) });
 export type AdminGroup = z.infer<typeof adminGroupSchema>;
+
+/** New title of a group (`PATCH /api/groups/:token`). */
+export const groupUpdateSchema = z.strictObject({ title: enteredGroupTitleSchema });
+export type GroupUpdate = z.infer<typeof groupUpdateSchema>;
+
+/**
+ * Member added from the app (`POST /api/groups/:token/members`), at the end of the list. Its id is drawn by the phone, so that a request sent again
+ * after a lost answer finds the member it created instead of adding a second one.
+ */
+export const newMemberSchema = z.strictObject({ id: memberIdSchema, name: enteredMemberNameSchema });
+export type NewMember = z.infer<typeof newMemberSchema>;
+
+/** Fields of a member changed from the app (`PATCH /api/groups/:token/members/:id`), at least one; those left out stay as they are. */
+export const memberUpdateSchema = z
+  .strictObject({ name: enteredMemberNameSchema.optional() })
+  .refine((update) => Object.values(update).some((value) => value !== undefined), 'nothing_to_update');
+export type MemberUpdate = z.infer<typeof memberUpdateSchema>;
+
+/**
+ * What two names of the same group must not share, the app refusing a second member under a name already taken: the name in Unicode NFC, so that
+ * an accent typed as one character or as a letter and its mark compare equal, without spaces at its ends, in lower case as in French. SQLite's
+ * `lower()` changes ASCII letters only, so the comparison runs here, on the server and on the phone alike.
+ */
+export function memberNameKey(name: string): string {
+  return name.normalize('NFC').trim().toLocaleLowerCase('fr-FR');
+}

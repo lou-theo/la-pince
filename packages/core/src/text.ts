@@ -4,6 +4,9 @@ import { z } from 'zod';
 // for the older phones the app runs on.
 const LONE_SURROGATE = /\p{Cs}/u;
 
+// A line break, a tab or another control character, which a one-line field never holds.
+const CONTROL_CHARACTER = /\p{Cc}/u;
+
 /** Text typed by a person (title, name): not empty, at most `maxLength` UTF-16 code units, and well formed, so that storage in UTF-8 keeps it intact. */
 export function textSchema(maxLength: number): z.ZodString {
   return z
@@ -11,4 +14,15 @@ export function textSchema(maxLength: number): z.ZodString {
     .min(1)
     .max(maxLength)
     .refine((text) => !LONE_SURROGATE.test(text), 'malformed_text');
+}
+
+/**
+ * Text a phone sends to be stored as typed (a title, a name edited in the app): spaces at both ends removed, then judged as `textSchema`, control
+ * characters refused. Stricter than `textSchema`, which also reads what was stored before, by the import among others.
+ */
+export function enteredTextSchema(maxLength: number): z.ZodPipe<z.ZodString, z.ZodString> {
+  return z
+    .string()
+    .trim()
+    .pipe(textSchema(maxLength).refine((text) => !CONTROL_CHARACTER.test(text), 'control_character'));
 }

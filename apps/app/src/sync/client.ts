@@ -7,6 +7,8 @@ import {
   type GroupResponse,
   groupResponseSchema,
   MAX_CHANGES,
+  type MemberId,
+  type NewMember,
   type Operation,
   operationBatchResponseSchema,
   pageFollowsQuery,
@@ -34,6 +36,12 @@ export type ChangesError = LoadError | 'unknown_cursor';
  */
 export type NotificationError = LoadError | 'notifications_disabled' | 'too_many_subscriptions' | 'invalid_request' | 'subscription_not_found';
 
+/**
+ * Why an edit of the group failed: `invalid_request`, the server refused the text; `member_not_found`, no such member in the group;
+ * `too_many_members`, the group is full; `member_name_taken`, another member already has the name.
+ */
+export type GroupEditError = LoadError | 'invalid_request' | 'member_not_found' | 'too_many_members' | 'member_name_taken';
+
 export interface ApiClient {
   readonly fetchGroup: (token: string) => Promise<ApiResult<GroupResponse>>;
   /** One page of the changes since the cursor, given with the revision received at it past 0, checked to answer that very query. */
@@ -47,6 +55,15 @@ export interface ApiClient {
   readonly unsubscribe: (token: string, endpoint: string) => Promise<ApiResult<undefined, NotificationError>>;
   /** Asks the server to send a test notification to this phone. */
   readonly sendTest: (token: string, endpoint: string) => Promise<ApiResult<undefined, NotificationError>>;
+  /** Renames the group; gives the whole group as the server holds it. */
+  readonly renameGroup: (token: string, title: string) => Promise<ApiResult<GroupResponse, GroupEditError>>;
+  /**
+   * Adds a member at the end of the list; gives the whole group. The id is drawn once, when the sheet to add a member opens, and sent again with each
+   * new try: a request whose answer was lost then finds the member it created instead of adding a second one.
+   */
+  readonly addMember: (token: string, member: NewMember) => Promise<ApiResult<GroupResponse, GroupEditError>>;
+  /** Renames a member; gives the whole group. */
+  readonly renameMember: (token: string, id: MemberId, name: string) => Promise<ApiResult<GroupResponse, GroupEditError>>;
 }
 
 // A request still pending past this is given up as a network failure: an answer that never ends would otherwise hold the outbox lock forever.
@@ -58,6 +75,8 @@ interface Schema<T> {
 
 // Answers without a body (204, 202).
 const noBody: Schema<undefined> = { safeParse: () => ({ success: true, data: undefined }) };
+
+const EDIT_ERRORS = ['group_not_found', 'invalid_request', 'member_not_found', 'too_many_members', 'member_name_taken'] as const;
 
 const NOTIFICATION_ERRORS = [
   'group_not_found',
@@ -144,6 +163,15 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
     },
     async sendTest(token, endpoint) {
       return read(`${groupUrl(token)}/subscription/test`, noBody, NOTIFICATION_ERRORS, sendJson('POST', { endpoint }));
+    },
+    async renameGroup(token, title) {
+      return read(groupUrl(token), groupResponseSchema, EDIT_ERRORS, sendJson('PATCH', { title }));
+    },
+    async addMember(token, member) {
+      return read(`${groupUrl(token)}/members`, groupResponseSchema, EDIT_ERRORS, sendJson('POST', member));
+    },
+    async renameMember(token, id, name) {
+      return read(`${groupUrl(token)}/members/${encodeURIComponent(id)}`, groupResponseSchema, EDIT_ERRORS, sendJson('PATCH', { name }));
     },
   };
 }
