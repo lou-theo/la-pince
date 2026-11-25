@@ -82,6 +82,7 @@ export async function updateMember(db: D1Database, groupId: GroupId, id: MemberI
     if (update.name !== undefined && nameTaken(current, update.name, id)) {
       return 'member_name_taken';
     }
+    // Only under a flood of edits of the same group.
     /* v8 ignore next 3 */
     if (tries === MAX_TRIES) {
       throw new Error('member not updated: the group changed at each try');
