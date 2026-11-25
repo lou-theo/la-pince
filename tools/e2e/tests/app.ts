@@ -24,6 +24,11 @@ export async function openAs(page: Page, token: string, member: string): Promise
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
 }
 
+/** A member's name without the « (toi) » mark that names who I am. */
+export function withoutMark(name: string): string {
+  return name.replace(' (toi)', '');
+}
+
 /** Balance of each member as the balances tab shows it, in cents, by name without the « (toi) » mark, read from each line's name (« Basile, doit, 5,75 € »). */
 export async function balances(page: Page): Promise<Map<string, number>> {
   await page.getByRole('link', { name: 'Soldes', exact: true }).click();
@@ -37,7 +42,7 @@ export async function balances(page: Page): Promise<Map<string, number>> {
       throw new Error(`not a line of the balances: ${label}`);
     }
     const [, name = '', standing, amount = '0'] = match;
-    read.set(name.replace(' (toi)', ''), (standing === 'doit' ? -1 : 1) * cents(amount));
+    read.set(withoutMark(name), (standing === 'doit' ? -1 : 1) * cents(amount));
   }
   return read;
 }

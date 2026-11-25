@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { balancesByName, demoGroup } from '../src/corpus.ts';
 import { tokenFor } from '../src/groups.ts';
-import { balances, cents, openAs, synced, wake } from './app.ts';
+import { balances, cents, openAs, synced, wake, withoutMark } from './app.ts';
 
 /** Opens the suggested transfers from the balances tab. */
 async function openTransfers(page: Page): Promise<void> {
@@ -20,9 +20,8 @@ async function firstTransfer(page: Page) {
     throw new Error(`not a suggested transfer: ${label}`);
   }
   const [, from = '', amount = '', to = ''] = match;
-  // The member who I am is named « Agathe (toi) » here, and « Agathe » in the balances.
-  const member = (name: string) => name.replace(/ \(toi\)$/, '');
-  return { button, from: member(from), to: member(to), amount: cents(amount) };
+  // Named as in the balances, the member who I am included.
+  return { button, from: withoutMark(from), to: withoutMark(to), amount: cents(amount) };
 }
 
 /** The balances once a reimbursement of `amount` from `from` to `to` is counted: the giver is owed it back, the receiver owes it. */
