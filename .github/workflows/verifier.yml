@@ -86,12 +86,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         # The logs of a public repo are public, and Wrangler prints the instance's address and its database id (docs/decisions/auto-hebergement.md): its output is kept
-        # out of them, and shown on failure only, without addresses, ids nor quoted names (custom domain, subdomain).
+        # out of them, and shown on failure only, without addresses, ids (UUIDs of D1, 32 hex digits of KV and of the account) nor quoted names
+        # (custom domain, subdomain).
         run: |
           status=0
           pnpm --filter @la-pince/server run deploy > "$RUNNER_TEMP/deploy.log" 2>&1 || status=$?
           if [ "$status" -ne 0 ]; then
-            sed -E 's#https?://[^[:space:]"]+#<url>#g; s#[A-Za-z0-9.-]+\.workers\.dev#<host>#g; s/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/<id>/g; $1; s/"[^"]*"/"<…>"/g' "$RUNNER_TEMP/deploy.log"
+            sed -E 's#https?://[^[:space:]"]+#<url>#g; s#[A-Za-z0-9.-]+\.workers\.dev#<host>#g; s/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/<id>/g; s/\b[0-9a-f]{32}\b/<id>/g; s/"[^"]*"/"<…>"/g' "$RUNNER_TEMP/deploy.log"
             exit "$status"
           fi
           echo "Instance deployed."
