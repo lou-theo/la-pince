@@ -111,6 +111,7 @@ describe('PUT /api/admin/groups/:id', () => {
         { id: 'bob', name: 'BOB' },
         { id: 'carol', name: 'Carol' },
       ],
+      photos: true,
     });
   });
 
@@ -140,6 +141,7 @@ describe('GET /api/groups/:token', () => {
         { id: 'alice', name: 'ALICE' },
         { id: 'bob', name: 'BOB' },
       ],
+      photos: true,
     });
   });
 

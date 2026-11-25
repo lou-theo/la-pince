@@ -68,8 +68,8 @@ describe('jpegSize', () => {
   it('never throws, whatever the bytes', () => {
     fc.assert(
       fc.property(fc.uint8Array({ maxLength: 300 }), (bytes) => {
-        jpegSize(bytes);
-        jpegSize(new Uint8Array([0xff, 0xd8, 0xff, ...bytes, 0xff, 0xd9]));
+        expect(() => jpegSize(bytes)).not.toThrow();
+        expect(() => jpegSize(new Uint8Array([0xff, 0xd8, 0xff, ...bytes, 0xff, 0xd9]))).not.toThrow();
       }),
     );
   });

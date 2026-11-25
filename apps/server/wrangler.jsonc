@@ -19,4 +19,6 @@
       "migrations_dir": "drizzle",
     },
   ],
+  // Photos of the members; a local key only, like `database_id`.
+  "kv_namespaces": [{ "binding": "PHOTOS", "id": "local" }],
 }

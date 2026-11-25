@@ -28,6 +28,9 @@
       "migrations_dir": "drizzle",
     },
   ],
+  // Photos of the members (optional: without this block the instance keeps none, and the app offers none). Printed by
+  // `wrangler kv namespace create la-pince-photos`. The id is required: without it, `wrangler deploy` creates a namespace by itself.
+  "kv_namespaces": [{ "binding": "PHOTOS", "id": "<kv namespace id>" }],
   // Workers Logs: keeps a line per API request and per queue message, the `console` output and the unhandled errors, readable afterwards in the
   // dashboard instead of only live through `wrangler tail`; app pages, served by the assets, do not invoke the Worker. Request lines carry the
   // token of the group link, as every group route does.

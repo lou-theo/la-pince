@@ -17,6 +17,9 @@ export const members = sqliteTable(
     name: text('name').notNull(),
     // Order in which members were added, which the phone uses to break ties when it orders members.
     position: integer('position').notNull(),
+    // Versions of the member's photo and of the one before it, kept for an undo; the bytes live in KV under keys named by them (`photos.ts`).
+    photo: text('photo'),
+    previousPhoto: text('previous_photo'),
   },
   (table) => [primaryKey({ columns: [table.groupId, table.id] })],
 );
