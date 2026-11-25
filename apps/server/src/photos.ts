@@ -114,7 +114,9 @@ export async function setPhoto(
     return { outcome: 'member_not_found', dropped: [] };
   }
   const key = keyOf(groupId, memberId, version);
-  if (current.photo === version && (await store.get(key, 'arrayBuffer')) !== null) {
+  // A read KV refuses counts as bytes missing: the write that follows says whether KV works.
+  const stored = async (): Promise<boolean> => (await store.get(key, 'arrayBuffer').catch(() => null)) !== null;
+  if (current.photo === version && (await stored())) {
     return { outcome: 'replayed', dropped: [] };
   }
   try {
@@ -122,7 +124,7 @@ export async function setPhoto(
   } catch (error) {
     // A key names its content: bytes already there are these bytes, written by the same photo sent twice at once, whose second write KV refuses
     // within the second. Otherwise the daily quota of writes of the free plan, or an outage.
-    if ((await store.get(key, 'arrayBuffer')) === null) {
+    if (!(await stored())) {
       log({ photo: 'not_stored', group: groupId, error: String(error) });
       return { outcome: 'photos_unavailable', dropped: [] };
     }
@@ -168,8 +170,8 @@ export async function readPhoto(store: PhotoStore, groupId: GroupId, memberId: M
 
 /**
  * Deletes the bytes of versions no longer pointed to, after the answer: a member keeps two photos at most. A version pointed to again in between
- * (the same photo sent again) is kept; one pointed to again after this read, within milliseconds, loses its bytes and shows the initial until the
- * next photo. A failure only leaves bytes nobody reads, and is logged.
+ * (the same photo sent again) is kept; one pointed to again after this read, within milliseconds, loses its bytes and shows the initial until a
+ * photo is sent, the same one included. A failure only leaves bytes nobody reads, and is logged.
  */
 export async function dropPhotos(
   db: D1Database,

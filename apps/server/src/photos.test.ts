@@ -39,6 +39,7 @@ class MemoryStore implements PhotoStore {
   /** Runs after the next write of bytes, before the caller goes on. */
   afterPut: (() => Promise<void>) | undefined;
   putError: Error | undefined;
+  getError: Error | undefined;
   deleteError: Error | undefined;
 
   async put(key: string, value: Uint8Array): Promise<void> {
@@ -53,6 +54,9 @@ class MemoryStore implements PhotoStore {
   }
 
   get(key: string): Promise<ArrayBuffer | null> {
+    if (this.getError !== undefined) {
+      return Promise.reject(this.getError);
+    }
     const value = this.bytes.get(key);
     return Promise.resolve(value === undefined ? null : new Uint8Array(value).buffer);
   }
@@ -114,6 +118,19 @@ describe('setPhoto', () => {
     store.bytes.set(keyOf(groupId, version), photo(1));
     store.putError = new Error('KV PUT failed: 429 Too Many Requests');
     expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'set', dropped: [] });
+    expect(await versions(groupId)).toStrictEqual({ photo: version, previous: null });
+  });
+
+  it('answers photos_unavailable when KV refuses both the read and the write of a photo sent again', async () => {
+    const groupId = await newGroup();
+    const store = new MemoryStore();
+    const version = await photoVersion(photo(1));
+    await setPhoto(db, store, groupId, alice, photo(1));
+    store.getError = new Error('KV GET failed: 500');
+    store.putError = new Error('KV PUT failed: 500');
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'photos_unavailable', dropped: [] });
+    log.mockRestore();
     expect(await versions(groupId)).toStrictEqual({ photo: version, previous: null });
   });
 
