@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { adminGroupSchema, groupResponseSchema, groupUpdateSchema, memberNameKey, memberUpdateSchema, newMemberSchema } from './group.ts';
+import {
+  adminGroupSchema,
+  groupResponseSchema,
+  groupUpdateSchema,
+  memberNameKey,
+  memberUpdateSchema,
+  newMemberSchema,
+  photoChangeResponseSchema,
+} from './group.ts';
 
 const group = {
   title: 'Trip',
@@ -49,6 +57,19 @@ describe('groupResponseSchema', () => {
     ['photos set to false', { ...group, photos: false }],
   ])('rejects %s', (_, response) => {
     expect(groupResponseSchema.safeParse(response).success).toBe(false);
+  });
+});
+
+describe('photoChangeResponseSchema', () => {
+  const undo = { version: 'a'.repeat(22), previous: null };
+
+  it('reads the group and the undo of the change, which may be absent', () => {
+    expect(photoChangeResponseSchema.parse({ ...group, undo })).toStrictEqual({ ...group, undo });
+    expect(photoChangeResponseSchema.parse(group)).toStrictEqual(group);
+  });
+
+  it('rejects an undo that puts back the version it undoes', () => {
+    expect(photoChangeResponseSchema.safeParse({ ...group, undo: { ...undo, previous: undo.version } }).success).toBe(false);
   });
 });
 

@@ -1,4 +1,4 @@
-import { apiErrorSchema, MAX_PHOTO_BYTES } from '@la-pince/core';
+import { apiErrorSchema, MAX_PHOTO_BYTES, photoChangeResponseSchema } from '@la-pince/core';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createTestHarness } from 'wrangler';
 
@@ -98,6 +98,7 @@ describe('PUT /api/groups/:token/members/:id/photo', () => {
         { id: 'bob', name: 'BOB' },
       ],
       photos: true,
+      undo: { version: await v(1), previous: null },
     });
     expect(await keys(id)).toStrictEqual([keyOf(id, 'alice', await v(1))]);
   });
@@ -203,6 +204,17 @@ describe('POST /api/groups/:token/members/:id/photo/undo', () => {
     await expectKeys(id, [keyOf(id, 'alice', await v(1)), keyOf(id, 'alice', await v(2))]);
   });
 
+  it('passes with the undo of the answer, though the sender never saw the photo it replaced', async () => {
+    const { token } = await newGroup();
+    await put(token, 'alice', jpeg(1));
+    // Another phone sets the second photo; this one, still showing the first, sets the third.
+    await put(token, 'alice', jpeg(2));
+    const answer = photoChangeResponseSchema.parse(await (await put(token, 'alice', jpeg(3))).json());
+    expect(answer.undo).toStrictEqual({ version: await v(3), previous: await v(2) });
+    expect((await undo(token, 'alice', answer.undo)).status).toBe(200);
+    expect(await photoOf(token, 'alice')).toBe(await v(2));
+  });
+
   it('removes a first photo, back to the initial', async () => {
     const { token } = await newGroup();
     await put(token, 'alice', jpeg(1));
@@ -240,7 +252,9 @@ describe('DELETE /api/groups/:token/members/:id/photo', () => {
     await put(token, 'alice', jpeg(1));
     const response = await remove(token, 'alice');
     expect(response.status).toBe(200);
-    expect(((await response.json()) as { members: { photo?: string }[] }).members[0]).toStrictEqual({ id: 'alice', name: 'ALICE' });
+    const answer = photoChangeResponseSchema.parse(await response.json());
+    expect(answer.members[0]).toStrictEqual({ id: 'alice', name: 'ALICE' });
+    expect(answer.undo).toStrictEqual({ version: null, previous: await v(1) });
     expect((await remove(token, 'alice')).status).toBe(200);
     expect(await keys(id)).toStrictEqual([keyOf(id, 'alice', await v(1))]);
     expect((await undo(token, 'alice', { version: null, previous: await v(1) })).status).toBe(200);

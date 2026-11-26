@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { memberIdSchema } from './ids.ts';
-import { photoVersionSchema } from './photo.ts';
+import { photoUndoSchema, photoVersionSchema } from './photo.ts';
 import { enteredTextSchema, textSchema, withoutInvisible } from './text.ts';
 
 // Far above the names (8 characters) and the title (12) of the group's history; exported for the app's fields.
@@ -47,6 +47,14 @@ const membersOf = <T extends { id: string }>(member: z.ZodType<T>) =>
  */
 export const groupResponseSchema = z.object({ title: groupTitleSchema, members: membersOf(memberSchema), photos: z.literal(true).optional() });
 export type GroupResponse = z.infer<typeof groupResponseSchema>;
+
+/**
+ * Answer of a photo change (`PUT`, `DELETE` and undo of `/api/groups/:token/members/:id/photo`): the group, and the body of the undo of that change,
+ * absent when there is nothing to put back. Only the server knows the version the change replaced: another phone may have changed the photo since
+ * this one last read the group.
+ */
+export const photoChangeResponseSchema = groupResponseSchema.extend({ undo: photoUndoSchema.optional() });
+export type PhotoChangeResponse = z.infer<typeof photoChangeResponseSchema>;
 
 /** Secret of a group's link: whoever has it reads and writes the group. Long and random, so that it cannot be guessed. */
 export const groupTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{32,128}$/);

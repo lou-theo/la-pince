@@ -16,6 +16,7 @@ import {
   memberUpdateSchema,
   newMemberSchema,
   type OperationBatchResponse,
+  type PhotoChangeResponse,
   photoUndoSchema,
   photoVersionSchema,
   type PushKeyResponse,
@@ -181,7 +182,8 @@ function photosOf(env: Env): PhotoStore {
   return env.PHOTOS;
 }
 
-// Answers a photo change with the whole group, as the other routes that edit it do, then deletes the bytes no version points to any more.
+// Answers a photo change with the whole group, as the other routes that edit it do, and the undo of the change; then deletes the bytes no version
+// points to any more.
 const photoErrorStatus = { member_not_found: 404, photo_changed: 409, photos_unavailable: 503 } as const;
 type PhotoError = keyof typeof photoErrorStatus;
 
@@ -191,14 +193,14 @@ async function answerPhotoChange(
   memberId: MemberId,
   changed: Changed<'set' | 'undone' | 'removed' | 'replayed' | PhotoError>,
 ): Promise<Response> {
-  const { outcome, dropped } = changed;
+  const { outcome, dropped, undo } = changed;
   if (outcome === 'member_not_found' || outcome === 'photo_changed' || outcome === 'photos_unavailable') {
     return apiError(context, outcome, photoErrorStatus[outcome]);
   }
   if (dropped.length > 0) {
     context.executionCtx.waitUntil(dropPhotos(context.env.DB, photosOf(context.env), groupId, memberId, dropped));
   }
-  return context.json(await readGroup(context.env, groupId));
+  return context.json({ ...(await readGroup(context.env, groupId)), ...(undo === undefined ? {} : { undo }) } satisfies PhotoChangeResponse);
 }
 
 // The phone sends the JPEG it reduced, as is: a body of another type, too heavy or too wide only comes from a bug or a forged client.

@@ -42,12 +42,18 @@ interface Judgment<Outcome> {
   readonly outcome: Outcome;
   /** The versions to write, or nothing to write. */
   readonly to?: PhotoState;
+  /** When nothing is written, the undo of the same change already made (a replay). */
+  readonly undo?: PhotoUndo;
 }
 
-/** Outcome of a change, with the versions no longer pointed to, whose bytes `dropPhotos` deletes once the answer is sent. */
+/**
+ * Outcome of a change, with the versions no longer pointed to, whose bytes `dropPhotos` deletes once the answer is sent, and the undo of the change:
+ * only the server knows the version it replaced, another phone having maybe changed the photo since this one last read the group.
+ */
 export interface Changed<Outcome> {
   readonly outcome: Outcome | 'member_not_found';
   readonly dropped: readonly PhotoVersion[];
+  readonly undo?: PhotoUndo;
 }
 
 /**
@@ -69,9 +75,9 @@ async function change<Outcome>(
     if (current === undefined) {
       return { outcome: 'member_not_found', dropped: [] };
     }
-    const { outcome, to } = judge(current);
+    const { outcome, to, undo } = judge(current);
     if (to === undefined) {
-      return { outcome, dropped: [] };
+      return { outcome, dropped: [], ...(undo === undefined ? {} : { undo }) };
     }
     // Only under a flood of changes of the same photo.
     /* v8 ignore next 3 */
@@ -90,6 +96,7 @@ async function change<Outcome>(
       return {
         outcome,
         dropped: [current.photo, current.previous].filter((version): version is PhotoVersion => version !== null && !kept.includes(version)),
+        undo: { version: to.photo, previous: current.photo },
       };
     }
   }
@@ -117,7 +124,7 @@ export async function setPhoto(
   // A read KV refuses counts as bytes missing: the write that follows says whether KV works.
   const stored = async (): Promise<boolean> => (await store.get(key, 'arrayBuffer').catch(() => null)) !== null;
   if (current.photo === version && (await stored())) {
-    return { outcome: 'replayed', dropped: [] };
+    return { outcome: 'replayed', dropped: [], undo: { version, previous: current.previous } };
   }
   try {
     await store.put(key, bytes);
@@ -133,7 +140,10 @@ export async function setPhoto(
     db,
     groupId,
     memberId,
-    (now) => (now.photo === version ? { outcome: 'replayed' } : { outcome: 'set', to: { photo: version, previous: now.photo } }),
+    (now) =>
+      now.photo === version
+        ? { outcome: 'replayed', undo: { version, previous: now.previous } }
+        : { outcome: 'set', to: { photo: version, previous: now.photo } },
     current,
   );
 }
@@ -156,11 +166,14 @@ export async function undoPhoto(
   });
 }
 
-/** Removes the member's photo, kept as the one an undo puts back. A member without a photo is left as it is. */
+/** Removes the member's photo, kept as the one an undo puts back. A member without a photo is left as it is, with the undo of the last removal. */
 export async function removePhoto(db: D1Database, groupId: GroupId, memberId: MemberId): Promise<Changed<'removed' | 'replayed'>> {
-  return change(db, groupId, memberId, (now) =>
-    now.photo === null ? { outcome: 'replayed' } : { outcome: 'removed', to: { photo: null, previous: now.photo } },
-  );
+  return change(db, groupId, memberId, (now) => {
+    if (now.photo !== null) {
+      return { outcome: 'removed', to: { photo: null, previous: now.photo } };
+    }
+    return now.previous === null ? { outcome: 'replayed' } : { outcome: 'replayed', undo: { version: null, previous: now.previous } };
+  });
 }
 
 /** The bytes of a photo, or `null` when none is stored under that version. */
@@ -170,7 +183,7 @@ export async function readPhoto(store: PhotoStore, groupId: GroupId, memberId: M
 
 /**
  * Deletes the bytes of versions no longer pointed to, after the answer: a member keeps two photos at most. A version pointed to again in between
- * (the same photo sent again) is kept; one pointed to again after this read, within milliseconds, loses its bytes and shows the initial until a
+ * (the same photo sent again) is kept; one pointed to again after this read, while the deletion runs, loses its bytes and shows the initial until a
  * photo is sent, the same one included. A failure only leaves bytes nobody reads, and is logged.
  */
 export async function dropPhotos(

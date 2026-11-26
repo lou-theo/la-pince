@@ -22,6 +22,8 @@ export {
   memberUpdateSchema,
   type NewMember,
   newMemberSchema,
+  type PhotoChangeResponse,
+  photoChangeResponseSchema,
 } from './group.ts';
 export {
   compareIds,

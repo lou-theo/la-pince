@@ -87,17 +87,47 @@ describe('setPhoto', () => {
     const groupId = await newGroup();
     const store = new MemoryStore();
     const [first, second] = [await photoVersion(photo(1)), await photoVersion(photo(2))];
-    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'set', dropped: [] });
-    expect(await setPhoto(db, store, groupId, alice, photo(2))).toStrictEqual({ outcome: 'set', dropped: [] });
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({
+      outcome: 'set',
+      dropped: [],
+      undo: { version: first, previous: null },
+    });
+    expect(await setPhoto(db, store, groupId, alice, photo(2))).toStrictEqual({
+      outcome: 'set',
+      dropped: [],
+      undo: { version: second, previous: first },
+    });
     expect(await versions(groupId)).toStrictEqual({ photo: second, previous: first });
-    expect(await setPhoto(db, store, groupId, alice, photo(3))).toStrictEqual({ outcome: 'set', dropped: [first] });
+    expect(await setPhoto(db, store, groupId, alice, photo(3))).toStrictEqual({
+      outcome: 'set',
+      dropped: [first],
+      undo: { version: await photoVersion(photo(3)), previous: second },
+    });
+  });
+
+  // The phone that sends a photo may not have seen the one another phone set since its last read: the server tells the undo, which then passes.
+  it('gives the undo of the version it replaced, which the sender may not know', async () => {
+    const groupId = await newGroup();
+    const store = new MemoryStore();
+    const [first, second, third] = [await photoVersion(photo(1)), await photoVersion(photo(2)), await photoVersion(photo(3))];
+    await setPhoto(db, store, groupId, alice, photo(1));
+    await setPhoto(db, store, groupId, alice, photo(2));
+    expect((await setPhoto(db, store, groupId, alice, photo(3))).undo).toStrictEqual({ version: third, previous: second });
+    // What the sender knew would be refused.
+    expect((await undoPhoto(db, groupId, alice, { version: third, previous: first })).outcome).toBe('photo_changed');
+    expect((await undoPhoto(db, groupId, alice, { version: third, previous: second })).outcome).toBe('undone');
+    expect(await versions(groupId)).toStrictEqual({ photo: second, previous: third });
   });
 
   it('answers a replay without writing the bytes again', async () => {
     const groupId = await newGroup();
     const store = new MemoryStore();
     await setPhoto(db, store, groupId, alice, photo(1));
-    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'replayed', dropped: [] });
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({
+      outcome: 'replayed',
+      dropped: [],
+      undo: { version: await photoVersion(photo(1)), previous: null },
+    });
     expect(store.puts).toBe(1);
   });
 
@@ -107,7 +137,11 @@ describe('setPhoto', () => {
     const version = await photoVersion(photo(1));
     await setPhoto(db, store, groupId, alice, photo(1));
     store.bytes.clear();
-    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'replayed', dropped: [] });
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({
+      outcome: 'replayed',
+      dropped: [],
+      undo: { version, previous: null },
+    });
     expect(store.bytes.get(keyOf(groupId, version))).toStrictEqual(photo(1));
   });
 
@@ -117,7 +151,7 @@ describe('setPhoto', () => {
     const version = await photoVersion(photo(1));
     store.bytes.set(keyOf(groupId, version), photo(1));
     store.putError = new Error('KV PUT failed: 429 Too Many Requests');
-    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'set', dropped: [] });
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'set', dropped: [], undo: { version, previous: null } });
     expect(await versions(groupId)).toStrictEqual({ photo: version, previous: null });
   });
 
@@ -162,8 +196,12 @@ describe('setPhoto', () => {
     store.afterPut = async () => {
       concurrent = await setPhoto(db, store, groupId, alice, photo(3));
     };
-    expect(await setPhoto(db, store, groupId, alice, photo(2))).toStrictEqual({ outcome: 'set', dropped: [first] });
-    expect(concurrent).toStrictEqual({ outcome: 'set', dropped: [] });
+    expect(await setPhoto(db, store, groupId, alice, photo(2))).toStrictEqual({
+      outcome: 'set',
+      dropped: [first],
+      undo: { version: second, previous: third },
+    });
+    expect(concurrent).toStrictEqual({ outcome: 'set', dropped: [], undo: { version: third, previous: first } });
     expect(await versions(groupId)).toStrictEqual({ photo: second, previous: third });
   });
 
@@ -173,7 +211,11 @@ describe('setPhoto', () => {
     store.afterPut = async () => {
       expect((await setPhoto(db, store, groupId, alice, photo(1))).outcome).toBe('set');
     };
-    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({ outcome: 'replayed', dropped: [] });
+    expect(await setPhoto(db, store, groupId, alice, photo(1))).toStrictEqual({
+      outcome: 'replayed',
+      dropped: [],
+      undo: { version: await photoVersion(photo(1)), previous: null },
+    });
   });
 });
 
@@ -184,7 +226,11 @@ describe('undoPhoto', () => {
     const [first, second] = [await photoVersion(photo(1)), await photoVersion(photo(2))];
     await setPhoto(db, store, groupId, alice, photo(1));
     await setPhoto(db, store, groupId, alice, photo(2));
-    expect(await undoPhoto(db, groupId, alice, { version: second, previous: first })).toStrictEqual({ outcome: 'undone', dropped: [] });
+    expect(await undoPhoto(db, groupId, alice, { version: second, previous: first })).toStrictEqual({
+      outcome: 'undone',
+      dropped: [],
+      undo: { version: first, previous: second },
+    });
     expect(await versions(groupId)).toStrictEqual({ photo: first, previous: second });
     expect(await undoPhoto(db, groupId, alice, { version: second, previous: first })).toStrictEqual({ outcome: 'replayed', dropped: [] });
   });
@@ -218,8 +264,8 @@ describe('removePhoto', () => {
     expect(await removePhoto(db, groupId, alice)).toStrictEqual({ outcome: 'replayed', dropped: [] });
     await setPhoto(db, store, groupId, alice, photo(1));
     await setPhoto(db, store, groupId, alice, photo(2));
-    expect(await removePhoto(db, groupId, alice)).toStrictEqual({ outcome: 'removed', dropped: [first] });
-    expect(await removePhoto(db, groupId, alice)).toStrictEqual({ outcome: 'replayed', dropped: [] });
+    expect(await removePhoto(db, groupId, alice)).toStrictEqual({ outcome: 'removed', dropped: [first], undo: { version: null, previous: second } });
+    expect(await removePhoto(db, groupId, alice)).toStrictEqual({ outcome: 'replayed', dropped: [], undo: { version: null, previous: second } });
     expect(await versions(groupId)).toStrictEqual({ photo: null, previous: second });
   });
 });
