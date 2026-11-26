@@ -188,6 +188,15 @@ li:first-child > .member {
   flex: 1;
 }
 
+/* The entry to the install guide, La Pince at its start. */
+.installRow {
+  padding-left: var(--space-2);
+}
+
+.installText {
+  font-weight: 600;
+}
+
 .rowHint {
   color: var(--color-muted);
   font-size: 0.8125rem;

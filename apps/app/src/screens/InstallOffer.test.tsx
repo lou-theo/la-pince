@@ -325,7 +325,11 @@ describe('guides of the iPhone', () => {
 
   it('opens the guide from a link as often as asked, without the offer, and shows no link where no guide fits', async () => {
     const user = userEvent.setup();
-    render(<InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ userAgent: safari18, prompt: 'absent' }).platform} />);
+    render(
+      <InstallGuideLink title="Week-end" platform={browser({ userAgent: safari18, prompt: 'absent' }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
     for (let time = 0; time < 2; time += 1) {
       await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
@@ -338,7 +342,11 @@ describe('guides of the iPhone', () => {
     expect(wasInstallOffered()).toBe(false);
     cleanup();
 
-    render(<InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ userAgent: windows }).platform} />);
+    render(
+      <InstallGuideLink title="Week-end" platform={browser({ userAgent: windows }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
+    );
     expect(screen.queryByRole('button')).toBeNull();
   });
 
@@ -349,14 +357,22 @@ describe('guides of the iPhone', () => {
     await user.click(screen.getByRole('button', { name: 'Plus tard' }));
     cleanup();
 
-    render(<InstallGuideLink title="Week-end" label="Installer l'app" variant="row" platform={platform} />);
+    render(
+      <InstallGuideLink title="Week-end" platform={platform}>
+        Installer l'app
+      </InstallGuideLink>,
+    );
     await user.click(screen.getByRole('button', { name: "Installer l'app" }));
     expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
     expect(screen.getByRole('heading', { name: 'Touche « Installer » ci-dessous' })).toBeDefined();
     cleanup();
 
     for (const { platform: elsewhere } of [browser({ standalone: true }), browser({ userAgent: windows }), browser({ userAgent: instagram })]) {
-      render(<InstallGuideLink title="Week-end" label="Installer l'app" variant="row" platform={elsewhere} />);
+      render(
+        <InstallGuideLink title="Week-end" platform={elsewhere}>
+          Installer l'app
+        </InstallGuideLink>,
+      );
       expect(screen.queryByRole('button')).toBeNull();
       cleanup();
     }
@@ -364,14 +380,20 @@ describe('guides of the iPhone', () => {
 
   it("falls back on Chrome's menu from a link when the window cannot open", async () => {
     const user = userEvent.setup();
-    render(<InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ answer: 'unavailable' }).platform} />);
+    render(
+      <InstallGuideLink title="Week-end" platform={browser({ answer: 'unavailable' }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
+    );
     await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
     await user.click(screen.getByRole('button', { name: 'Installer' }));
     expect(await screen.findByRole('heading', { name: 'Touche ⋮ en haut à droite' })).toBeDefined();
     cleanup();
 
     render(
-      <InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ userAgent: samsung, answer: 'unavailable' }).platform} />,
+      <InstallGuideLink title="Week-end" platform={browser({ userAgent: samsung, answer: 'unavailable' }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
     );
     await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
     await user.click(screen.getByRole('button', { name: 'Installer' }));
@@ -433,9 +455,14 @@ describe('moment of the offer', () => {
     rememberInstallOffered();
     await rememberMember(token, 'm1');
     onAndroidChrome();
-    renderApp(`/g/${token}/moi`, fakeServer({ token, group }).fetch);
+    const location = renderApp(`/g/${token}/moi`, fakeServer({ token, group }).fetch);
     await user.click(await screen.findByRole('button', { name: "Installer l'app" }));
     expect(screen.getByRole('heading', { name: 'Touche « Installer » ci-dessous' })).toBeDefined();
+    // Left by the back gesture, the guide open: no dialog stays over the screen hidden.
+    act(() => {
+      location.navigate(`/g/${token}`);
+    });
+    expect(document.querySelector('dialog[open]')).toBeNull();
     cleanup();
 
     renderApp('/lien', fakeServer({ token, group }).fetch);

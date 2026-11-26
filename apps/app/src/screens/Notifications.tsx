@@ -231,7 +231,7 @@ export function Notifications({ token, title, member, platform: given }: Notific
       {status === 'home_screen' ? (
         <>
           <p className={layout.muted}>{m.notifications_home_screen()}</p>
-          <InstallGuideLink title={title} label={m.notifications_home_screen_guide()} />
+          <InstallGuideLink title={title}>{m.notifications_home_screen_guide()}</InstallGuideLink>
         </>
       ) : null}
       {status === 'denied' ? <p className={layout.muted}>{m.notifications_denied()}</p> : null}

@@ -57,7 +57,7 @@ export function PasteLink(): ReactNode {
         </button>
       </form>
       {/* Without a group, no profile: the guide starts again from here. */}
-      <InstallGuideLink title={m.app_name()} label={m.install_entry()} />
+      <InstallGuideLink title={m.app_name()}>{m.install_entry()}</InstallGuideLink>
     </Layout>
   );
 }

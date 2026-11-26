@@ -15,12 +15,11 @@ import { BottomNav, chromeOf } from './BottomNav.tsx';
 import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
 import { InAppBanner } from './InAppBanner.tsx';
-import { InstallGuideLink } from './InstallOffer.tsx';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
 import { useListFilter } from './listFilterMemory.ts';
 import { ListFilterBar } from './ListFilters.tsx';
-import { GroupMembers, OnThisPhone, You } from './Me.tsx';
+import { GroupMembers, InstallEntry, OnThisPhone, You } from './Me.tsx';
 import { MemberBalance } from './MemberBalance.tsx';
 import { Notifications } from './Notifications.tsx';
 import { OperationDetail } from './OperationDetail.tsx';
@@ -182,7 +181,8 @@ export function GroupHome({
       {/* Below my sheet on the tab “Toi”; mounted on every screen of the group, at the same place, so that each opening saves the subscription again. */}
       <div hidden={chrome.section !== 'me'}>
         <OnThisPhone
-          install={<InstallGuideLink title={group.title} label={m.install_entry()} variant="row" />}
+          // Mounted on my page only: a guide left open over a screen hidden since (back gesture) would leave the page inert.
+          install={chrome.section === 'me' ? <InstallEntry title={group.title} /> : null}
           notifications={<Notifications token={token} title={group.title} member={currentMember.id} />}
           onChangeMember={() => {
             setChoosing(true);

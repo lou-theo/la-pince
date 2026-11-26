@@ -174,9 +174,9 @@ export function InstallOffer({ title, platform: given }: InstallOfferProps): Rea
 interface InstallGuideLinkProps {
   /** Title of the group shown on the phone drawn by the guide. */
   readonly title: string;
-  readonly label: string;
-  /** A link in a text by default; `row` a line of my page, La Pince peeking at its start. */
-  readonly variant?: 'link' | 'row';
+  /** A link in a text by default. */
+  readonly className?: string | undefined;
+  readonly children: ReactNode;
   /** The browser's APIs by default; tests hand a fake one. */
   readonly platform?: InstallPlatform;
 }
@@ -186,7 +186,7 @@ interface InstallGuideLinkProps {
  * offer (my page, the screen without a group): the guide opens at once, without the offer, as often as asked, whatever came of the offer. Nothing
  * where no guide fits: on a computer, in the installed app, in a browser built into an app (its banner says what to do).
  */
-export function InstallGuideLink({ title, label, variant = 'link', platform: given }: InstallGuideLinkProps): ReactNode {
+export function InstallGuideLink({ title, className = layout.link, children, platform: given }: InstallGuideLinkProps): ReactNode {
   const { platform, context, guide } = useBrowserGuide(given);
   const dialog = useRef<HTMLDialogElement>(null);
   const [shown, setShown] = useState<BuiltGuide | undefined>(undefined);
@@ -202,7 +202,7 @@ export function InstallGuideLink({ title, label, variant = 'link', platform: giv
   return (
     <>
       <button
-        className={variant === 'row' ? styles.entry : layout.link}
+        className={className}
         type="button"
         onClick={() => {
           if (isBuilt(guide)) {
@@ -210,26 +210,7 @@ export function InstallGuideLink({ title, label, variant = 'link', platform: giv
           }
         }}
       >
-        {variant === 'row' ? (
-          <>
-            <img className={styles.peek} src="/logo.svg" alt="" />
-            <span className={styles.entryText}>{label}</span>
-            <svg
-              className={styles.chevron}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M9 6l6 6-6 6" />
-            </svg>
-          </>
-        ) : (
-          label
-        )}
+        {children}
       </button>
       {shown === undefined ? null : (
         <dialog
