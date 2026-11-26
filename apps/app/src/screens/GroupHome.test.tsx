@@ -1,8 +1,9 @@
 import { groupResponseSchema } from '@la-pince/core';
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import { rememberInstallOffered } from '../storage/device.ts';
 import { change, fakeServer, json } from '../testing/fake-server.ts';
 import { rememberMember } from '../testing/groupDb.ts';
 import { renderApp } from '../testing/render.tsx';
@@ -18,17 +19,21 @@ const group = groupResponseSchema.parse({
 const keyUrl = '/api/notifications/key';
 
 describe('frame of a group', () => {
-  it('checks the notifications at every opening, on the list too, and shows them with who I am only', async () => {
+  it('checks the notifications at every opening, on the list too, shows them with who I am only, and closes their guide when left', async () => {
     // An iPhone, whose browser has no Push API in a tab: the notifications ask for the home screen, after reading the instance's key.
-    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',
+    );
     await rememberMember(token, 'm2');
+    // The offer made already, so that only the guide of the notifications opens.
+    rememberInstallOffered();
     const server = fakeServer({
       token,
       group,
       answer: (url) => (url === keyUrl ? Promise.resolve(json({ publicKey: `B${'k'.repeat(86)}` })) : undefined),
     });
     const user = userEvent.setup();
-    renderApp(`/g/${token}`, server.fetch);
+    const location = renderApp(`/g/${token}`, server.fetch);
     await waitFor(() => {
       expect(server.calls).toContain(keyUrl);
     });
@@ -37,6 +42,17 @@ describe('frame of a group', () => {
 
     await user.click(screen.getByRole('link', { name: 'Tu es Bruno' }));
     expect(screen.getByText(homeScreen).closest('[hidden]')).toBeNull();
+
+    // Left for the list, as by the back gesture, the guide open: the notifications stay mounted, hidden, and their guide must not stay modal over the list.
+    await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
+    expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
+    act(() => {
+      location.navigate(`/g/${token}`);
+    });
+    expect(screen.getByText(homeScreen).closest('[hidden]')).not.toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('dialog[open]')).toBeNull();
+    });
     vi.restoreAllMocks();
   });
 
