@@ -181,8 +181,7 @@ export function GroupHome({
       {/* Below my sheet on the tab “Toi”; mounted on every screen of the group, at the same place, so that each opening saves the subscription again. */}
       <div hidden={chrome.section !== 'me'}>
         <OnThisPhone
-          // Mounted on my page only: a guide left open over a screen hidden since (back gesture) would leave the page inert.
-          install={chrome.section === 'me' ? <InstallEntry title={group.title} /> : null}
+          install={<InstallEntry title={group.title} />}
           notifications={<Notifications token={token} title={group.title} member={currentMember.id} />}
           onChangeMember={() => {
             setChoosing(true);

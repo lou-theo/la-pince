@@ -100,6 +100,14 @@ test('the guide starts again from my page after « Plus tard », and from the sc
   expect(await openedWindows(page)).toBe(1);
   await guide.getByRole('button', { name: "J'ai compris" }).click();
 
+  // Left by the back gesture, the guide open: my page stays mounted, hidden, and the list must not be left inert under its modal.
+  await page.getByRole('button', { name: "Installer l'app" }).click();
+  await expect(guide).toBeVisible();
+  await page.goBack();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Soldes' }).click();
+  await expect(page).toHaveURL(/\/soldes$/);
+
   await page.goto(`${appUrl()}/lien`);
   await page.getByRole('button', { name: "Installer l'app" }).click();
   await expect(page.getByRole('dialog', { name: "Installer l'app" })).toBeVisible();
