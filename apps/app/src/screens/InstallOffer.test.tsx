@@ -66,14 +66,21 @@ function browser({
 const offerTitle = "Installer l'app ?";
 const step = (number: number, total: number) => screen.getByText(`Étape ${String(number)} sur ${String(total)}`);
 
-/** Goes through the guide by « Suivant », checking each instruction, its step and what the phone drawn shows. */
-async function walk(user: ReturnType<typeof userEvent.setup>, steps: readonly (readonly [instruction: string, drawn?: string])[], from = 1) {
+/** Goes through the guide by « Suivant », checking each instruction, its step, and what the phone drawn shows or not. */
+async function walk(
+  user: ReturnType<typeof userEvent.setup>,
+  steps: readonly (readonly [instruction: string, drawn?: string | undefined, notDrawn?: string])[],
+  from = 1,
+) {
   const total = from - 1 + steps.length;
-  for (const [index, [instruction, drawn]] of steps.entries()) {
+  for (const [index, [instruction, drawn, notDrawn]] of steps.entries()) {
     expect(screen.getByRole('heading', { level: 3 }).textContent).toBe(instruction);
     expect(step(from + index, total)).toBeDefined();
     if (drawn !== undefined) {
       expect(screen.getByText(drawn, { selector: 'text' })).toBeDefined();
+    }
+    if (notDrawn !== undefined) {
+      expect(screen.queryByText(notDrawn, { selector: 'text' })).toBeNull();
     }
     if (index < steps.length - 1) {
       await user.click(screen.getByRole('button', { name: 'Suivant' }));
@@ -225,11 +232,10 @@ describe('guides of the iPhone', () => {
       ["Touche l'icône Partager, en bas de l'écran", 'Week-end'],
       ["Fais défiler jusqu'à « Sur l'écran d'accueil »", "Sur l'écran d'accueil"],
       ["Touche « Sur l'écran d'accueil »"],
-      ['Touche « Ajouter » en haut à droite', 'Ajouter'],
+      // No switch to open as a web app before iOS 26.
+      ['Touche « Ajouter » en haut à droite', 'Ajouter', 'Ouvrir comme app web'],
       [open],
     ]);
-    // No switch to open as a web app before iOS 26.
-    expect(screen.queryByText('Ouvrir comme app web')).toBeNull();
     await user.click(screen.getByRole('button', { name: "J'ai compris" }));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
@@ -248,7 +254,7 @@ describe('guides of the iPhone', () => {
     await walk(
       user,
       [
-        ['Touche « … » en bas à droite', 'Partager'],
+        ['Touche «\u00a0…\u00a0» en bas à droite', 'Partager'],
         ['Touche « Partager »'],
         ["Fais défiler jusqu'à « Sur l'écran d'accueil »"],
         ["Touche « Sur l'écran d'accueil »"],
@@ -269,7 +275,8 @@ describe('guides of the iPhone', () => {
     await walk(
       user,
       [
-        ["Touche l'icône Partager, en bas de l'écran"],
+        // Share in the bar: no menu of « … ».
+        ["Touche l'icône Partager, en bas de l'écran", undefined, 'Partager'],
         ["Fais défiler jusqu'à « Sur l'écran d'accueil »"],
         ["Touche « Sur l'écran d'accueil »"],
         ['Laisse « Ouvrir comme app web » activé, puis touche « Ajouter »'],

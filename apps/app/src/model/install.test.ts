@@ -44,6 +44,7 @@ const userAgents: readonly (readonly [name: string, userAgent: string, context: 
     'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.1 Mobile/15E148 Safari/604.1',
     'ios_safari_26',
   ],
+  ['iPhone browser saying Safari without its version', `${iosBase} Mobile/15E148 Safari/604.1`, 'ios_safari'],
   ['Chrome, iPhone', `${iosBase} CriOS/131.0.6778.73 Mobile/15E148 Safari/604.1`, 'ios_chrome'],
   [
     'Chrome, iPhone under iOS 26',

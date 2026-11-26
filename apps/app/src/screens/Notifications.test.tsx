@@ -1,6 +1,6 @@
 import { type ApiError, groupIdSchema, memberIdSchema } from '@la-pince/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { openNotificationDb } from '../storage/notificationDb.ts';
 import { createApiClient } from '../sync/client.ts';
@@ -112,6 +112,10 @@ const remember = async (name: string, as = 'm1') => {
 };
 
 describe('notifications of a group', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('subscribes this phone as who I am, sends a test, then stops and drops the subscription of the browser', async () => {
     const api = server();
     const { platform, state } = browser();
@@ -315,6 +319,5 @@ describe('notifications of a group', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voir comment faire' }));
     expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
     expect(screen.getByRole('heading', { name: "Touche l'icône Partager, en bas de l'écran" })).toBeDefined();
-    vi.restoreAllMocks();
   });
 });
