@@ -2,6 +2,7 @@ import { type ReactNode, useId } from 'react';
 
 import styles from './InstallScene.module.css';
 
+// Colors are fixed, not the theme's: the phone drawn shows the browser and the app in their light look, whatever the theme of this one.
 // The scene is drawn in its own units, scaled to the room the sheet leaves: a phone of 190 × 384 centered on a sand card of 358 × 416, its screen
 // inset by 6. Everything a step draws is in the screen's units, 178 wide and 372 high.
 const card = { width: 358, height: 416 };

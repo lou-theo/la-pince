@@ -38,8 +38,14 @@ const menuDots = { x: 168, y: 16 };
 // The end of the line, its words left readable.
 const menuItem = { x: 150, y: 100 };
 
-const installWindow = (host: string) => (
-  <AndroidInstallWindow host={host} label={m.install_scene_window_title()} cancel={m.install_scene_cancel()} install={m.install_guide_install()} />
+const installWindow = (host: string, appear = false) => (
+  <AndroidInstallWindow
+    host={host}
+    label={m.install_scene_window_title()}
+    cancel={m.install_scene_cancel()}
+    install={m.install_guide_install()}
+    appear={appear}
+  />
 );
 
 function stepsOf(guide: BuiltGuide, { title, host }: Drawn): readonly Step[] {
@@ -54,13 +60,7 @@ function stepsOf(guide: BuiltGuide, { title, host }: Drawn): readonly Step[] {
           <>
             {browser}
             <AppInstallSheet title={m.install_scene_install_app()} install={m.install_guide_install()} />
-            <AndroidInstallWindow
-              host={host}
-              label={m.install_scene_window_title()}
-              cancel={m.install_scene_cancel()}
-              install={m.install_guide_install()}
-              appear
-            />
+            {installWindow(host, true)}
           </>
         ),
       },

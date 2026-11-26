@@ -43,6 +43,10 @@ const inAppMarks = /FBAN|FBAV|FB_IAB|Instagram|\bLine\/|MicroMessenger|Snapchat|
 // Chromium browsers that add their own name to Chrome's: they may lack Chrome's ⋮ « Installer l'application ».
 const otherChromium = /SamsungBrowser|EdgA\/|OPR\/|OPT\/|YaBrowser|UCBrowser|Vivaldi|DuckDuckGo|MiuiBrowser|HuaweiBrowser|HeyTapBrowser|Silk\//;
 
+/** Whether the browser runs on an iPhone or an iPad; iPadOS asks for the desktop site and calls itself a Mac, told apart by its touch screen. */
+export const isAppleTouch = (userAgent: string, maxTouchPoints: number): boolean =>
+  /iPhone|iPad|iPod/.test(userAgent) || (userAgent.includes('Macintosh') && maxTouchPoints > 1);
+
 function iosContext(userAgent: string): InstallContext {
   if (userAgent.includes('CriOS/')) {
     return 'ios_chrome';
@@ -72,7 +76,7 @@ export function detectInstallContext({ userAgent, maxTouchPoints, standalone }: 
   if (inAppMarks.test(userAgent)) {
     return 'in_app';
   }
-  if (/iPhone|iPad|iPod/.test(userAgent) || (userAgent.includes('Macintosh') && maxTouchPoints > 1)) {
+  if (isAppleTouch(userAgent, maxTouchPoints)) {
     return iosContext(userAgent);
   }
   return userAgent.includes('Android') ? androidContext(userAgent) : 'desktop';
