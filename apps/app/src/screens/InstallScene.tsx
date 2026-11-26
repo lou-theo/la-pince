@@ -178,13 +178,17 @@ export function AndroidInstallWindow({
   cancel,
   install,
   appear = false,
+  accent = '#2a5db0',
 }: {
-  readonly host: string;
+  /** The address under the app's name, which the window of Android's home screen does not show. */
+  readonly host?: string | undefined;
   readonly label: string;
   readonly cancel: string;
   readonly install: string;
   /** Whether the window appears once the tap before it lands, rather than being there. */
   readonly appear?: boolean;
+  /** Color of the buttons: Chrome's blue, or the system's. */
+  readonly accent?: string;
 }): ReactNode {
   return (
     <>
@@ -195,17 +199,19 @@ export function AndroidInstallWindow({
           {label}
         </SceneText>
         <AppIcon x={24} y={143} size={24} round />
-        <SceneText x={55} y={150} size={8.5} weight={600}>
+        <SceneText x={55} y={host === undefined ? 155 : 150} size={8.5} weight={600}>
           La Pince
         </SceneText>
-        <SceneText x={55} y={161} size={7} color="#57534e">
-          {host}
-        </SceneText>
-        <SceneText x={88} y={186} size={8.5} weight={600} color="#2a5db0" anchor="middle">
+        {host === undefined ? null : (
+          <SceneText x={55} y={161} size={7} color="#57534e">
+            {host}
+          </SceneText>
+        )}
+        <SceneText x={88} y={186} size={8.5} weight={600} color={accent} anchor="middle">
           {cancel}
         </SceneText>
         <g className={appear ? undefined : styles.press}>
-          <rect x="111" y="178" width="44" height="16" rx="8" fill="#2a5db0" />
+          <rect x="111" y="178" width="44" height="16" rx="8" fill={accent} />
           <SceneText x={133} y={186} size={8.5} weight={600} color="#ffffff" anchor="middle">
             {install}
           </SceneText>
@@ -287,29 +293,70 @@ export function AppInstallSheet({ title, install }: { readonly title: string; re
   );
 }
 
-/** Chrome's ⋮ menu, open, its `item` among lines sketched. */
-export function ChromeMenu({ item }: { readonly item: string }): ReactNode {
+/** What an entry of a browser's menu shows before its words: the phone with a plus of an install, or the chevron of a part that unfolds. */
+export type MenuGlyph = 'install' | 'unfold';
+
+/**
+ * A browser's ⋮ menu, open, its `item` among lines sketched; an item too long for one line goes on two, cut at the space nearest its middle. The
+ * menu appears once the tap on ⋮ lands with `appear`, or its `item` flashes as tapped with `flash`.
+ */
+export function BrowserMenu({
+  item,
+  glyph = 'install',
+  appear = false,
+  flash = false,
+}: {
+  readonly item: string;
+  readonly glyph?: MenuGlyph;
+  readonly appear?: boolean;
+  readonly flash?: boolean;
+}): ReactNode {
   const sketched: readonly (readonly [number, number])[] = [
     [0, 70],
     [1, 54],
     [2, 80],
     [4, 62],
   ];
+  const lines = splitLine(item, 24);
   return (
-    <>
+    <g className={appear ? styles.menuRevealTop : undefined}>
       <rect x="24" y="6" width="150" height="136" rx="10" fill="#ffffff" stroke="#e3ddd5" />
+      {flash ? <rect className={styles.flash} x="25" y="87" width="148" height="26" fill="#ffffff" /> : null}
       {sketched.map(([row, width]) => (
         <rect key={row} x="33" y={19.5 + row * 26} width={width} height="5" rx="2.5" fill="#e3ddd5" />
       ))}
       <g transform="translate(31 94.5) scale(0.46)" fill="none" stroke="#1c1917" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="6" y="2" width="12" height="20" rx="3" />
-        <path d="M12 8v6M9 11h6" />
+        {glyph === 'install' ? (
+          <>
+            <rect x="6" y="2" width="12" height="20" rx="3" />
+            <path d="M12 8v6M9 11h6" />
+          </>
+        ) : (
+          <path d="M6 9l6 6 6-6" />
+        )}
       </g>
-      <SceneText x={45} y={100} size={8} weight={600}>
-        {item}
-      </SceneText>
-    </>
+      {lines.map((line, index) => (
+        <SceneText key={line} x={45} y={100 + (index - (lines.length - 1) / 2) * 9} size={lines.length > 1 ? 7 : 8} weight={600}>
+          {line}
+        </SceneText>
+      ))}
+    </g>
   );
+}
+
+/** `text` whole when it holds in `room` characters, otherwise on two lines cut at the space nearest its middle. */
+function splitLine(text: string, room: number): readonly string[] {
+  if (text.length <= room) {
+    return [text];
+  }
+  const middle = text.length / 2;
+  let cut = -1;
+  for (let at = text.indexOf(' '); at !== -1; at = text.indexOf(' ', at + 1)) {
+    if (cut === -1 || Math.abs(at - middle) < Math.abs(cut - middle)) {
+      cut = at;
+    }
+  }
+  return cut === -1 ? [text] : [text.slice(0, cut), text.slice(cut + 1)];
 }
 
 // Glyphs of iOS drawn on a grid of 24, as the icons of the app.

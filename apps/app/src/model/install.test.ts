@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectInstallContext, guideOf, type InstallContext, type PromptState } from './install.ts';
+import { chromeIntentUrl, detectInstallContext, guideOf, type InstallContext, type PromptState } from './install.ts';
 
 const iosBase = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)';
 const androidBase = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko)';
@@ -22,6 +22,7 @@ const userAgents: readonly (readonly [name: string, userAgent: string, context: 
   ['Android WebView of an app', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36`, 'in_app'],
   ['Facebook, Android', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/489.0.0.47.103;]`, 'in_app'],
   ['Instagram, Android', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36 Instagram 356.0.0.41.101 Android (34/14; 420dpi)`, 'in_app'],
+  ['Messenger, Android', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36 [FB_IAB/MESSENGER;FBAV/480.0.0.44.109;]`, 'in_app'],
   ['Safari, iPhone', `${iosBase} Version/18.7 Mobile/15E148 Safari/604.1`, 'ios_safari'],
   [
     'Safari 18, iPhone',
@@ -73,6 +74,11 @@ const userAgents: readonly (readonly [name: string, userAgent: string, context: 
   [
     'Facebook, iPhone',
     `${iosBase} Mobile/22H20 [FBAN/FBIOS;FBAV/489.0.0.36.106;FBBV/680000000;FBDV/iPhone14,5;FBMD/iPhone;FBSN/iOS;FBSV/18.7]`,
+    'in_app',
+  ],
+  [
+    'Messenger, iPhone',
+    `${iosBase} Mobile/22H20 [FBAN/MessengerForiOS;FBAV/480.0.0.38.109;FBBV/670000000;FBDV/iPhone14,5;FBMD/iPhone;FBSN/iOS;FBSV/18.7]`,
     'in_app',
   ],
   ['Instagram, iPhone', `${iosBase} Mobile/22H20 Instagram 356.0.0.24.84 (iPhone14,5; iOS 18_7; fr_FR; fr; scale=3.00; 1170x2532)`, 'in_app'],
@@ -140,5 +146,21 @@ describe('guide of a context', () => {
   it("goes through Chrome's menu without an install window, and takes another Chromium browser for one that cannot install", () => {
     expect(guideOf('android_chrome', 'absent')).toBe('android_menu');
     expect(guideOf('android_chromium', 'absent')).toBe('cannot');
+  });
+});
+
+describe('link to open the page in Chrome', () => {
+  const playStore = 'S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.android.chrome;end';
+
+  it("names Chrome's package and falls back on Chrome's page on the Play Store, the page's fragment left out", () => {
+    expect(chromeIntentUrl('https://lapince.example/g/abc?x=1#top')).toBe(
+      `intent://lapince.example/g/abc?x=1#Intent;scheme=https;package=com.android.chrome;${playStore}`,
+    );
+  });
+
+  it('keeps the scheme and the port of a local server', () => {
+    expect(chromeIntentUrl('http://localhost:5173/lien')).toBe(
+      `intent://localhost:5173/lien#Intent;scheme=http;package=com.android.chrome;${playStore}`,
+    );
   });
 });

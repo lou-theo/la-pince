@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { m } from '../i18n/paraglide/messages.js';
 import type { InstallOutcome } from '../install/platform.ts';
 import type { InstallGuide as InstallGuideOf } from '../model/install.ts';
+import { CannotInstall } from './CannotInstall.tsx';
 import styles from './Install.module.css';
 import {
   addPoint,
@@ -11,8 +12,8 @@ import {
   AndroidHomeScreen,
   AndroidInstallWindow,
   AppInstallSheet,
+  BrowserMenu,
   ChromeIosBrowser,
-  ChromeMenu,
   chromeShare,
   InstallScene,
   IosHomeScreen,
@@ -32,6 +33,8 @@ import { useMounted } from './useMounted.ts';
 export const builtGuides = [
   'android_button',
   'android_menu',
+  'android_firefox',
+  'cannot',
   'ios_safari',
   'ios_safari_26',
   'ios_share',
@@ -67,6 +70,11 @@ const windowButton = { x: 133, y: 186 };
 const homeIcon = { x: 29, y: 199 };
 const menuDots = { x: 168, y: 16 };
 const menuItem = { x: 150, y: 100 };
+// An entry on two lines is touched at the menu's edge, its words left readable.
+const longMenuItem = { x: 170, y: 100 };
+
+// The window of Android's home screen, in the system's color rather than Chrome's blue.
+const systemAccent = '#5a3fb0';
 
 const installWindow = (host: string, appear = false) => (
   <AndroidInstallWindow
@@ -195,6 +203,71 @@ function iosStepsOf(guide: 'ios_safari' | 'ios_safari_26' | 'ios_share', drawn: 
   return [...choice, ...toShare, ...throughShare];
 }
 
+/**
+ * The steps of Firefox on Android, by its ⋮ menu and « Plus » to the entry that installs the app, then the window of Android's home screen; and
+ * those of the shortcut a browser that cannot install still makes, by its menu and its entry to add the page to the home screen.
+ */
+function otherAndroidSteps(guide: 'android_firefox' | 'cannot', title: string, browser: ReactNode): readonly Step[] {
+  const addWindow = (
+    <AndroidInstallWindow
+      label={m.install_scene_add_home_screen()}
+      cancel={m.install_scene_cancel()}
+      install={m.install_scene_add()}
+      accent={systemAccent}
+    />
+  );
+  const withBrowser = (over: ReactNode) => (
+    <>
+      {browser}
+      {over}
+    </>
+  );
+  if (guide === 'cannot') {
+    const item = m.install_scene_add_home_screen();
+    return [
+      {
+        instruction: m.install_menu_step_menu(),
+        note: m.install_shortcut_menu_note(),
+        tap: menuDots,
+        ripple: 'green',
+        screen: withBrowser(<BrowserMenu item={item} appear />),
+      },
+      {
+        instruction: m.install_shortcut_item(),
+        note: m.install_shortcut_item_note(),
+        tap: longMenuItem,
+        ripple: 'green',
+        screen: withBrowser(<BrowserMenu item={item} flash />),
+      },
+      { instruction: m.install_shortcut_add(), tap: windowButton, screen: withBrowser(addWindow) },
+    ];
+  }
+  const more = m.install_scene_more();
+  return [
+    {
+      instruction: m.install_menu_step_menu(),
+      note: m.install_firefox_menu_note(),
+      tap: menuDots,
+      ripple: 'green',
+      screen: withBrowser(<BrowserMenu item={more} glyph="unfold" appear />),
+    },
+    {
+      instruction: m.install_firefox_more(),
+      tap: menuItem,
+      ripple: 'green',
+      screen: withBrowser(<BrowserMenu item={more} glyph="unfold" flash />),
+    },
+    {
+      instruction: m.install_firefox_item(),
+      tap: longMenuItem,
+      ripple: 'green',
+      screen: withBrowser(<BrowserMenu item={m.install_scene_firefox_item()} flash />),
+    },
+    { instruction: m.install_firefox_add(), tap: windowButton, screen: withBrowser(addWindow) },
+    { instruction: m.install_step_open(), tap: homeIcon, screen: <AndroidHomeScreen title={title} /> },
+  ];
+}
+
 function stepsOf(guide: BuiltGuide, drawn: Drawn, bar: ChosenBar): readonly Step[] {
   if (guide === 'ios_safari' || guide === 'ios_safari_26' || guide === 'ios_share') {
     return iosStepsOf(guide, drawn, bar);
@@ -228,6 +301,9 @@ function stepsOf(guide: BuiltGuide, drawn: Drawn, bar: ChosenBar): readonly Step
       { instruction: m.install_button_step_done(), tap: homeIcon, screen: home },
     ];
   }
+  if (guide === 'android_firefox' || guide === 'cannot') {
+    return otherAndroidSteps(guide, title, browser);
+  }
   return [
     { instruction: m.install_menu_step_menu(), note: m.install_menu_already(), tap: menuDots, ripple: 'green', screen: browser },
     {
@@ -237,7 +313,7 @@ function stepsOf(guide: BuiltGuide, drawn: Drawn, bar: ChosenBar): readonly Step
       screen: (
         <>
           {browser}
-          <ChromeMenu item={m.install_scene_menu_item()} />
+          <BrowserMenu item={m.install_scene_menu_item()} />
         </>
       ),
     },
@@ -257,6 +333,8 @@ function stepsOf(guide: BuiltGuide, drawn: Drawn, bar: ChosenBar): readonly Step
 
 interface InstallGuideProps extends Drawn {
   readonly guide: BuiltGuide;
+  /** With `cannot`, whether the browser may have installed the app already, as a Chromium browser that hands no install window. */
+  readonly maybeInstalled?: boolean;
   /** Opens the browser's install window, for `android_button`. */
   readonly install: () => Promise<InstallOutcome>;
   /** The browser could not open its window: another guide, or none. */
@@ -269,18 +347,22 @@ interface InstallGuideProps extends Drawn {
  * With `android_button`, the app's « Installer » opens the browser's window at once: accepted, the guide ends on the icon to touch; dismissed, it
  * closes, the person having said no.
  */
-export function InstallGuide({ guide, title, host, install, onUnavailable, onClose }: InstallGuideProps): ReactNode {
+export function InstallGuide({ guide, maybeInstalled = false, title, host, install, onUnavailable, onClose }: InstallGuideProps): ReactNode {
   const [index, setIndex] = useState(0);
   // Once installed, the steps before lead nowhere: the window opens once.
   const [installed, setInstalled] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
-  // The button that opened the guide is gone: the focus goes to its title, for a screen reader to start there.
-  useEffect(() => {
-    heading.current?.focus();
-  }, []);
   const mounted = useMounted();
   // Safari's compact bar first, its default.
   const [bar, setBar] = useState<ChosenBar>('compact');
+  // A browser that cannot install says so first; the steps of a shortcut come once asked.
+  const [shortcut, setShortcut] = useState(false);
+  const intro = guide === 'cannot' && !shortcut;
+  // The button that opened the guide is gone: the focus goes to its title, for a screen reader to start there; again between the word that the
+  // browser cannot install and the shortcut's steps.
+  useEffect(() => {
+    heading.current?.focus();
+  }, [shortcut]);
   const steps = stepsOf(guide, { title, host }, bar);
   const step = steps[index] ?? steps[0];
   if (step === undefined) {
@@ -340,9 +422,9 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
       <div className={styles.guideHead}>
         <div className={styles.guideTitles}>
           <h2 ref={heading} className={styles.guideTitle} tabIndex={-1}>
-            {m.install_guide_title()}
+            {guide === 'cannot' && shortcut ? m.install_shortcut_title() : m.install_guide_title()}
           </h2>
-          <span className={styles.muted}>{m.install_guide_step({ step: index + 1, total: steps.length })}</span>
+          {intro ? null : <span className={styles.muted}>{m.install_guide_step({ step: index + 1, total: steps.length })}</span>}
         </div>
         <button className={styles.close} type="button" aria-label={m.install_guide_close()} onClick={onClose}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
@@ -350,42 +432,58 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
           </svg>
         </button>
       </div>
-      {step.choice === true ? (
-        <SafariBarChoice
-          value={bar}
-          onChange={setBar}
-          labels={{ group: m.install_ios_layout_label(), compact: m.install_ios_layout_compact(), bar: m.install_ios_layout_bar() }}
+      {intro ? (
+        <CannotInstall
+          maybeInstalled={maybeInstalled}
+          onShortcut={() => {
+            setShortcut(true);
+          }}
         />
       ) : (
-        // A new scene at each step, so that its animation starts over with the instruction.
-        <InstallScene key={`${guide}-${bar}-${String(index)}`} tap={step.tap} ripple={step.ripple} swipe={step.swipe}>
-          {step.screen}
-        </InstallScene>
+        <>
+          {step.choice === true ? (
+            <SafariBarChoice
+              value={bar}
+              onChange={setBar}
+              labels={{ group: m.install_ios_layout_label(), compact: m.install_ios_layout_compact(), bar: m.install_ios_layout_bar() }}
+            />
+          ) : (
+            // A new scene at each step, so that its animation starts over with the instruction.
+            <InstallScene key={`${guide}-${bar}-${String(index)}`} tap={step.tap} ripple={step.ripple} swipe={step.swipe}>
+              {step.screen}
+            </InstallScene>
+          )}
+          <div className={styles.instruction} aria-live="polite">
+            <h3 key={index} className={styles.instructionText}>
+              {step.instruction}
+            </h3>
+            {step.note === undefined ? null : <p className={styles.muted}>{step.note}</p>}
+          </div>
+          <div className={styles.dots} aria-hidden="true">
+            {steps.map(({ instruction }, dot) => (
+              <span key={instruction} className={dot === index ? styles.dotCurrent : dot < index ? styles.dotDone : styles.dot} />
+            ))}
+          </div>
+          <div className={styles.buttons}>
+            <button
+              className={styles.secondary}
+              type="button"
+              // The shortcut's first step goes back to the browser's word that it cannot install.
+              disabled={(index === 0 && guide !== 'cannot') || installed}
+              onClick={() => {
+                if (index === 0) {
+                  setShortcut(false);
+                } else {
+                  setIndex(index - 1);
+                }
+              }}
+            >
+              {m.install_guide_previous()}
+            </button>
+            {primary}
+          </div>
+        </>
       )}
-      <div className={styles.instruction} aria-live="polite">
-        <h3 key={index} className={styles.instructionText}>
-          {step.instruction}
-        </h3>
-        {step.note === undefined ? null : <p className={styles.muted}>{step.note}</p>}
-      </div>
-      <div className={styles.dots} aria-hidden="true">
-        {steps.map(({ instruction }, dot) => (
-          <span key={instruction} className={dot === index ? styles.dotCurrent : dot < index ? styles.dotDone : styles.dot} />
-        ))}
-      </div>
-      <div className={styles.buttons}>
-        <button
-          className={styles.secondary}
-          type="button"
-          disabled={index === 0 || installed}
-          onClick={() => {
-            setIndex(index - 1);
-          }}
-        >
-          {m.install_guide_previous()}
-        </button>
-        {primary}
-      </div>
     </div>
   );
 }

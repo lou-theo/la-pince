@@ -50,21 +50,18 @@ interface GuideOfBrowserProps {
   readonly onClose: () => void;
 }
 
-/** The guide in its dialog; the browser unable to open its install window, Chrome still installs from its menu, another browser has no guide left. */
+/** The guide in its dialog; the browser unable to open its install window, Chrome still installs from its menu, another browser is one that cannot. */
 function GuideOfBrowser({ guide, context, title, platform, onGuide, onClose }: GuideOfBrowserProps): ReactNode {
   return (
     <InstallGuide
       key={guide}
       guide={guide}
+      maybeInstalled={context === 'android_chromium'}
       title={title}
       host={location.host}
       install={platform.install}
       onUnavailable={() => {
-        if (context === 'android_chrome') {
-          onGuide('android_menu');
-        } else {
-          onClose();
-        }
+        onGuide(context === 'android_chrome' ? 'android_menu' : 'cannot');
       }}
       onClose={onClose}
     />
@@ -151,6 +148,8 @@ export function InstallOffer({ title, platform: given }: InstallOfferProps): Rea
           <button className={styles.later} type="button" onClick={close}>
             {m.install_offer_later()}
           </button>
+          {/* Said in a group only: without one, the entry is on the screen itself, under the link to paste. */}
+          {title === undefined ? null : <p className={`${styles.muted ?? ''} ${styles.profileHint ?? ''}`}>{m.install_offer_profile()}</p>}
         </div>
       ) : null}
       {phase.name === 'guide' ? (
@@ -172,16 +171,19 @@ export function InstallOffer({ title, platform: given }: InstallOfferProps): Rea
 interface InstallGuideLinkProps {
   /** Title of the group shown on the phone drawn by the guide. */
   readonly title: string;
-  readonly label: string;
+  /** A link in a text by default. */
+  readonly className?: string | undefined;
+  readonly children: ReactNode;
   /** The browser's APIs by default; tests hand a fake one. */
   readonly platform?: InstallPlatform;
 }
 
 /**
- * A link to the guide of this browser, for a screen that needs the app installed (the notifications on an iPhone): the guide opens at once,
- * without the offer, as often as asked. Nothing where no guide fits.
+ * A link to the guide of this browser, for a screen that needs the app installed (the notifications on an iPhone) and to start it again after the
+ * offer (my page, the screen without a group): the guide opens at once, without the offer, as often as asked, whatever came of the offer. Nothing
+ * where no guide fits: on a computer, in the installed app, in a browser built into an app (its banner says what to do).
  */
-export function InstallGuideLink({ title, label, platform: given }: InstallGuideLinkProps): ReactNode {
+export function InstallGuideLink({ title, className = layout.link, children, platform: given }: InstallGuideLinkProps): ReactNode {
   const { platform, context, guide } = useBrowserGuide(given);
   const dialog = useRef<HTMLDialogElement>(null);
   const [shown, setShown] = useState<BuiltGuide | undefined>(undefined);
@@ -197,7 +199,7 @@ export function InstallGuideLink({ title, label, platform: given }: InstallGuide
   return (
     <>
       <button
-        className={layout.link}
+        className={className}
         type="button"
         onClick={() => {
           if (isBuilt(guide)) {
@@ -205,7 +207,7 @@ export function InstallGuideLink({ title, label, platform: given }: InstallGuide
           }
         }}
       >
-        {label}
+        {children}
       </button>
       {shown === undefined ? null : (
         <dialog

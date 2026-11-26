@@ -122,3 +122,16 @@ export function guideOf(context: InstallContext, prompt: PromptState): InstallGu
       return context === 'android_chrome' ? 'android_menu' : 'cannot';
   }
 }
+
+// Chrome's page on the Play Store: where a phone without Chrome is sent to get it. The page itself as the fallback would reload it, and the offer,
+// remembered as soon as shown, would not come back with its link to copy.
+const chromeOnPlayStore = 'https://play.google.com/store/apps/details?id=com.android.chrome';
+
+/**
+ * The address that opens `pageUrl` in Chrome from another Android browser: an `intent:` link naming Chrome's package, Chrome's page on the Play
+ * Store as `S.browser_fallback_url` where Chrome is missing. The fragment is left out, `#` opening the intent's own part.
+ */
+export function chromeIntentUrl(pageUrl: string): string {
+  const { protocol, host, pathname, search } = new URL(pageUrl);
+  return `intent://${host}${pathname}${search}#Intent;scheme=${protocol.slice(0, -1)};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(chromeOnPlayStore)};end`;
+}
