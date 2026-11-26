@@ -127,7 +127,7 @@
   /* Round button over the list, above the menu, inside the column on a computer. */
   position: fixed;
   right: max(var(--space-4), env(safe-area-inset-right), calc((100vw - var(--column-width)) / 2 + var(--space-4)));
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-4));
+  bottom: calc(var(--nav-total) + var(--space-4));
   z-index: 1;
   display: flex;
   align-items: center;

@@ -16,7 +16,7 @@
 }
 
 .withNav {
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-2));
+  bottom: calc(var(--nav-total) + var(--space-2));
 }
 
 .text {

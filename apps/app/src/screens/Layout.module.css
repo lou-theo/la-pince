@@ -90,7 +90,7 @@
 
 /* Room for the menu at the bottom. */
 .withNav {
-  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-6));
+  padding-bottom: calc(var(--nav-total) + var(--space-6));
 }
 
 .main {
