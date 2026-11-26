@@ -1,6 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { hideInAppBanner, readLastGroup, rememberInstallOffered, saveLastGroup, wasInAppBannerHidden, wasInstallOffered } from './device.ts';
+import {
+  hideInAppBanner,
+  readLastGroup,
+  readTheme,
+  rememberInstallOffered,
+  saveLastGroup,
+  saveTheme,
+  themeKey,
+  wasInAppBannerHidden,
+  wasInstallOffered,
+} from './device.ts';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -11,6 +23,15 @@ describe('device storage', () => {
     expect(readLastGroup()).toBeUndefined();
     saveLastGroup('token-a');
     expect(readLastGroup()).toBe('token-a');
+  });
+
+  it("remembers the theme under the key that index.html reads before the first paint, an unknown value being the phone's", () => {
+    expect(readTheme()).toBe('system');
+    saveTheme('dark');
+    expect(readTheme()).toBe('dark');
+    expect(readFileSync('index.html', 'utf8')).toContain(`localStorage.getItem('${themeKey}')`);
+    localStorage.setItem(themeKey, 'pink');
+    expect(readTheme()).toBe('system');
   });
 
   it('remembers that the install was offered, across visits', () => {
