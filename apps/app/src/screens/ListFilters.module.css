@@ -77,8 +77,15 @@
   padding: 0 var(--space-2);
   border-radius: 0.5rem;
   background: var(--color-surface);
+  max-width: 100%;
   font-size: 0.8125rem;
   white-space: nowrap;
+}
+
+/* A tag wider than the summary, a long search, ends with an ellipsis. */
+.tagText {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .strong {

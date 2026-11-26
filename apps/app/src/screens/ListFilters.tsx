@@ -181,7 +181,7 @@ interface Tag {
 function summaryTags(view: GroupView, filter: ListFilter, today: string): Tag[] {
   const tags: Tag[] = [];
   const value = (key: string, text: string) => {
-    tags.push({ key, content: text, text, strong: true });
+    tags.push({ key, content: <span className={styles.tagText}>{text}</span>, text, strong: true });
   };
   const people = (key: string, label: string, members: readonly MemberId[]) => {
     const names = members.map((id) => shortName(view, id, 'object')).join(', ');

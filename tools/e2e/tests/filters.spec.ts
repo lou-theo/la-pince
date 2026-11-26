@@ -87,3 +87,20 @@ test('the filters narrow the demo group to the cent, from the pills then the she
   await expect(page.getByRole('button', { name: 'Me concerne' })).toHaveAttribute('aria-pressed', 'false');
   expect(await lines(page).count()).toBeGreaterThan(narrowed.lines);
 });
+
+test('a tag wider than the summary ends with an ellipsis', async ({ page }, info) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await openAs(page, tokenFor(info.project.name, 'filters'), 'Agathe');
+  await page.getByRole('button', { name: 'Filtres' }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('searchbox').fill('un titre bien trop long pour tenir sur la ligne du résumé');
+  await sheet.getByRole('button', { name: 'Aucun résultat' }).click();
+  const text = page.getByText('« un titre bien trop long pour tenir sur la ligne du résumé »');
+  await expect(text).toBeVisible();
+  expect(
+    await text.evaluate((element) => ({ cut: element.scrollWidth > element.clientWidth, overflow: getComputedStyle(element).textOverflow })),
+  ).toStrictEqual({
+    cut: true,
+    overflow: 'ellipsis',
+  });
+});
