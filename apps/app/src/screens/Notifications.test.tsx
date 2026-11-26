@@ -1,6 +1,6 @@
 import { type ApiError, groupIdSchema, memberIdSchema } from '@la-pince/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { openNotificationDb } from '../storage/notificationDb.ts';
 import { createApiClient } from '../sync/client.ts';
@@ -306,7 +306,15 @@ describe('notifications of a group', () => {
     expect(unsupported.calls).toStrictEqual([]);
     other.unmount();
 
+    // An iPhone outside the app of its home screen: the way to install it, through the guide of its browser.
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',
+    );
     show(server().client, browser({ support: 'home_screen' }).platform);
     expect(await screen.findByText(/ajoute d'abord La Pince à l'écran d'accueil/)).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Voir comment faire' }));
+    expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
+    expect(screen.getByRole('heading', { name: "Touche l'icône Partager, en bas de l'écran" })).toBeDefined();
+    vi.restoreAllMocks();
   });
 });

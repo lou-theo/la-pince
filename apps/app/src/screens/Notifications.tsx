@@ -7,6 +7,7 @@ import { type NotificationDb, type NotifiedGroup, openNotificationDb } from '../
 import type { ApiClient, ApiResult, NotificationError } from '../sync/client.ts';
 import { useApiClient } from '../sync/context.ts';
 import { browserPushPlatform, type PushPlatform, subscriptionKey } from '../sync/push.ts';
+import { InstallGuideLink } from './InstallOffer.tsx';
 import layout from './Layout.module.css';
 import styles from './Notifications.module.css';
 
@@ -102,7 +103,7 @@ async function reconcile(
 
 /**
  * The notifications of the group on this phone: activation, a test notification, deactivation. Hidden on an instance without notifications and in
- * browsers without the Push API, save on an iPhone, told to add the app to its home screen first.
+ * browsers without the Push API, save on an iPhone, told to add the app to its home screen first, its guide one touch away.
  */
 export function Notifications({ token, title, member, platform: given }: NotificationsProps): ReactNode {
   const client = useApiClient();
@@ -227,7 +228,12 @@ export function Notifications({ token, title, member, platform: given }: Notific
   }
   return (
     <div className={styles.notifications}>
-      {status === 'home_screen' ? <p className={layout.muted}>{m.notifications_home_screen()}</p> : null}
+      {status === 'home_screen' ? (
+        <>
+          <p className={layout.muted}>{m.notifications_home_screen()}</p>
+          <InstallGuideLink title={title} label={m.notifications_home_screen_guide()} />
+        </>
+      ) : null}
       {status === 'denied' ? <p className={layout.muted}>{m.notifications_denied()}</p> : null}
       {status === 'off' && publicKey !== undefined ? (
         <>
