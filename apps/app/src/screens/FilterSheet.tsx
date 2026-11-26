@@ -1,5 +1,5 @@
 import type { MemberId } from '@la-pince/core';
-import { type ReactNode, type RefObject, useId, useRef, useState } from 'react';
+import { type MouseEvent, type PointerEvent, type ReactNode, type RefObject, useId, useRef, useState } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
 import type { OperationView } from '../model/group.ts';
@@ -24,7 +24,7 @@ interface FilterSheetProps {
  */
 export function FilterSheet({ dialog, view, filter, kept, onChange, onClose }: FilterSheetProps): ReactNode {
   const titleId = useId();
-  const pressedBackdrop = useRef(false);
+  const backdrop = useBackdropClose(dialog);
   const set = (changes: Partial<ListFilter>) => {
     onChange({ ...filter, ...changes });
   };
@@ -36,16 +36,13 @@ export function FilterSheet({ dialog, view, filter, kept, onChange, onClose }: F
       ref={dialog}
       className={styles.sheet}
       aria-labelledby={titleId}
-      onClose={onClose}
-      onPointerDown={(event) => {
-        pressedBackdrop.current = event.target === dialog.current;
-      }}
-      onClick={(event) => {
-        // A touch on the backdrop lands on the dialog itself, its content filling the sheet.
-        if (pressedBackdrop.current && event.target === dialog.current) {
-          close();
+      onClose={(event) => {
+        // React lets the close of the grid, inside, bubble up here.
+        if (event.target === event.currentTarget) {
+          onClose();
         }
       }}
+      {...backdrop}
     >
       <div className={styles.sheetContent}>
         <span className={styles.handle} aria-hidden="true" />
@@ -162,21 +159,41 @@ export function FilterSheet({ dialog, view, filter, kept, onChange, onClose }: F
           />
         </div>
         <button className={styles.submit} type="button" onClick={close}>
-          {showLabel(kept.length, filter.kind === 'reimbursement')}
+          {showLabel(kept)}
         </button>
       </div>
     </dialog>
   );
 }
 
-function showLabel(count: number, reimbursements: boolean): string {
+/** The lines kept, named « dépenses » or « remboursements » when they are all of one kind, « résultats » when mixed. */
+function showLabel(kept: readonly OperationView[]): string {
+  const count = kept.length;
   if (count === 0) {
     return m.filters_show_none();
   }
-  if (reimbursements) {
+  if (kept.every((operation) => operation.kind === 'reimbursement')) {
     return count === 1 ? m.filters_show_reimbursements_one() : m.filters_show_reimbursements({ count: String(count) });
   }
-  return count === 1 ? m.filters_show_one() : m.filters_show({ count: String(count) });
+  if (kept.every((operation) => operation.kind === 'expense')) {
+    return count === 1 ? m.filters_show_one() : m.filters_show({ count: String(count) });
+  }
+  return m.filters_show_mixed({ count: String(count) });
+}
+
+/** Closes a modal dialog on a touch on its backdrop, which lands on the dialog itself, its content filling it; a press begun inside does not count. */
+function useBackdropClose(dialog: RefObject<HTMLDialogElement | null>) {
+  const pressed = useRef(false);
+  return {
+    onPointerDown: (event: PointerEvent<HTMLDialogElement>) => {
+      pressed.current = event.target === dialog.current;
+    },
+    onClick: (event: MouseEvent<HTMLDialogElement>) => {
+      if (pressed.current && event.target === dialog.current) {
+        dialog.current.close();
+      }
+    },
+  };
 }
 
 interface SegmentedProps<T extends string> {
@@ -240,7 +257,7 @@ function People({ view, title, add, chosen, onChange, children }: PeopleProps) {
               <button
                 className={styles.badge}
                 type="button"
-                aria-label={m.filters_remove({ name: shortName(view, id, 'object') })}
+                aria-label={id === view.me ? m.filters_remove_me() : m.filters_remove({ name: memberOf(view, id).name })}
                 onClick={() => {
                   onChange(chosen.filter((other) => other !== id));
                 }}
@@ -278,7 +295,7 @@ function People({ view, title, add, chosen, onChange, children }: PeopleProps) {
           </button>
         </li>
       </ul>
-      <PeoplePicker dialog={picker} view={view} title={title} chosen={chosen} draft={draft} onDraft={setDraft} onChange={onChange} />
+      <PeoplePicker dialog={picker} view={view} title={title} draft={draft} onDraft={setDraft} onChange={onChange} />
     </section>
   );
 }
@@ -287,7 +304,6 @@ interface PeoplePickerProps {
   readonly dialog: RefObject<HTMLDialogElement | null>;
   readonly view: GroupView;
   readonly title: string;
-  readonly chosen: readonly MemberId[];
   readonly draft: readonly MemberId[];
   readonly onDraft: (draft: readonly MemberId[]) => void;
   readonly onChange: (chosen: MemberId[]) => void;
@@ -297,28 +313,20 @@ interface PeoplePickerProps {
  * The grid of the group's members, five a row, over the sheet: a touch picks or drops one, « Aucun » drops them all, « Valider · N personnes »
  * applies the choice; Escape or a touch on the backdrop leave it as it was.
  */
-function PeoplePicker({ dialog, view, title, chosen, draft, onDraft, onChange }: PeoplePickerProps) {
+function PeoplePicker({ dialog, view, title, draft, onDraft, onChange }: PeoplePickerProps) {
   const titleId = useId();
-  const pressedBackdrop = useRef(false);
+  const backdrop = useBackdropClose(dialog);
   const close = () => {
     dialog.current?.close();
   };
-  // The members in the order of the group, whatever the order of the touches.
-  const picked = view.members.filter((member) => draft.includes(member.id)).map((member) => member.id);
+  // The members in the order of the group, whatever the order of the touches; those who left it, which the grid cannot show, stay picked until
+  // « Aucun ».
+  const picked = [
+    ...view.members.filter((member) => draft.includes(member.id)).map((member) => member.id),
+    ...draft.filter((id) => !view.members.some((member) => member.id === id)),
+  ];
   return (
-    <dialog
-      ref={dialog}
-      className={styles.sheet}
-      aria-labelledby={titleId}
-      onPointerDown={(event) => {
-        pressedBackdrop.current = event.target === dialog.current;
-      }}
-      onClick={(event) => {
-        if (pressedBackdrop.current && event.target === dialog.current) {
-          close();
-        }
-      }}
-    >
+    <dialog ref={dialog} className={styles.sheet} aria-labelledby={titleId} {...backdrop}>
       <div className={styles.sheetContent}>
         <span className={styles.handle} aria-hidden="true" />
         <div className={styles.sheetHead}>
@@ -370,8 +378,7 @@ function PeoplePicker({ dialog, view, title, chosen, draft, onDraft, onChange }:
           className={styles.submit}
           type="button"
           onClick={() => {
-            // The members chosen who left the group stay chosen: the grid cannot show them.
-            onChange([...picked, ...chosen.filter((id) => !view.members.some((member) => member.id === id))]);
+            onChange(picked);
             close();
           }}
         >

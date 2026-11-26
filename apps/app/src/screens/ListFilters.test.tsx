@@ -86,7 +86,8 @@ describe('sheet of the filters', () => {
     const sheet = screen.getByRole('dialog', { name: 'Filtres' });
     await user.type(within(sheet).getByRole('searchbox', { name: 'Chercher un titre' }), 'CINEMA');
     expect(titles()).toStrictEqual(['Cinéma', 'Remboursement cinéma']);
-    expect(within(sheet).getByRole('button', { name: 'Voir 2 dépenses' })).toBeDefined();
+    // An expense and a reimbursement: results, as the heading counts the expense alone.
+    expect(within(sheet).getByRole('button', { name: 'Voir 2 résultats' })).toBeDefined();
 
     const kind = within(sheet).getByRole('group', { name: 'Type' });
     await user.click(within(kind).getByRole('button', { name: 'Remboursements' }));
@@ -139,7 +140,7 @@ describe('sheet of the filters', () => {
       within(payers)
         .getAllByRole('button')
         .map((button) => button.getAttribute('aria-label')),
-    ).toStrictEqual(['Retirer toi', 'Ajouter un payeur']);
+    ).toStrictEqual(['Te retirer', 'Ajouter un payeur']);
 
     await user.click(within(payers).getByRole('button', { name: 'Ajouter un payeur' }));
     const grid = screen.getByRole('dialog', { name: 'Payé par' });
@@ -158,15 +159,18 @@ describe('sheet of the filters', () => {
     await user.click(within(grid).getByRole('button', { name: 'Chloé' }));
     await user.click(within(grid).getByRole('button', { name: 'Valider · 2 personnes' }));
     expect(titles()).toStrictEqual(['Cinéma', 'Pizzas', 'Remboursement cinéma']);
+    // The grid closing leaves the sheet open, the focus not sent behind it.
+    expect(screen.getByRole('dialog', { name: 'Filtres' })).toBeDefined();
+    expect(document.activeElement).not.toBe(screen.getByRole('button', { name: /^Modifier les filtres :/ }));
 
-    await user.click(within(payers).getByRole('button', { name: 'Retirer toi' }));
+    await user.click(within(payers).getByRole('button', { name: 'Te retirer' }));
     expect(titles()).toStrictEqual(['Pizzas', 'Remboursement cinéma']);
     await user.click(within(payers).getByRole('button', { name: 'Ajouter un payeur' }));
     await user.click(within(grid).getByRole('button', { name: 'Aucun' }));
     expect(within(grid).getByRole('button', { name: 'Valider · personne' })).toBeDefined();
     await user.click(within(grid).getByRole('button', { name: 'Chloé' }));
     await user.click(within(grid).getByRole('button', { name: 'Valider · 1 personne' }));
-    await user.click(within(sheet).getByRole('button', { name: 'Voir 2 dépenses' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Voir 2 résultats' }));
     // Chloé as a payer is a criterion of the sheet: the summary names her.
     expect(screen.getByRole('button', { name: 'Modifier les filtres : De Chloé' })).toBeDefined();
   });
@@ -209,13 +213,15 @@ describe('sheet of the filters', () => {
     await user.click(within(sheet).getByRole('button', { name: 'Voir 1 dépense' }));
     const summary = screen.getByRole('button', { name: /^Modifier les filtres :/ });
     expect(summary.getAttribute('aria-label')?.replace(/\s/g, ' ')).toBe(
-      "Modifier les filtres : Pour Alice, Chloé, ≥ 12,00 €, Depuis le 4 nov., Jusqu'au 4 nov.",
+      "Modifier les filtres : Pour l'un de Alice, Chloé, ≥ 12,00 €, Depuis le 4 nov., Jusqu'au 4 nov.",
     );
 
     await user.click(summary);
     await user.click(within(sheet).getByRole('button', { name: 'Tout effacer' }));
     expect(titles()).toHaveLength(4);
-    expect(within(sheet).getByRole('button', { name: 'Voir 4 dépenses' })).toBeDefined();
+    expect(within(sheet).getByRole('button', { name: 'Voir 4 résultats' })).toBeDefined();
+    await user.click(within(within(sheet).getByRole('group', { name: 'Type' })).getByRole('button', { name: 'Dépenses' }));
+    expect(within(sheet).getByRole('button', { name: 'Voir 3 dépenses' })).toBeDefined();
     fireEvent.change(within(sheet).getByLabelText('Depuis le'), { target: { value: '2027-01-01' } });
     expect(within(sheet).getByRole('button', { name: 'Aucun résultat' })).toBeDefined();
     expect(screen.getByText('Aucune dépense ne correspond à ces filtres.')).toBeDefined();

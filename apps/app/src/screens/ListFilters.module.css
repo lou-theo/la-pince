@@ -55,16 +55,16 @@
   color: var(--color-text);
   text-align: left;
   cursor: pointer;
+  /* The tags measure their place from the button. */
+  position: relative;
 }
 
-/* One line high: the tags that wrap are out of sight, and counted in « +N ». */
+/* One line: the tags beyond the room are hidden, and counted in « +N ». */
 .tags {
   display: flex;
   flex: 1;
-  flex-wrap: wrap;
   gap: 0.375rem;
   min-width: 0;
-  height: 2rem;
   overflow: hidden;
 }
 
@@ -129,6 +129,7 @@
 .clear svg {
   width: 1.125rem;
   height: 1.125rem;
+  stroke-width: 2.2;
 }
 
 /* Heading of a filtered list: what it counts. */

@@ -3,10 +3,21 @@ import { type ReactNode, type RefObject, useLayoutEffect, useMemo, useRef, useSt
 
 import { m } from '../i18n/paraglide/messages.js';
 import { compactDay, localDay } from '../model/dates.ts';
-import { amountBound, filterOperations, hasAdvanced, type ListFilter, NO_FILTER, normalized, paidByMe, togglePaidByMe } from '../model/listFilter.ts';
+import {
+  amountBound,
+  dayBound,
+  filterOperations,
+  hasAdvanced,
+  type ListFilter,
+  NO_FILTER,
+  normalized,
+  paidByMe,
+  togglePaidByMe,
+} from '../model/listFilter.ts';
 import { formatCents } from '../model/money.ts';
 import { Avatar } from './Avatar.tsx';
 import { FilterSheet } from './FilterSheet.tsx';
+import { CloseIcon } from './FormFrame.tsx';
 import styles from './ListFilters.module.css';
 import { type GroupView, memberOf, shortName } from './view.ts';
 
@@ -93,29 +104,40 @@ interface SummaryProps {
   readonly onClear: () => void;
 }
 
-/** The filters set, as small square tags on one line, those beyond the room counted in « +N ». */
+// Room kept for « +N » at the end of the line, in rem: wider than « +9 » and the gap before it.
+const MORE_ROOM = 2.75;
+
+/** The filters set, as small square tags on one line, those beyond the room hidden and counted in « +N », the first one always shown. */
 function Summary({ view, filter, opener, onOpen, onClear }: SummaryProps) {
   const [today] = useState(() => localDay(new Date()));
   const tags = summaryTags(view, filter, today);
   const box = useRef<HTMLSpanElement>(null);
   const [hidden, setHidden] = useState(0);
-  // The tags wrap in a box one line high: those on the following lines are out of sight, and counted.
+  // Measured against the whole width of the button, which « +N » does not change: tags keep their place on one line, those hidden included.
   useLayoutEffect(() => {
+    const button = opener.current;
     const element = box.current;
-    if (element === null) {
+    if (button === null || element === null) {
       return;
     }
     const count = () => {
-      const top = (element.firstElementChild as HTMLElement | null)?.offsetTop ?? 0;
-      setHidden([...element.children].filter((tag) => (tag as HTMLElement).offsetTop > top).length);
+      const ends = [...element.children].map((tag) => (tag as HTMLElement).offsetLeft + (tag as HTMLElement).offsetWidth);
+      const room = button.clientWidth;
+      if (ends.every((end) => end <= room)) {
+        setHidden(0);
+        return;
+      }
+      const rem = Number(getComputedStyle(document.documentElement).fontSize.replace('px', ''));
+      const shown = ends.filter((end) => end <= room - MORE_ROOM * rem).length;
+      setHidden(ends.length - Math.max(shown, 1));
     };
     count();
     const observer = new ResizeObserver(count);
-    observer.observe(element);
+    observer.observe(button);
     return () => {
       observer.disconnect();
     };
-  }, [tags.length, filter]);
+  }, [opener, tags.length, filter]);
   return (
     <div className={styles.summary}>
       <button
@@ -127,8 +149,12 @@ function Summary({ view, filter, opener, onOpen, onClear }: SummaryProps) {
         onClick={onOpen}
       >
         <span ref={box} className={styles.tags}>
-          {tags.map((tag) => (
-            <span key={tag.key} className={tag.strong ? `${styles.tag ?? ''} ${styles.strong ?? ''}` : styles.tag}>
+          {tags.map((tag, index) => (
+            <span
+              key={tag.key}
+              className={tag.strong ? `${styles.tag ?? ''} ${styles.strong ?? ''}` : styles.tag}
+              style={index >= tags.length - hidden ? { visibility: 'hidden' } : undefined}
+            >
               {tag.content}
             </span>
           ))}
@@ -136,9 +162,7 @@ function Summary({ view, filter, opener, onOpen, onClear }: SummaryProps) {
         {hidden > 0 ? <span className={`${styles.tag ?? ''} ${styles.strong ?? ''}`}>{m.filters_more({ count: String(hidden) })}</span> : null}
       </button>
       <button className={styles.clear} type="button" aria-label={m.filters_reset()} onClick={onClear}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <CloseIcon />
       </button>
     </div>
   );
@@ -177,7 +201,12 @@ function summaryTags(view: GroupView, filter: ListFilter, today: string): Tag[] 
     people('payers', m.filters_tag_payers(), filter.payers);
   }
   if (filter.involved.length > 0) {
-    people('involved', m.filters_tag_involved(), filter.involved);
+    // « Au moins un » said only where it changes something, from two members.
+    people(
+      'involved',
+      filter.involvedMode === 'any' && filter.involved.length > 1 ? m.filters_tag_involved_any() : m.filters_tag_involved(),
+      filter.involved,
+    );
   }
   const min = amountBound(filter.minAmount);
   if (min !== undefined) {
@@ -187,11 +216,13 @@ function summaryTags(view: GroupView, filter: ListFilter, today: string): Tag[] 
   if (max !== undefined) {
     value('max', m.filters_tag_max({ amount: formatCents(max) }));
   }
-  if (filter.from !== '') {
-    value('from', m.filters_tag_from({ day: compactDay(filter.from, today) }));
+  const from = dayBound(filter.from);
+  if (from !== undefined) {
+    value('from', m.filters_tag_from({ day: compactDay(from, today) }));
   }
-  if (filter.to !== '') {
-    value('to', m.filters_tag_to({ day: compactDay(filter.to, today) }));
+  const to = dayBound(filter.to);
+  if (to !== undefined) {
+    value('to', m.filters_tag_to({ day: compactDay(to, today) }));
   }
   return tags;
 }
