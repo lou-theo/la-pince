@@ -464,14 +464,14 @@ export function SafariMenu({ share, flash = false }: { readonly share: string; r
   );
 }
 
-/** Where La Pince taps Share in the menu of « … ». */
-export const safariMenuShare: ScenePoint = { x: 95, y: 238 };
+/** Where La Pince taps Share in the menu of « … »: at the end of its line, its word left readable. */
+export const safariMenuShare: ScenePoint = { x: 156, y: 238 };
 
 // The Share sheet scrolls by this much to bring its entry to add the app in reach.
 const sheetScroll = 110;
 
-/** Points of the Share sheet: its entry to add the app once scrolled, and where La Pince starts the swipe that scrolls it. */
-export const sharePoints = { entry: { x: 70, y: 261 }, swipe: { x: 120, y: 330 } };
+/** Points of the Share sheet: its entry to add the app once scrolled, at the end of its line, and where La Pince starts the swipe that scrolls it. */
+export const sharePoints = { entry: { x: 156, y: 261 }, swipe: { x: 120, y: 330 } };
 
 /**
  * The Share sheet of iOS over the page, its `entry` to add the app to the home screen down its list: the sheet slides in or grows as it opens
@@ -545,8 +545,8 @@ export function ShareSheet({
   );
 }
 
-/** Where La Pince taps « Ajouter » in the window to add to the home screen. */
-export const addPoint: ScenePoint = { x: 154, y: 18 };
+/** Where La Pince taps « Ajouter » in the window to add to the home screen: on its last letters, the word left readable. */
+export const addPoint: ScenePoint = { x: 167, y: 21 };
 
 /** The window of iOS to add the app to the home screen, its « Ajouter » flashing as tapped; under iOS 26, its switch `webApp` on. */
 export function AddToHomeScreen({
@@ -655,7 +655,8 @@ export function ChromeIosBrowser({ host, title }: { readonly host: string; reado
 function BarPicture({ bar }: { readonly bar: 'compact' | 'bar' }): ReactNode {
   const ring = '#2f6b4f';
   return (
-    <svg viewBox="0 0 140 230" aria-hidden="true">
+    // Cropped from the top to fill its box, the bar at the bottom always shown.
+    <svg viewBox="0 0 140 230" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <rect width="140" height="230" fill="#faefd8" />
       {[8, 35, 62].map((y) => (
         <rect key={y} x="8" y={y} width="124" height="22" rx="6" fill="#ffffff" />

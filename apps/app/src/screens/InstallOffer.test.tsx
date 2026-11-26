@@ -239,7 +239,7 @@ describe('guides of the iPhone', () => {
     render(<InstallOffer title="Week-end" platform={browser({ userAgent: safari26, prompt: 'absent' }).platform} />);
     await user.click(screen.getByRole('button', { name: "C'est parti" }));
     expect(screen.getByRole('heading', { level: 3 }).textContent).toBe("Qu'est-ce que tu vois en bas de ton écran ?");
-    const compact = screen.getByRole('button', { name: 'Une barre avec « … »' });
+    const compact = screen.getByRole('button', { name: 'Une barre avec «\u00a0…\u00a0»' });
     const bar = screen.getByRole('button', { name: 'Une barre avec Partager' });
     expect(compact.getAttribute('aria-pressed')).toBe('true');
     expect(bar.getAttribute('aria-pressed')).toBe('false');

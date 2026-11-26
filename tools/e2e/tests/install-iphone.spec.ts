@@ -62,7 +62,7 @@ test.describe('Safari 26', () => {
     await page.getByRole('dialog', { name: "Installer l'app ?" }).getByRole('button', { name: "C'est parti" }).click();
     const guide = page.getByRole('dialog', { name: "Installer l'app" });
     await expect(guide.getByRole('heading', { level: 3 })).toHaveText("Qu'est-ce que tu vois en bas de ton écran ?");
-    await expect(guide.getByRole('button', { name: 'Une barre avec « … »' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(guide.getByRole('button', { name: 'Une barre avec «\u00a0…\u00a0»' })).toHaveAttribute('aria-pressed', 'true');
     await expect(guide.getByText('Étape 1 sur 7')).toBeVisible();
     await guide.getByRole('button', { name: 'Une barre avec Partager' }).click();
     await expect(guide.getByRole('button', { name: 'Une barre avec Partager' })).toHaveAttribute('aria-pressed', 'true');
