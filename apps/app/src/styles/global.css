@@ -56,7 +56,7 @@
   --space-6: 1.5rem;
   --column-width: 40rem;
   /* Menu at the bottom of the group's screens: the height of an iPhone's tab bar, growing with the text, then part of the room the phone keeps for
-     its home indicator, the tabs centered over both; the whole room would leave a strip of white under the tabs. */
+     its home indicator, the tabs a little above the middle of both, clear of the indicator; the whole room would leave a strip of white under them. */
   --nav-height: 3.0625rem;
   --nav-bottom: max(env(safe-area-inset-bottom) - 14px, 0px);
   --nav-total: calc(var(--nav-height) + var(--nav-bottom));
