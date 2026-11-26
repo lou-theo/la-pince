@@ -6,6 +6,7 @@ import { loadErrorMessage } from '../i18n/errors.ts';
 import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { liveOperations, overlay, sortedBalances, transfers } from '../model/group.ts';
+import { paidByMe } from '../model/listFilter.ts';
 import type { LoadError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
 import { Avatar } from './Avatar.tsx';
@@ -83,6 +84,10 @@ export function GroupHome({
         members={group.members}
         currentMember={currentMember}
         onChoose={(member) => {
+          // « Payé par moi » names whoever I am now, not the member I was when I pressed it.
+          if (remembered !== undefined && paidByMe(filter, remembered)) {
+            setFilter({ ...filter, payers: [member.id] });
+          }
           onChooseMember(member.id);
           setChoosing(false);
         }}

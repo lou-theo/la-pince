@@ -77,6 +77,18 @@ describe('pills of the list', () => {
     expect(screen.getByRole('button', { name: 'Me concerne' }).getAttribute('aria-pressed')).toBe('true');
     expect(titles()).toStrictEqual(['Courses', 'Remboursement cinéma']);
   });
+
+  it('keeps « Payé par moi » on whoever I am after I said I am someone else', async () => {
+    const { user } = await open();
+    await user.click(screen.getByRole('button', { name: 'Payé par moi' }));
+    expect(titles()).toStrictEqual(['Cinéma']);
+    await user.click(screen.getByRole('link', { name: 'Tu es Bruno' }));
+    await user.click(screen.getByRole('button', { name: "Ce n'est pas moi" }));
+    await user.click(screen.getByRole('button', { name: 'Chloé' }));
+    await user.click(screen.getByRole('link', { name: 'Retour aux dépenses' }));
+    expect(screen.getByRole('button', { name: 'Payé par moi' }).getAttribute('aria-pressed')).toBe('true');
+    expect(titles()).toStrictEqual(['Pizzas', 'Remboursement cinéma']);
+  });
 });
 
 describe('sheet of the filters', () => {
