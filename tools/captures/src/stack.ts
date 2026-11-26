@@ -49,7 +49,8 @@ async function setPhotos(browser: Browser, serverUrl: string): Promise<void> {
       await fetch(new URL(`api/groups/${token}/members/${member.id}/photo`, serverUrl), {
         method: 'PUT',
         headers: { 'Content-Type': 'image/jpeg' },
-        body: await page.screenshot({ type: 'jpeg', quality: 85 }),
+        // Copied into its own ArrayBuffer: the DOM's `fetch` takes no Node `Buffer`.
+        body: new Uint8Array(await page.screenshot({ type: 'jpeg', quality: 85 })),
       });
     }
   } finally {
