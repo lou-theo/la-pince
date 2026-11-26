@@ -198,7 +198,7 @@ export function AndroidInstallWindow({
         <SceneText x={55} y={161} size={7} color="#57534e">
           {host}
         </SceneText>
-        <SceneText x={97} y={186} size={8.5} weight={600} color="#2a5db0" anchor="middle">
+        <SceneText x={88} y={186} size={8.5} weight={600} color="#2a5db0" anchor="middle">
           {cancel}
         </SceneText>
         <g className={appear ? undefined : styles.press}>

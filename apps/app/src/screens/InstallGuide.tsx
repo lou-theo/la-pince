@@ -35,7 +35,8 @@ const sheetButton = { x: 89, y: 305 };
 const windowButton = { x: 133, y: 186 };
 const homeIcon = { x: 29, y: 199 };
 const menuDots = { x: 168, y: 16 };
-const menuItem = { x: 74, y: 100 };
+// The end of the line, its words left readable.
+const menuItem = { x: 150, y: 100 };
 
 const installWindow = (host: string) => (
   <AndroidInstallWindow host={host} label={m.install_scene_window_title()} cancel={m.install_scene_cancel()} install={m.install_guide_install()} />

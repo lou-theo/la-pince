@@ -2,8 +2,10 @@
 .card {
   display: flex;
   flex: 1 1 auto;
+  align-items: center;
   justify-content: center;
   min-height: 0;
+  max-height: 26rem;
   border-radius: 1.125rem;
   background: var(--color-brand);
   overflow: hidden;
@@ -198,18 +200,18 @@
   }
 }
 
-/* At rest: La Pince on the point, what the tap opens shown, the app not opening over the icon. */
+/* At rest: La Pince on the point of the gesture. */
 @media (prefers-reduced-motion: reduce) {
   .tap,
-  .ripple,
   .press,
-  .reveal,
-  .dim,
   .pop {
     animation: none;
   }
 
+  /* The moment before the tap: what it opens, and the app opening, wait. */
   .ripple,
+  .reveal,
+  .dim,
   .openApp {
     display: none;
   }
