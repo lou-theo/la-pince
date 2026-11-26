@@ -59,6 +59,34 @@ async function loaded(page: Page): Promise<void> {
   await expect.poll(() => sheetPhoto(page).evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth)).toBeGreaterThan(0);
 }
 
+/** The photo versions of the members in the copy of each group the phone opens on (`openGroupDb`, the last read saved). */
+async function savedPhotos(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const done = <T>(request: IDBRequest<T>) =>
+      new Promise<T>((resolve, reject) => {
+        request.addEventListener('success', () => {
+          resolve(request.result);
+        });
+        request.addEventListener('error', () => {
+          reject(request.error ?? new Error('IndexedDB request failed'));
+        });
+      });
+    const names = (await indexedDB.databases()).flatMap(({ name }) => (name?.startsWith('la-pince-group-') === true ? [name] : []));
+    const reads = await Promise.all(
+      names.map(async (name) => {
+        const db = await done(indexedDB.open(name));
+        const read: unknown = await done(db.transaction('meta').objectStore('meta').get('read'));
+        db.close();
+        return read;
+      }),
+    );
+    return reads.flatMap((read) => {
+      const members = (read as { group?: { members?: { photo?: string | null }[] } } | undefined)?.group?.members ?? [];
+      return members.flatMap(({ photo }) => (typeof photo === 'string' ? [photo] : []));
+    });
+  });
+}
+
 /** The colors at the middle of each quadrant of the photo the sheet shows, as the server gives it, with its size as a JPEG. */
 async function served(page: Page): Promise<{ size: ReturnType<typeof jpegSize>; type: string | undefined; colors: number[][] }> {
   const src = (await sheetPhoto(page).getAttribute('src')) ?? '';
@@ -130,6 +158,9 @@ test('a photo set on a member reaches another browser, shows offline, is taken a
   // Set again, then shown after a restart without network: from the copy the service worker keeps.
   await choosePhoto(page, 'Changer la photo de Basile', await picture(page, false), 'quadrants.png');
   await loaded(page);
+  // The screen shows the group the change answered at once, but the phone saves only the read that follows it: restarting before that read
+  // ends would open on the copy without the photo.
+  await expect.poll(() => savedPhotos(page)).toContain((await sheetPhoto(page).getAttribute('src'))?.split('/').pop());
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { level: 2, name: 'Basile' })).toBeVisible();
