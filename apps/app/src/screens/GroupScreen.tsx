@@ -9,6 +9,7 @@ import type { ApiResult, GroupEditError } from '../sync/client.ts';
 import { useApiClient } from '../sync/context.ts';
 import { createGroupStore } from '../sync/groupStore.ts';
 import { GroupHome } from './GroupHome.tsx';
+import { InstallOffer } from './InstallOffer.tsx';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
 import type { EditResult, GroupEdit } from './view.ts';
@@ -88,19 +89,23 @@ function GroupLoader({ token }: { readonly token: string }) {
       );
     case 'ready':
       return (
-        <GroupHome
-          token={token}
-          group={state.group}
-          changes={state.changes}
-          outbox={state.outbox}
-          readAt={state.readAt}
-          currentMember={state.currentMember}
-          onChooseMember={store.chooseMember}
-          readError={state.readError}
-          onRetry={() => void store.sync()}
-          enqueue={store.enqueue}
-          edits={edits}
-        />
+        <>
+          <GroupHome
+            token={token}
+            group={state.group}
+            changes={state.changes}
+            outbox={state.outbox}
+            readAt={state.readAt}
+            currentMember={state.currentMember}
+            onChooseMember={store.chooseMember}
+            readError={state.readError}
+            onRetry={() => void store.sync()}
+            enqueue={store.enqueue}
+            edits={edits}
+          />
+          {/* Offered once who I am is told, the group behind. */}
+          {state.currentMember === undefined ? null : <InstallOffer title={state.group.title} />}
+        </>
       );
   }
 }
