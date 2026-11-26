@@ -10,6 +10,8 @@
   --color-accent-text: #ffffff;
   --color-danger: #b91c1c;
   --color-positive: #1d4ed8;
+  /* Red of the logo's claw, for a call to follow La Pince. */
+  --color-claw: #c23a22;
   --shadow-raised: 0 4px 12px rgb(28 25 23 / 25%);
   --shadow-flat: 0 1px 2px rgb(28 25 23 / 15%);
   /* Over the screen behind a sheet. */
@@ -74,6 +76,7 @@
     --color-accent-text: #1c1917;
     --color-danger: #f87171;
     --color-positive: #60a5fa;
+    --color-claw: #f0806a;
     --color-scrim: rgb(0 0 0 / 65%);
     --decor-ahead-band: #3b2f12;
     --decor-ahead-text: #fbbf24;

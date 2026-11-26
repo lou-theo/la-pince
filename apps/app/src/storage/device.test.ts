@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { readLastGroup, saveLastGroup } from './device.ts';
+import { readLastGroup, rememberInstallOffered, saveLastGroup, wasInstallOffered } from './device.ts';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -13,6 +13,13 @@ describe('device storage', () => {
     expect(readLastGroup()).toBe('token-a');
   });
 
+  it('remembers that the install was offered, across visits', () => {
+    expect(wasInstallOffered()).toBe(false);
+    rememberInstallOffered();
+    expect(localStorage.getItem('la-pince:install-offered')).not.toBeNull();
+    expect(wasInstallOffered()).toBe(true);
+  });
+
   it('forgets rather than fails when the browser refuses storage', () => {
     const refuse = () => {
       throw new DOMException('denied', 'SecurityError');
@@ -22,5 +29,9 @@ describe('device storage', () => {
       saveLastGroup('token-a');
     }).not.toThrow();
     expect(readLastGroup()).toBeUndefined();
+    // Offered once in this visit all the same, not at each screen.
+    expect(wasInstallOffered()).toBe(false);
+    rememberInstallOffered();
+    expect(wasInstallOffered()).toBe(true);
   });
 });

@@ -1,0 +1,218 @@
+/* The sand card of the scene, which takes the room the column it sits in leaves, the drawing scaled to it. */
+.card {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  max-height: 26rem;
+  border-radius: 1.125rem;
+  background: var(--color-brand);
+  overflow: hidden;
+}
+
+.scene {
+  display: block;
+  width: 100%;
+  max-width: 22.375rem;
+  max-height: 26rem;
+}
+
+/* One gesture every 3.4 s: La Pince comes in claw first, taps, and what the tap opens appears. Times are shared, so that each part lands on the
+   tap. Lengths are in the scene's units. */
+.tap {
+  animation: tap 3.4s ease-in-out infinite;
+}
+
+.ripple {
+  fill: rgb(255 255 255 / 60%);
+  animation: ripple 3.4s ease-out infinite;
+}
+
+.rippleGreen {
+  fill: rgb(47 107 79 / 45%);
+}
+
+.press {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: press 3.4s ease-out infinite;
+}
+
+.reveal {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: reveal 3.4s ease-out infinite;
+}
+
+.dim {
+  animation: dim 3.4s ease-out infinite;
+}
+
+.pop {
+  transform-origin: 29px 199px;
+  animation: pop 3.4s ease-out infinite;
+}
+
+.openApp {
+  transform-origin: 29px 199px;
+  animation: open-app 3.4s ease-in-out infinite;
+}
+
+@keyframes tap {
+  0% {
+    transform: translate(-56px, 44px);
+    opacity: 0;
+  }
+
+  14% {
+    opacity: 1;
+  }
+
+  38% {
+    transform: none;
+  }
+
+  44% {
+    transform: translate(2px, -2px) scale(0.88);
+  }
+
+  52% {
+    transform: none;
+  }
+
+  84% {
+    transform: none;
+    opacity: 1;
+  }
+
+  100% {
+    transform: none;
+    opacity: 0;
+  }
+}
+
+@keyframes ripple {
+  0%,
+  42% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+
+  46% {
+    opacity: 0.75;
+  }
+
+  66%,
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes press {
+  0%,
+  42%,
+  60%,
+  100% {
+    transform: none;
+    filter: none;
+  }
+
+  46%,
+  54% {
+    transform: scale(0.94);
+    filter: brightness(1.25);
+  }
+}
+
+@keyframes reveal {
+  0%,
+  46% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  54%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes dim {
+  0%,
+  46% {
+    opacity: 0;
+  }
+
+  54%,
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0);
+  }
+
+  12% {
+    transform: scale(1.18);
+  }
+
+  18%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes open-app {
+  0%,
+  48% {
+    transform: scale(0.14);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(0.14);
+    opacity: 1;
+  }
+
+  66%,
+  92% {
+    transform: none;
+    opacity: 1;
+  }
+
+  100% {
+    transform: none;
+    opacity: 0;
+  }
+}
+
+/* At rest: La Pince on the point of the gesture. */
+@media (prefers-reduced-motion: reduce) {
+  .tap,
+  .press,
+  .pop {
+    animation: none;
+  }
+
+  /* The moment before the tap: what it opens, and the app opening, wait. */
+  .ripple,
+  .reveal,
+  .dim,
+  .openApp {
+    display: none;
+  }
+}

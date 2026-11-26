@@ -1,0 +1,325 @@
+/* The sheet rising from the bottom over the screen, blurred behind: the offer at its height, the guide almost the whole screen. */
+.sheet {
+  width: 100%;
+  max-width: var(--column-width);
+  max-height: none;
+  margin: auto auto 0;
+  padding: 0;
+  border: none;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  box-shadow: 0 -8px 24px rgb(28 25 23 / 18%);
+  animation: sheet-rise 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+.sheet::backdrop {
+  background: var(--color-scrim);
+  backdrop-filter: blur(3px) saturate(0.8);
+}
+
+.tall {
+  height: calc(100dvh - 2.25rem);
+}
+
+.handle {
+  align-self: center;
+  width: 2.5rem;
+  height: 0.3125rem;
+  border-radius: 0.1875rem;
+  background: var(--color-border);
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+
+.offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+}
+
+/* La Pince hops in on a sand halo, then sways while the offer waits. */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 10.75rem;
+}
+
+.halo {
+  position: absolute;
+  width: 10.625rem;
+  height: 9.375rem;
+  border-radius: 50%;
+  background: var(--color-brand);
+}
+
+.hop {
+  position: relative;
+  animation: pince-hop 0.9s 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+.bob {
+  display: block;
+  width: 9.375rem;
+  height: 9.375rem;
+  transform-origin: 50% 80%;
+  animation: pince-bob 2.6s 1.3s ease-in-out infinite;
+}
+
+.offerTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  text-align: center;
+}
+
+/* The red of the claw. */
+.follow {
+  color: var(--color-claw);
+}
+
+.offerText {
+  margin: 0 var(--space-2);
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 3rem;
+  border: none;
+  border-radius: 0.875rem;
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.start {
+  min-height: 3.25rem;
+  margin-top: 0.375rem;
+  font-size: 1.0625rem;
+}
+
+.later {
+  min-height: 2.75rem;
+  border: none;
+  background: transparent;
+  color: var(--color-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary {
+  min-height: 3rem;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 0.875rem;
+  background: transparent;
+  color: var(--color-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-2) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom));
+}
+
+.guideHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.guideTitles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.guideTitle {
+  outline: none;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.close svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.instruction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 3.25rem;
+}
+
+.instructionText {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  animation: text-in 0.35s ease-out both;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.dot,
+.dotDone,
+.dotCurrent {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--color-border);
+  transition: width 0.25s;
+}
+
+.dotDone,
+.dotCurrent {
+  background: var(--color-accent);
+}
+
+.dotCurrent {
+  width: 1.375rem;
+}
+
+.buttons {
+  display: grid;
+  margin-top: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+/* The app's « Installer » nods now and then, the gesture of the step. */
+.nudge {
+  animation: nudge 3.4s ease-in-out infinite;
+}
+
+@keyframes sheet-rise {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes pince-hop {
+  0% {
+    transform: translateY(60px) rotate(-12deg);
+    opacity: 0;
+  }
+
+  55% {
+    transform: translateY(-10px) rotate(4deg);
+    opacity: 1;
+  }
+
+  75% {
+    transform: translateY(2px) rotate(-2deg);
+  }
+
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes pince-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateY(-7px) rotate(4deg);
+  }
+}
+
+@keyframes text-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nudge {
+  0%,
+  70%,
+  100% {
+    transform: none;
+  }
+
+  78% {
+    transform: translateY(-3px);
+  }
+
+  86% {
+    transform: translateY(1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .hop,
+  .bob,
+  .instructionText,
+  .nudge {
+    animation: none;
+  }
+}
