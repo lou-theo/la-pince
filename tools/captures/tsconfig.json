@@ -2,6 +2,8 @@
   "extends": "@la-pince/config/tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
+    // The screens run code in the page.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
     // The demo corpus is a JSON file read by the stack.
     "resolveJsonModule": true
   },

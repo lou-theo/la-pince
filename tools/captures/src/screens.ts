@@ -206,6 +206,62 @@ const openNewExpense = async (page: Page, demo: Demo): Promise<void> => {
   await page.locator('form input[inputmode="decimal"]').first().waitFor();
 };
 
+// What a phone's Chrome says of itself: the offer to install the app comes on a phone only.
+const androidChrome = 'Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+
+/**
+ * Makes the page an Android Chrome, before the app starts. With `window`, Chrome hands its install window, which answers « Installer » after
+ * `acceptAfter` ms (never without it, the window staying open); without, Chrome hands none and the app offers its ⋮ menu.
+ */
+const asAndroidChrome = async (page: Page, window: boolean, acceptAfter?: number): Promise<void> => {
+  await page.addInitScript(
+    ({ userAgent, hand, delay }) => {
+      Object.defineProperty(Navigator.prototype, 'userAgent', { get: () => userAgent });
+      if (!hand) {
+        return;
+      }
+      addEventListener('load', () => {
+        let accept = (): void => undefined;
+        const userChoice = new Promise((resolve) => {
+          accept = () => {
+            resolve({ outcome: 'accepted', platform: 'web' });
+          };
+        });
+        const prompt = () => {
+          if (delay !== null) {
+            setTimeout(accept, delay);
+          }
+          return Promise.resolve();
+        };
+        dispatchEvent(Object.assign(new Event('beforeinstallprompt', { cancelable: true }), { prompt, userChoice }));
+      });
+    },
+    { userAgent: androidChrome, hand: window, delay: acceptAfter ?? null },
+  );
+};
+
+// The sheet of the offer, then of the guide: a modal dialog, its main button the last one but « Plus tard » on the offer.
+const sheet = 'dialog[open]';
+
+/** Brings the offer over the group, at rest: still pictures show La Pince on the point, the animations stopped. */
+const openOffer = async (page: Page, demo: Demo, window = true, acceptAfter?: number): Promise<void> => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await asAndroidChrome(page, window, acceptAfter);
+  await chooseFirstMember(page, demo);
+  // Without a window, Chrome is given 3 s before its menu is offered.
+  await page.locator(sheet).waitFor({ timeout: 6000 });
+};
+
+/** Opens the guide from the offer, at its step `step` (1 first) by its main button. */
+const openGuide = async (page: Page, demo: Demo, window: boolean, step: number, acceptAfter?: number): Promise<void> => {
+  await openOffer(page, demo, window, acceptAfter);
+  await page.locator(`${sheet} button`).first().click();
+  for (let at = 1; at < step; at += 1) {
+    await page.locator(`${sheet} button`).last().click();
+  }
+  await page.locator(`${sheet} svg image`).first().waitFor();
+};
+
 /** Screens of the app, in the order of the board; a PR that adds a screen adds it here. */
 export const screens: readonly Screen[] = [
   {
@@ -485,6 +541,48 @@ export const screens: readonly Screen[] = [
     },
   },
   {
+    name: 'installation-proposition',
+    label: "Proposition d'installer l'app, à l'arrivée sur un téléphone",
+    reach: (page, demo) => openOffer(page, demo),
+  },
+  {
+    name: 'installation-proposition-sombre',
+    label: 'Proposition, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openOffer(page, demo);
+    },
+  },
+  { name: 'installation-bouton', label: 'Guide Android, 1 : le bouton « Installer »', reach: (page, demo) => openGuide(page, demo, true, 1) },
+  {
+    name: 'installation-bouton-fenetre',
+    label: 'Guide Android, 2 : la fenêtre du navigateur',
+    reach: (page, demo) => openGuide(page, demo, true, 2),
+  },
+  {
+    name: 'installation-bouton-installee',
+    label: "Guide Android, 3 : l'icône à toucher",
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openGuide(page, demo, true, 2, 0);
+      // The home screen drawn, once the window is accepted.
+      await page.locator(`${sheet} svg linearGradient`).waitFor({ state: 'attached' });
+    },
+  },
+  {
+    name: 'installation-bouton-sombre',
+    label: 'Guide Android, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openGuide(page, demo, true, 1);
+    },
+  },
+  { name: 'installation-menu', label: 'Guide de Chrome sans fenêtre, 1 : le menu ⋮', reach: (page, demo) => openGuide(page, demo, false, 1) },
+  {
+    name: 'installation-menu-entree',
+    label: "Guide de Chrome sans fenêtre, 2 : « Installer l'application »",
+    reach: (page, demo) => openGuide(page, demo, false, 2),
+  },
+  {
     name: 'groupe-introuvable',
     label: 'Groupe introuvable',
     reach: async (page: Page, demo: Demo): Promise<void> => {
@@ -502,6 +600,27 @@ export const screens: readonly Screen[] = [
     },
   },
 ];
+
+/**
+ * Journey filmed for the GIF of the install, on a phone's Chrome: the offer at the arrival, the guide, the browser's window accepted after 3 s, and
+ * the icon to touch.
+ */
+export async function installJourney(page: Page, demo: Demo): Promise<void> {
+  await asAndroidChrome(page, true, 3000);
+  await page.goto(`${demo.appUrl}/g/${demo.token}`);
+  await page.getByRole('list').waitFor();
+  await page.waitForTimeout(800);
+  await page.getByRole('list').getByRole('button').first().click();
+  await page.locator(sheet).waitFor();
+  await page.waitForTimeout(3000);
+  await page.locator(`${sheet} button`).first().click();
+  await page.waitForTimeout(4000);
+  await page.locator(`${sheet} button`).last().click();
+  // The window, then the icon to touch once accepted.
+  await page.waitForTimeout(7500);
+  await page.locator(`${sheet} button`).last().click();
+  await page.waitForTimeout(800);
+}
 
 /**
  * Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, filter it (« Me concerne », then the sheet: who paid,

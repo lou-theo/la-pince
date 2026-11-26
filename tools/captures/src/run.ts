@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import { type Browser, type BrowserContextOptions, chromium } from 'playwright';
 
 import { boardHtml } from './board.ts';
-import { type Demo, journey, screens } from './screens.ts';
+import { type Demo, installJourney, journey, screens } from './screens.ts';
 import { startStack } from './stack.ts';
 
 const exec = promisify(execFile);
@@ -66,8 +66,8 @@ async function shoot(browser: Browser, demo: Demo, out: string, print: (line: st
   return found;
 }
 
-/** Films the journey on a phone and turns it into a GIF with ffmpeg. */
-async function film(browser: Browser, demo: Demo, out: string): Promise<string> {
+/** Films a journey on a phone and turns it into `<name>.gif` with ffmpeg. */
+async function film(browser: Browser, demo: Demo, out: string, name: string, run: typeof journey): Promise<string> {
   const context = await browser.newContext({
     ...phone.options,
     deviceScaleFactor: 1,
@@ -76,13 +76,13 @@ async function film(browser: Browser, demo: Demo, out: string): Promise<string> 
     recordVideo: { dir: join(out, 'video'), size: phoneSize },
   });
   const page = await context.newPage();
-  await journey(page, demo);
+  await run(page, demo);
   await context.close();
   const video = await page.video()?.path();
   if (video === undefined) {
     throw new Error('no video recorded');
   }
-  const gif = join(out, 'parcours.gif');
+  const gif = join(out, `${name}.gif`);
   const filter = 'fps=10,scale=390:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer';
   await exec('ffmpeg', ['-y', '-loglevel', 'error', '-i', video, '-vf', filter, gif]);
   await rm(join(out, 'video'), { recursive: true, force: true });
@@ -150,7 +150,8 @@ export async function captures({ before, out: outOption, print }: Options): Prom
     try {
       const dir = join(out, 'apres');
       versions.push({ label: `Après (${branch})`, dir, found: await shoot(browser, stack.demo, dir, print) });
-      print(`GIF: ${await film(browser, stack.demo, out)}`);
+      print(`GIF: ${await film(browser, stack.demo, out, 'parcours', journey)}`);
+      print(`GIF: ${await film(browser, stack.demo, out, 'installation', installJourney)}`);
     } finally {
       await stack.close();
     }

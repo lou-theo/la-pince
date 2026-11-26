@@ -1,3 +1,5 @@
+import { isAppleTouch } from '../model/install.ts';
+
 /**
  * Whether this browser can receive notifications: `ready`; `home_screen`, an iPhone or iPad where Safari offers them only to an app opened from the
  * home screen (iOS 16.4 or later); `unsupported`, any other browser without the Push API.
@@ -19,9 +21,7 @@ function supportOf(): PushSupport {
   if ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
     return 'ready';
   }
-  // iPadOS asks for the desktop site and calls itself a Mac, told apart by its touch screen.
-  const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
-  return apple ? 'home_screen' : 'unsupported';
+  return isAppleTouch(navigator.userAgent, navigator.maxTouchPoints) ? 'home_screen' : 'unsupported';
 }
 
 /** The public key a subscription was made with, in base64url as the instance serves it; undefined where the browser does not tell it. */

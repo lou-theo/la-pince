@@ -4,7 +4,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App.tsx';
+import { captureInstallPrompt } from './install/platform.ts';
 import { createApiClient } from './sync/client.ts';
+
+captureInstallPrompt();
 
 const root = document.getElementById('root');
 if (root === null) {

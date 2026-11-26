@@ -3,6 +3,7 @@ import { Redirect, Route, Switch } from 'wouter';
 
 import { m } from './i18n/paraglide/messages.js';
 import { GroupScreen } from './screens/GroupScreen.tsx';
+import { InstallOffer } from './screens/InstallOffer.tsx';
 import layout from './screens/Layout.module.css';
 import { Layout } from './screens/Layout.tsx';
 import { type ListFilterMemory, ListFilterMemoryContext } from './screens/listFilterMemory.ts';
@@ -23,6 +24,7 @@ export function App({ client }: { readonly client: ApiClient }): ReactNode {
           </Route>
           <Route path="/lien">
             <PasteLink />
+            <InstallOffer />
           </Route>
           <Route path="/g/:token" nest>
             {({ token }) => <GroupScreen token={token} />}
@@ -40,5 +42,13 @@ export function App({ client }: { readonly client: ApiClient }): ReactNode {
 
 function Home() {
   const lastGroup = readLastGroup();
-  return lastGroup === undefined ? <PasteLink /> : <Redirect to={`/g/${lastGroup}`} replace />;
+  // Without a group, the phone is offered to install the app all the same.
+  return lastGroup === undefined ? (
+    <>
+      <PasteLink />
+      <InstallOffer />
+    </>
+  ) : (
+    <Redirect to={`/g/${lastGroup}`} replace />
+  );
 }
