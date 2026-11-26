@@ -37,7 +37,14 @@ export async function serveApp(dist: string, apiUrl: string): Promise<{ readonly
           headers: { 'Content-Type': request.headers['content-type'] ?? 'application/json' },
           ...(chunks.length > 0 ? { body: Buffer.concat(chunks) } : {}),
         });
-        response.writeHead(answer.status, { 'Content-Type': answer.headers.get('content-type') ?? 'application/json' });
+        // The headers the app depends on: a photo's cache rules and its type, which the browser must not guess.
+        const relayed = Object.fromEntries(
+          ['cache-control', 'x-content-type-options'].flatMap((name) => {
+            const value = answer.headers.get(name);
+            return value === null ? [] : [[name, value]];
+          }),
+        );
+        response.writeHead(answer.status, { 'Content-Type': answer.headers.get('content-type') ?? 'application/json', ...relayed });
         response.end(Buffer.from(await answer.arrayBuffer()));
         return;
       }
