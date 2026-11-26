@@ -197,6 +197,59 @@ li:first-child > .member {
   font-weight: 600;
 }
 
+/* The theme of this phone: a segmented control like the tabs of my page, the chosen one marked by a class. */
+.theme {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+}
+
+.themeOptions {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius);
+  background: var(--color-background);
+}
+
+.themeOption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--space-3);
+  border-radius: 0.5625rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Drawn as nothing over its label, so that its own focus ring frames the option, for the keyboard only. */
+.themeOption input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: inherit;
+  appearance: none;
+  cursor: pointer;
+}
+
+.themeOption input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.themeChosen {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow:
+    var(--shadow-flat),
+    inset 0 0 0 1px var(--color-border);
+}
+
 .rowHint {
   color: var(--color-muted);
   font-size: 0.8125rem;

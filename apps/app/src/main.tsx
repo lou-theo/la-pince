@@ -5,9 +5,11 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './App.tsx';
 import { captureInstallPrompt } from './install/platform.ts';
+import { startTheme } from './screens/theme.ts';
 import { createApiClient } from './sync/client.ts';
 
 captureInstallPrompt();
+startTheme();
 
 const root = document.getElementById('root');
 if (root === null) {

@@ -55,3 +55,17 @@ export const wasInAppBannerHidden = (): boolean => hiddenInMemory || read(inAppB
 export const hideInAppBanner = (): void => {
   hiddenInMemory ||= !write(inAppBannerKey, '1', () => sessionStorage);
 };
+
+/** The theme of the app on this phone: the phone's own, or one forced whatever the phone says. */
+export type ThemeChoice = 'system' | 'light' | 'dark';
+
+// Also read by the script of `index.html`, which sets the theme before the first paint.
+export const themeKey = 'la-pince:theme';
+
+export const readTheme = (): ThemeChoice => {
+  const stored = read(themeKey);
+  return stored === 'light' || stored === 'dark' ? stored : 'system';
+};
+export const saveTheme = (choice: ThemeChoice): void => {
+  write(themeKey, choice);
+};
