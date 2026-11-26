@@ -291,6 +291,7 @@ describe('guides of the iPhone', () => {
         ['Touche « Ajouter » en haut à droite'],
         [open],
       ]);
+      expect(screen.getByRole('button', { name: "J'ai compris" })).toBeDefined();
       cleanup();
       localStorage.clear();
     }
