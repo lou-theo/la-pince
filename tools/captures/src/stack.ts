@@ -38,7 +38,7 @@ async function setPhotos(browser: Browser, serverUrl: string): Promise<void> {
     for (const [index, [background, shirt, skin, hair]] of looks.entries()) {
       const member = group.members[withPhoto[index] ?? -1];
       if (member === undefined) {
-        continue;
+        throw new Error(`the demo group has no member at place ${String(withPhoto[index])} to give a photo`);
       }
       await page.setContent(
         `<body style="margin:0"><svg width="256" height="256" viewBox="0 0 40 40"><rect width="40" height="40" fill="${background}"/>` +
