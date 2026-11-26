@@ -56,8 +56,9 @@ describe('filterOperations', () => {
     expect(ids({ payers: [me] })).toStrictEqual(['cinema', 'coffee']);
     // Either: the cinema I advanced without a share comes in.
     expect(ids({ involvesMe: true, payers: [me] })).toStrictEqual(['shopping', 'cinema', 'coffee', 'back']);
-    // With other payers, both narrow the list.
+    // With other payers, both narrow the list, me among them or not.
     expect(ids({ involvesMe: true, payers: [m1, m3] })).toStrictEqual(['shopping', 'back']);
+    expect(ids({ involvesMe: true, payers: [me, m3] })).toStrictEqual(['coffee', 'back']);
   });
 
   it('keeps any of the payers chosen', () => {
@@ -98,6 +99,8 @@ describe('filterOperations', () => {
     expect(ids({ from: '2026-11-04' })).toStrictEqual(['shopping', 'cinema']);
     expect(ids({ to: '2026-11-02' })).toStrictEqual(['pizza', 'back']);
     expect(ids({ from: '2026-11-03', to: '2026-11-03' })).toStrictEqual(['coffee']);
+    // A year of five digits, which a date field can give, is no bound.
+    expect(ids({ from: '10000-01-01' })).toStrictEqual(ids({}));
   });
 });
 
@@ -134,7 +137,7 @@ describe('the pills and the sheet', () => {
       expect(isActive({ ...NO_FILTER, ...criterion }, me)).toBe(true);
     }
     // Blank or unreadable, a field sets nothing.
-    expect(hasAdvanced({ ...NO_FILTER, search: ' ', minAmount: 'x', maxAmount: ' ' }, me)).toBe(false);
+    expect(hasAdvanced({ ...NO_FILTER, search: ' ', minAmount: 'x', maxAmount: ' ', from: '10000-01-01', to: '2026-1-1' }, me)).toBe(false);
     // The mode alone, without members, sets nothing either.
     expect(hasAdvanced({ ...NO_FILTER, involvedMode: 'any' }, me)).toBe(false);
   });

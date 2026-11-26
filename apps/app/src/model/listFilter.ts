@@ -54,6 +54,14 @@ export function amountBound(typed: string): number | undefined {
   return typedCents(typed.replace('€', '').trim());
 }
 
+// A day as the date fields give it; anything else (a year of five digits) is no bound.
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A day bound as typed, `YYYY-MM-DD`; none when the field is empty or holds something else. */
+export function dayBound(typed: string): string | undefined {
+  return ISO_DAY.test(typed) ? typed : undefined;
+}
+
 /** Whether a criterion of the sheet is set, beyond the two pills: the list then shows the summary instead of the pills. */
 export function hasAdvanced(filter: ListFilter, me: MemberId): boolean {
   return (
@@ -63,8 +71,8 @@ export function hasAdvanced(filter: ListFilter, me: MemberId): boolean {
     filter.involved.length > 0 ||
     amountBound(filter.minAmount) !== undefined ||
     amountBound(filter.maxAmount) !== undefined ||
-    filter.from !== '' ||
-    filter.to !== ''
+    dayBound(filter.from) !== undefined ||
+    dayBound(filter.to) !== undefined
   );
 }
 
@@ -83,8 +91,11 @@ export function filterOperations(operations: readonly OperationView[], filter: L
   const search = normalized(filter.search);
   const min = amountBound(filter.minAmount);
   const max = amountBound(filter.maxAmount);
+  const from = dayBound(filter.from);
+  const to = dayBound(filter.to);
   const involves = (operation: OperationView, member: MemberId) => myShare(operation.effect, member) > 0;
-  // Both pills pressed keep whatever involves me, an expense I advanced without a share of mine included.
+  // Both pills pressed keep whatever involves me, an expense I advanced without a share of mine included; with other payers chosen in the sheet,
+  // « Me concerne » narrows them like any other criterion.
   const either = filter.involvesMe && paidByMe(filter, me);
   return operations.filter((operation) => {
     const { payer, total } = operation.effect;
@@ -108,8 +119,8 @@ export function filterOperations(operations: readonly OperationView[], filter: L
       (min === undefined || total >= min) &&
       (max === undefined || total <= max) &&
       // ISO days compare as strings.
-      (filter.from === '' || operation.date >= filter.from) &&
-      (filter.to === '' || operation.date <= filter.to)
+      (from === undefined || operation.date >= from) &&
+      (to === undefined || operation.date <= to)
     );
   });
 }
