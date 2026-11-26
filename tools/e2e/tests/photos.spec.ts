@@ -59,6 +59,34 @@ async function loaded(page: Page): Promise<void> {
   await expect.poll(() => sheetPhoto(page).evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth)).toBeGreaterThan(0);
 }
 
+/** The photo versions of the members in the copy of the group the phone opens on (`openGroupDb`, the last read saved). */
+async function savedPhotos(page: Page, token: string): Promise<string[]> {
+  return page.evaluate(async (link) => {
+    const done = <T>(request: IDBRequest<T>) =>
+      new Promise<T>((resolve, reject) => {
+        request.addEventListener('success', () => {
+          resolve(request.result);
+        });
+        request.addEventListener('error', () => {
+          reject(request.error ?? new Error('IndexedDB request failed'));
+        });
+      });
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(link));
+    const db = await done(
+      indexedDB.open(`la-pince-group-${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`),
+    );
+    try {
+      const read = (await done(db.transaction('meta').objectStore('meta').get('read'))) as
+        { group?: { members?: { photo?: string | null }[] } } | undefined;
+      return (read?.group?.members ?? []).flatMap(({ photo }) => (typeof photo === 'string' ? [photo] : []));
+    } finally {
+      db.close();
+    }
+  }, token);
+}
+
+const versionOf = (src: string | null): string | undefined => src?.split('/').pop();
+
 /** The colors at the middle of each quadrant of the photo the sheet shows, as the server gives it, with its size as a JPEG. */
 async function served(page: Page): Promise<{ size: ReturnType<typeof jpegSize>; type: string | undefined; colors: number[][] }> {
   const src = (await sheetPhoto(page).getAttribute('src')) ?? '';
@@ -105,6 +133,7 @@ test('a photo set on a member reaches another browser, shows offline, is taken a
   await choosePhoto(page, 'Changer la photo de Basile', await picture(page, false), 'quadrants.png');
   await expect(page.getByText('Photo de Basile changée')).toBeVisible();
   await loaded(page);
+  const first = versionOf(await sheetPhoto(page).getAttribute('src'));
   // The middle square, reduced to a JPEG of 256 px, which the server serves as is.
   const photo = await served(page);
   expect(photo.size).toStrictEqual({ width: 256, height: 256 });
@@ -126,10 +155,14 @@ test('a photo set on a member reaches another browser, shows offline, is taken a
   await wake(second);
   await expect(sheetPhoto(second)).toHaveCount(0);
   await other.close();
+  // The screen shows at once the group a change answers, but the phone saves it only with a read that ends after it: a restart sooner opens on
+  // the copy from before. The same picture set again has the same version, which the copy must have lost first for the wait below to mean anything.
+  await expect.poll(() => savedPhotos(page, token)).not.toContain(first);
 
   // Set again, then shown after a restart without network: from the copy the service worker keeps.
   await choosePhoto(page, 'Changer la photo de Basile', await picture(page, false), 'quadrants.png');
   await loaded(page);
+  await expect.poll(() => savedPhotos(page, token)).toContain(versionOf(await sheetPhoto(page).getAttribute('src')));
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { level: 2, name: 'Basile' })).toBeVisible();
