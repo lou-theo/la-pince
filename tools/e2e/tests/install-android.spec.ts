@@ -86,7 +86,7 @@ test.describe('Samsung Internet', () => {
     await expect(guide.getByRole('heading', { level: 3 })).toHaveText(cannot);
     await expect(guide.getByRole('link', { name: 'Ouvrir dans Chrome' })).toHaveAttribute(
       'href',
-      `intent://${new URL(appUrl()).host}/lien#Intent;scheme=http;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(`${appUrl()}/lien`)};end`,
+      `intent://${new URL(appUrl()).host}/lien#Intent;scheme=http;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.android.chrome')};end`,
     );
 
     await guide.getByRole('button', { name: 'Copier le lien' }).click();

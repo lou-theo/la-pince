@@ -144,16 +144,17 @@ describe('guide of a context', () => {
 });
 
 describe('link to open the page in Chrome', () => {
-  it("names Chrome's package and falls back on the page itself, its fragment left out", () => {
+  const playStore = 'S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.android.chrome;end';
+
+  it("names Chrome's package and falls back on Chrome's page on the Play Store, the page's fragment left out", () => {
     expect(chromeIntentUrl('https://lapince.example/g/abc?x=1#top')).toBe(
-      'intent://lapince.example/g/abc?x=1#Intent;scheme=https;package=com.android.chrome;' +
-        'S.browser_fallback_url=https%3A%2F%2Flapince.example%2Fg%2Fabc%3Fx%3D1;end',
+      `intent://lapince.example/g/abc?x=1#Intent;scheme=https;package=com.android.chrome;${playStore}`,
     );
   });
 
   it('keeps the scheme and the port of a local server', () => {
     expect(chromeIntentUrl('http://localhost:5173/lien')).toBe(
-      'intent://localhost:5173/lien#Intent;scheme=http;package=com.android.chrome;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A5173%2Flien;end',
+      `intent://localhost:5173/lien#Intent;scheme=http;package=com.android.chrome;${playStore}`,
     );
   });
 });
