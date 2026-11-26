@@ -129,6 +129,9 @@ describe('my page', () => {
     expect(themes.getByRole('radio', { name: 'Sombre' })).toHaveProperty('checked', true);
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem('la-pince:theme')).toBe('dark');
+    await user.click(themes.getByRole('radio', { name: 'Auto' }));
+    expect(themes.getByRole('radio', { name: 'Auto' })).toHaveProperty('checked', true);
+    expect(document.documentElement.dataset.theme).toBe('light');
   });
 
   it('opens a sheet from the transfers back to them, and any other way back to the balances', async () => {

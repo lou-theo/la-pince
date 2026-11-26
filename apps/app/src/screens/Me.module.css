@@ -243,7 +243,7 @@ li:first-child > .member {
     inset 0 0 0 1px var(--color-border);
 }
 
-.themeOption:has(:focus-visible) {
+.themeOption:focus-within {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
