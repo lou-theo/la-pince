@@ -1,26 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { isPhotoRequest, MAX_PHOTOS, type PhotoCache, servePhoto } from './photoCache.ts';
+import { memoryCache } from '../testing/photo.ts';
+import { isPhotoRequest, keepSentPhoto, MAX_PHOTOS, preloadPhotos, servePhoto } from './photoCache.ts';
 
 const origin = 'https://la-pince.example';
 const address = (version: string) => `${origin}/api/groups/token/members/m1/photos/${version}`;
 const jpeg = (body = 'photo') => new Response(body, { status: 200, headers: { 'Content-Type': 'image/jpeg' } });
 
-/** A cache in memory, keys in the order they were put, as the Cache API keeps them. */
-function memoryCache(): PhotoCache & { readonly urls: () => string[] } {
-  const kept = new Map<string, Response>();
-  const urlOf = (request: RequestInfo | URL) => (request instanceof Request ? request.url : new URL(String(request), origin).href);
-  return {
-    match: (request) => Promise.resolve(kept.get(urlOf(request))?.clone()),
-    put: async (request, response) => {
-      kept.delete(urlOf(request));
-      kept.set(urlOf(request), new Response(await response.arrayBuffer(), response));
-    },
-    keys: () => Promise.resolve([...kept.keys()].map((url) => new Request(url))),
-    delete: (request) => Promise.resolve(kept.delete(urlOf(request))),
-    urls: () => [...kept.keys()],
-  };
-}
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('isPhotoRequest', () => {
   it('takes a GET of a version of a photo on the app’s origin, nothing else', () => {
@@ -69,5 +58,46 @@ describe('servePhoto', () => {
     }
     expect(cache.urls()).toHaveLength(MAX_PHOTOS);
     expect(cache.urls()[0]).toBe(address('v1'));
+  });
+});
+
+describe('keepSentPhoto', () => {
+  it('keeps the photo sent under its address, never over a copy already kept', async () => {
+    const cache = memoryCache();
+    vi.stubGlobal('caches', { open: () => Promise.resolve(cache) });
+    await keepSentPhoto('/api/groups/token/members/m1/photos/v1', new Blob(['sent']));
+    await keepSentPhoto('/api/groups/token/members/m1/photos/v1', new Blob(['again']));
+    expect(await (await cache.match('/api/groups/token/members/m1/photos/v1'))?.text()).toBe('sent');
+  });
+
+  it('does nothing where the browser has no cache', async () => {
+    vi.stubGlobal('caches', { open: () => Promise.reject(new DOMException('', 'SecurityError')) });
+    await expect(keepSentPhoto('/api/groups/token/members/m1/photos/v1', new Blob(['sent']))).resolves.toBeUndefined();
+  });
+});
+
+describe('preloadPhotos', () => {
+  it('asks only for the photos the cache lacks, and asks again next time for one that failed', async () => {
+    const cache = memoryCache();
+    vi.stubGlobal('caches', { open: () => Promise.resolve(cache) });
+    const asked: string[] = [];
+    const fetchFn = (request: Request) => {
+      asked.push(new URL(request.url).pathname);
+      return Promise.resolve(request.url.endsWith('v2') ? new Response('', { status: 404 }) : jpeg());
+    };
+    const urls = ['/api/groups/token/members/m1/photos/v1', '/api/groups/token/members/m2/photos/v2'];
+    await preloadPhotos(urls, fetchFn);
+    await preloadPhotos(urls, fetchFn);
+    expect(asked).toStrictEqual([urls[0], urls[1], urls[1]]);
+  });
+
+  it('asks for nothing where the browser has no cache', async () => {
+    vi.stubGlobal('caches', { open: () => Promise.reject(new DOMException('', 'SecurityError')) });
+    let asked = 0;
+    await preloadPhotos(['/api/groups/token/members/m1/photos/v1'], () => {
+      asked += 1;
+      return Promise.resolve(jpeg());
+    });
+    expect(asked).toBe(0);
   });
 });

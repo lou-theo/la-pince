@@ -150,7 +150,7 @@ export function fakeServer({
       if (replaced !== undefined) {
         return replaced;
       }
-      if (/^\/members\/[^/]+\/photos?(\/|$)/.test(url.slice(base.length)) && url.startsWith(base)) {
+      if (url.startsWith(base) && /^\/members\/[^/]+\/photos?(\/|$)/.test(url.slice(base.length))) {
         return photoRoute(url, init);
       }
       if (url === base && init?.method === 'PATCH') {

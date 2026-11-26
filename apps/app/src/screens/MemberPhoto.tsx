@@ -35,11 +35,8 @@ export interface PhotoEdit {
   readonly undo: () => void;
 }
 
-/**
- * The state of a change of photo, living with the sheet: leaving it forgets the band, which goes after `BAND_DURATION` anyway. `onStart`: a change
- * starts, whose band takes the place of any other.
- */
-export function usePhotoEdit(view: GroupView, id: MemberId, onStart: () => void): PhotoEdit {
+/** The state of a change of photo, living with the sheet: leaving it forgets the band, which goes after `BAND_DURATION` anyway. */
+export function usePhotoEdit(view: GroupView, id: MemberId): PhotoEdit {
   const [band, setBand] = useBand<PhotoBandState>();
   const [busy, setBusy] = useState(false);
   // A state is read at the next render: a second touch in the same frame would get through it.
@@ -51,7 +48,6 @@ export function usePhotoEdit(view: GroupView, id: MemberId, onStart: () => void)
     if (working.current) {
       return;
     }
-    onStart();
     working.current = true;
     setBusy(true);
     void work().finally(() => {

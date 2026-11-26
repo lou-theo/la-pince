@@ -91,13 +91,17 @@ export function AddMember({ online, taken, onAdd, photos, onPhoto }: AddMemberPr
       return;
     }
     const sent = chosen === undefined ? undefined : await onPhoto(id, chosen.photo);
+    if (!mounted.current) {
+      return;
+    }
+    // Said below the button, outside the sheet: still said when the sheet was closed while the photo was on its way.
+    if (sent?.ok === false) {
+      setNotice(m.add_member_photo_failed({ reason: photoErrorMessage(sent.error) }));
+    }
     if (gone()) {
       return;
     }
     setBusy(false);
-    if (sent?.ok === false) {
-      setNotice(m.add_member_photo_failed({ reason: photoErrorMessage(sent.error) }));
-    }
     close();
   };
   const choose = async (file: File) => {
@@ -109,12 +113,10 @@ export function AddMember({ online, taken, onAdd, photos, onPhoto }: AddMemberPr
     }
     setReducing(false);
     if (reduced.ok) {
-      setChosen((before) => {
-        if (before !== undefined) {
-          URL.revokeObjectURL(before.preview);
-        }
-        return { photo: reduced.photo, preview: URL.createObjectURL(reduced.photo) };
-      });
+      if (chosen !== undefined) {
+        URL.revokeObjectURL(chosen.preview);
+      }
+      setChosen({ photo: reduced.photo, preview: URL.createObjectURL(reduced.photo) });
     } else {
       setError(photoErrorMessage(reduced.error));
     }
@@ -141,12 +143,10 @@ export function AddMember({ online, taken, onAdd, photos, onPhoto }: AddMemberPr
           current.current = undefined;
           setId(undefined);
           setReducing(false);
-          setChosen((before) => {
-            if (before !== undefined) {
-              URL.revokeObjectURL(before.preview);
-            }
-            return undefined;
-          });
+          if (chosen !== undefined) {
+            URL.revokeObjectURL(chosen.preview);
+          }
+          setChosen(undefined);
           // Browsers give the focus back to the button by themselves; a test environment may not.
           opener.current?.focus();
         }}

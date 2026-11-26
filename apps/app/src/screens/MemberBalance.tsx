@@ -13,11 +13,11 @@ import { EditOffline } from './EditOffline.tsx';
 import { reimbursementHref } from './Forms.tsx';
 import layout from './Layout.module.css';
 import { BackBar } from './Layout.tsx';
-import { PhotoBadge, PhotoBand, usePhotoEdit } from './MemberPhoto.tsx';
+import { PhotoBadge, PhotoBand, type PhotoEdit, usePhotoEdit } from './MemberPhoto.tsx';
 import { RenameField } from './RenameField.tsx';
 import { PlusIcon, rowKey, TransferLine } from './Transfers.tsx';
 import { UndoBanner } from './UndoBanner.tsx';
-import { useSettle } from './useSettle.ts';
+import { type Settle, useSettle } from './useSettle.ts';
 import { type GroupView, isMember, memberOf, shortName, syncLine } from './view.ts';
 
 /** Label of a sheet's arrow, after the screen it leads back to. */
@@ -68,19 +68,33 @@ interface MemberSheetProps {
 export function MemberSheet({ view, id, here, you }: MemberSheetProps): ReactNode {
   const pays = useId();
   const receives = useId();
-  // The band of the last action, a payment or a change of photo: a new one replaces the other, as a new payment replaces the band of the last.
-  const [front, setFront] = useState<'settle' | 'photo'>('settle');
   const paying = useSettle(view);
+  const photo = usePhotoEdit(view, id);
+  // The band of the last action, a payment or a change of photo: the band set last is shown, so that the result of a photo sent before a payment,
+  // and coming after it, is still said; a new payment brings its band back at once.
+  const [last, setLast] = useState<{ settle: Settle['band']; photo: PhotoEdit['band']; front: 'settle' | 'photo' }>({
+    settle: paying.band,
+    photo: photo.band,
+    front: 'settle',
+  });
+  if (last.settle !== paying.band || last.photo !== photo.band) {
+    let front = last.front;
+    if (paying.band !== last.settle && paying.band !== undefined) {
+      front = 'settle';
+    }
+    if (photo.band !== last.photo && photo.band !== undefined) {
+      front = 'photo';
+    }
+    setLast({ settle: paying.band, photo: photo.band, front });
+  }
+  const { front } = last;
   const settle = {
     ...paying,
     pay: (transfer: Parameters<typeof paying.pay>[0]) => {
-      setFront('settle');
+      setLast((before) => ({ ...before, front: 'settle' }));
       paying.pay(transfer);
     },
   };
-  const photo = usePhotoEdit(view, id, () => {
-    setFront('photo');
-  });
   const sheet = memberSheet(id, view.balances, view.transfers, view.members);
   if (sheet === undefined) {
     return <p className={layout.muted}>{m.member_not_found()}</p>;

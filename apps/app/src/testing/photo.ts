@@ -1,5 +1,7 @@
 import { vi } from 'vitest';
 
+import type { PhotoCache } from '../storage/photoCache.ts';
+
 const segment = (marker: number, payload: readonly number[]) => [0xff, marker, (payload.length + 2) >> 8, (payload.length + 2) & 0xff, ...payload];
 
 /**
@@ -52,4 +54,20 @@ export function stubPicture({
     callback(new Blob([encode(quality ?? 1)], { type }));
   });
   return { drawn, qualities };
+}
+
+/** A cache in memory, keys in the order they were put, as the Cache API keeps them; a relative address resolves against the page's. */
+export function memoryCache(): PhotoCache & { readonly urls: () => string[] } {
+  const kept = new Map<string, Response>();
+  const urlOf = (request: RequestInfo | URL) => (request instanceof Request ? request.url : new URL(String(request), location.href).href);
+  return {
+    match: (request) => Promise.resolve(kept.get(urlOf(request))?.clone()),
+    put: async (request, response) => {
+      kept.delete(urlOf(request));
+      kept.set(urlOf(request), new Response(await response.arrayBuffer(), response));
+    },
+    keys: () => Promise.resolve([...kept.keys()].map((url) => new Request(url))),
+    delete: (request) => Promise.resolve(kept.delete(urlOf(request))),
+    urls: () => [...kept.keys()],
+  };
 }

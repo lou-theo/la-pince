@@ -41,15 +41,16 @@ function GroupLoader({ token }: { readonly token: string }) {
       store.applyGroup(result.value);
       return { ok: true };
     };
-    // `sent`: the photo this phone sent, kept under its address before the group shows it.
+    // `sent`: the photo this phone sent, kept under its address before the group shows it. Its version is the one its undo names: the group
+    // answered is read after the change, and may already carry a photo another phone set in between.
     const photoShown = async (result: ApiResult<PhotoChangeResponse, PhotoError>, id: MemberId, sent?: Blob): Promise<PhotoResult> => {
       if (!result.ok) {
         void store.reread();
         return result;
       }
       const { undo, ...group } = result.value;
-      const version = group.members.find((member) => member.id === id)?.photo;
-      if (sent !== undefined && version !== undefined) {
+      const version = undo?.version;
+      if (sent !== undefined && version !== undefined && version !== null) {
         await keepSentPhoto(photoUrl(token, id, version), sent).catch(() => undefined);
       }
       store.applyGroup(group);
@@ -66,18 +67,15 @@ function GroupLoader({ token }: { readonly token: string }) {
   });
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const ready = state.status === 'ready';
-  // After each read, the photos this phone lacks, so that they show offline (docs/decisions/photos-stockage.md).
+  // After each read or edit, the photos this phone lacks, so that they show offline (docs/decisions/photos-stockage.md).
+  const group = ready ? state.group : undefined;
   const readAt = ready ? state.readAt : undefined;
-  const photos =
-    ready && state.group.photos === true
-      ? state.group.members.flatMap((member) => (member.photo === undefined ? [] : [photoUrl(token, member.id, member.photo)]))
-      : [];
-  const photoList = photos.join(' ');
   useEffect(() => {
-    if (readAt !== undefined && photoList !== '') {
-      void preloadPhotos(photoList.split(' '), (request) => fetch(request)).catch(() => undefined);
+    if (group?.photos === true) {
+      const urls = group.members.flatMap((member) => (member.photo === undefined ? [] : [photoUrl(token, member.id, member.photo)]));
+      void preloadPhotos(urls, (request) => fetch(request)).catch(() => undefined);
     }
-  }, [readAt, photoList]);
+  }, [group, readAt, token]);
 
   useEffect(() => store.start(), [store]);
   useEffect(() => {
