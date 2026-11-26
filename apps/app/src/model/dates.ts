@@ -25,6 +25,11 @@ export function shortDay(day: string, today: string): string {
   if (days === 0 || days === -1) {
     return relativeDays.format(days, 'day');
   }
+  return compactDay(day, today);
+}
+
+/** A day (`YYYY-MM-DD`) in a few letters, never relative, for a label that follows « le »: `17 nov.`, with the year when not that of `today`. */
+export function compactDay(day: string, today: string): string {
   return (day.slice(0, 4) === today.slice(0, 4) ? shortDaysOfYear : shortDaysWithYear).format(midnight(day));
 }
 

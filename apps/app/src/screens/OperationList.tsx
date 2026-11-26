@@ -1,27 +1,38 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { dayHeading, localDay } from '../model/dates.ts';
 import type { OperationView } from '../model/group.ts';
+import { filterOperations, isActive, type ListFilter, type ResultHeading, resultHeading } from '../model/listFilter.ts';
 import { byDay, type MyPart, myPart } from '../model/listing.ts';
 import { formatCents } from '../model/money.ts';
 import { Avatar } from './Avatar.tsx';
 import layout from './Layout.module.css';
+import filters from './ListFilters.module.css';
 import styles from './OperationList.module.css';
 import { type GroupView, memberOf, sharesInOrder, who } from './view.ts';
 
-/** The group's operations, the latest day first, one card each saying in words what it means for me, and the button to add an expense. */
-export function OperationList({ view }: { readonly view: GroupView }): ReactNode {
+/**
+ * The group's operations the filters keep, the latest day first, one card each saying in words what it means for me, and the button to add an
+ * expense; a filtered list says above it what it counts.
+ */
+export function OperationList({ view, filter }: { readonly view: GroupView; readonly filter: ListFilter }): ReactNode {
   // Read once: the heading only drops the year of the current year.
   const [today] = useState(() => localDay(new Date()));
+  const active = isActive(filter, view.me);
+  const shown = useMemo(
+    () => (active ? filterOperations(view.operations, filter, view.me) : view.operations),
+    [active, view.operations, filter, view.me],
+  );
   return (
     <>
-      {view.operations.length === 0 ? (
-        <p className={layout.muted}>{m.operations_empty()}</p>
+      {active && shown.length > 0 ? <p className={filters.heading}>{headingText(resultHeading(shown, view.me))}</p> : null}
+      {shown.length === 0 ? (
+        <p className={layout.muted}>{active ? m.filters_empty() : m.operations_empty()}</p>
       ) : (
         <div className={styles.days}>
-          {byDay(view.operations).map(({ day, operations }) => (
+          {byDay(shown).map(({ day, operations }) => (
             <section key={day} className={styles.day}>
               <h2 className={styles.dayHeading}>{dayHeading(day, today)}</h2>
               <ul className={styles.list}>
@@ -82,6 +93,17 @@ function subLine(view: GroupView, operation: OperationView, part: MyPart): strin
     return to.length === 1 ? m.operation_reimbursed_you({ from: view.nameOf(payer) }) : who(view, operation);
   }
   return m.operation_reimbursed_amount({ from: view.nameOf(payer), amount, to: to.join(', ') });
+}
+
+function headingText(heading: ResultHeading): string {
+  const total = formatCents(heading.total);
+  if (heading.kind === 'reimbursement') {
+    return heading.count === 1
+      ? m.filters_heading_reimbursements_one({ total })
+      : m.filters_heading_reimbursements({ count: String(heading.count), total });
+  }
+  const share = formatCents(heading.myShare);
+  return heading.count === 1 ? m.filters_heading_one({ total, share }) : m.filters_heading({ count: String(heading.count), total, share });
 }
 
 function partLabel(part: MyPart): string {

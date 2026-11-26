@@ -15,6 +15,8 @@ export interface Chrome {
   readonly section: Section;
   readonly nav: boolean;
   readonly screenBar: boolean;
+  /** The band holds the filters of the list, on the list only. */
+  readonly filters: boolean;
 }
 
 // The routes match with or without one trailing slash, as wouter's do.
@@ -28,18 +30,18 @@ const trimmed = (location: string) => location.replace(/(.)\/$/, '$1');
 export function chromeOf(location: string): Chrome {
   const path = trimmed(location);
   if (path === '/soldes' || path.startsWith('/soldes/')) {
-    return { section: 'balances', nav: true, screenBar: path === '/soldes/virements' };
+    return { section: 'balances', nav: true, screenBar: path === '/soldes/virements', filters: false };
   }
   if (path === '/moi' || path === '/moi/groupe') {
-    return { section: path === '/moi' ? 'me' : 'members', nav: false, screenBar: true };
+    return { section: path === '/moi' ? 'me' : 'members', nav: false, screenBar: true, filters: false };
   }
   if (/^\/membres\/[^/]+$/.test(path)) {
-    return { section: 'sheet', nav: false, screenBar: true };
+    return { section: 'sheet', nav: false, screenBar: true, filters: false };
   }
   if (/^\/(nouvelle-depense|nouveau-remboursement|operations\/[^/]+\/modifier)$/.test(path)) {
-    return { section: 'form', nav: false, screenBar: true };
+    return { section: 'form', nav: false, screenBar: true, filters: false };
   }
-  return { section: 'operations', nav: true, screenBar: false };
+  return { section: 'operations', nav: true, screenBar: false, filters: path === '/' };
 }
 
 /** Menu at the bottom of the group's screens: the expenses and the balances, the current one marked. */
