@@ -48,7 +48,7 @@ export function InAppBanner({ token, platform }: InAppBannerProps): ReactNode {
           {copy === 'copied' ? m.install_in_app_paste() : copy === 'manual' ? m.install_in_app_manual() : m.install_in_app_text()}
         </p>
         {copy === 'manual' ? (
-          <ManualLink className={styles.manual} label={m.install_in_app_manual()} link={link} />
+          <ManualLink className={styles.manual} label={m.install_in_app_manual()} link={link} focus />
         ) : (
           <button
             className={copy === 'copied' ? `${styles.copy ?? ''} ${styles.copied ?? ''}` : styles.copy}

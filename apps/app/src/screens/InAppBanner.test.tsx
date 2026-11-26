@@ -43,12 +43,17 @@ describe('banner of a browser built into an app', () => {
   it('shows the link to copy by hand where the clipboard is refused', async () => {
     const user = userEvent.setup();
     clipboard(() => Promise.reject(new DOMException('denied', 'NotAllowedError')));
-    render(<InAppBanner token={token} platform={platformOf(instagram)} />);
+    const { rerender } = render(<InAppBanner token={token} platform={platformOf(instagram)} />);
     await user.click(screen.getByRole('button', { name: 'Copier le lien' }));
     const input = screen.getByRole<HTMLInputElement>('textbox', { name: 'Copie ce lien et colle-le dans ton navigateur :' });
     expect(input.value).toBe(`${location.origin}/g/${token}`);
     // In place of the button that had it, for a screen reader to reach the link.
     expect(document.activeElement).toBe(input);
+    // Taken once: a render of the screen around leaves the focus where the person put it.
+    const elsewhere = screen.getByRole('button', { name: 'Masquer ce message' });
+    elsewhere.focus();
+    rerender(<InAppBanner token={token} platform={platformOf(instagram)} />);
+    expect(document.activeElement).toBe(elsewhere);
     expect(screen.queryByRole('button', { name: 'Copier le lien' })).toBeNull();
   });
 

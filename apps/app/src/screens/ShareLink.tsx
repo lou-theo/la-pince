@@ -1,4 +1,4 @@
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { groupLink } from '../model/link.ts';
@@ -67,23 +67,30 @@ export function ShareLink({ token, title }: { readonly token: string; readonly t
 }
 
 /**
- * A link to copy by hand where the clipboard is refused: it takes the focus as it replaces the button that asked for the copy, so that a screen
- * reader reaches it, and is selected whole when focused.
+ * A link to copy by hand where the clipboard is refused, selected whole when focused. With `focus`, it takes the focus once shown, for when it
+ * replaces the button that asked for the copy: a screen reader then reaches it.
  */
 export function ManualLink({
   className,
   label,
   link,
+  focus = false,
 }: {
   readonly className?: string | undefined;
   readonly label: string;
   readonly link: string;
+  readonly focus?: boolean;
 }): ReactNode {
+  const input = useRef<HTMLInputElement>(null);
+  // Once, when shown: not at each render of the screen around, which would take the focus back from whatever has it.
+  useEffect(() => {
+    if (focus) {
+      input.current?.focus();
+    }
+  }, [focus]);
   return (
     <input
-      ref={(input) => {
-        input?.focus();
-      }}
+      ref={input}
       className={className}
       aria-label={label}
       readOnly
