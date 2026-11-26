@@ -43,7 +43,7 @@ describe('frame of a group', () => {
     await user.click(screen.getByRole('link', { name: 'Tu es Bruno' }));
     expect(screen.getByText(homeScreen).closest('[hidden]')).toBeNull();
 
-    // Left by the back gesture, the guide open: the notifications stay mounted, hidden, and their guide must not stay modal over the list.
+    // Left for the list, as by the back gesture, the guide open: the notifications stay mounted, hidden, and their guide must not stay modal over the list.
     await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
     expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
     act(() => {

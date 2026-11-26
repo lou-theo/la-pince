@@ -190,7 +190,7 @@ export function InstallGuideLink({ title, className = layout.link, children, pla
   const [shown, setShown] = useState<BuiltGuide | undefined>(undefined);
   useModal(dialog, shown !== undefined);
   // Left by the back gesture, the guide open: the screen of the link may stay mounted, hidden (the notifications of the group), and a modal left
-  // open there would leave the whole page inert. Closed at every change of address, which only the history can make while it is open.
+  // open there would leave the whole page inert. Closed at every change of address, the only way such a screen gets hidden.
   const [location] = useLocation();
   useEffect(() => {
     dialog.current?.close();
