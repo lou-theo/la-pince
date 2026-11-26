@@ -101,8 +101,6 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  /* iOS paints the bars of an installed app after the page's background: the root's, not only the body's. */
-  background: var(--color-background);
 }
 
 body {
