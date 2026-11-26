@@ -262,6 +262,41 @@ const openGuide = async (page: Page, demo: Demo, window: boolean, step: number, 
   await page.locator(`${sheet} svg image`).first().waitFor();
 };
 
+// What iPhone browsers say of themselves: under iOS 26, Safari keeps `OS 18_6` and tells its generation by `Version/26` alone.
+const iphones = {
+  safari18: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',
+  safari26: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1',
+  chrome:
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/140.0.7339.122 Mobile/15E148 Safari/604.1',
+} as const;
+type Iphone = keyof typeof iphones;
+
+/** Makes the page an iPhone's browser, before the app starts. */
+const asIphone = async (page: Page, browser: Iphone): Promise<void> => {
+  await page.addInitScript((userAgent) => {
+    Object.defineProperty(Navigator.prototype, 'userAgent', { get: () => userAgent });
+  }, iphones[browser]);
+};
+
+/**
+ * Opens the guide of an iPhone's browser from the offer, at rest, at its step `step` (1 first) by its main button; with `bar`, Safari 26's bar of
+ * buttons chosen at its first step rather than the compact one.
+ */
+const openIphoneGuide = async (page: Page, demo: Demo, browser: Iphone, step: number, bar = false): Promise<void> => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await asIphone(page, browser);
+  await chooseFirstMember(page, demo);
+  await page.locator(sheet).waitFor();
+  await page.locator(`${sheet} button`).first().click();
+  if (bar) {
+    await page.locator(`${sheet} button[aria-pressed]`).last().click();
+  }
+  for (let at = 1; at < step; at += 1) {
+    await page.locator(`${sheet} button`).last().click();
+  }
+  await page.locator(`${sheet} h3`).waitFor();
+};
+
 /** Screens of the app, in the order of the board; a PR that adds a screen adds it here. */
 export const screens: readonly Screen[] = [
   {
@@ -583,6 +618,69 @@ export const screens: readonly Screen[] = [
     reach: (page, demo) => openGuide(page, demo, false, 2),
   },
   {
+    name: 'installation-iphone-safari',
+    label: 'Guide de Safari avant iOS 26, 1 : Partager dans la barre du bas',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari18', 1),
+  },
+  {
+    name: 'installation-iphone-safari-defiler',
+    label: 'Guide de Safari avant iOS 26, 2 : la feuille de partage',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari18', 2),
+  },
+  {
+    name: 'installation-iphone-safari-ajouter',
+    label: 'Guide de Safari avant iOS 26, 4 : « Ajouter »',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari18', 4),
+  },
+  {
+    name: 'installation-iphone-safari-icone',
+    label: "Guide de l'iPhone, dernière étape : l'icône à toucher",
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari18', 5),
+  },
+  {
+    name: 'installation-iphone-26-choix',
+    label: 'Guide de Safari 26, 1 : quelle barre',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari26', 1),
+  },
+  {
+    name: 'installation-iphone-26-sombre',
+    label: 'Guide de Safari 26, quelle barre, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openIphoneGuide(page, demo, 'safari26', 1);
+    },
+  },
+  {
+    name: 'installation-iphone-26-menu',
+    label: 'Guide de Safari 26, barre compacte, 2 : « … »',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari26', 2),
+  },
+  {
+    name: 'installation-iphone-26-partager',
+    label: 'Guide de Safari 26, barre compacte, 3 : « Partager »',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari26', 3),
+  },
+  {
+    name: 'installation-iphone-26-ajouter',
+    label: 'Guide de Safari 26, 6 : « Ouvrir comme app web » et « Ajouter »',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari26', 6),
+  },
+  {
+    name: 'installation-iphone-26-barre',
+    label: 'Guide de Safari 26, barre avec Partager, 2 : Partager',
+    reach: (page, demo) => openIphoneGuide(page, demo, 'safari26', 2, true),
+  },
+  {
+    name: 'installation-iphone-chrome',
+    label: "Guide de Chrome sur iPhone, 1 : Partager au bout de l'adresse",
+    reach: (page, demo) => openIphoneGuide(page, demo, 'chrome', 1),
+  },
+  {
+    name: 'installation-iphone-chrome-entree',
+    label: "Guide de Chrome sur iPhone, 3 : « Ajouter à l'écran d'accueil »",
+    reach: (page, demo) => openIphoneGuide(page, demo, 'chrome', 3),
+  },
+  {
     name: 'groupe-introuvable',
     label: 'Groupe introuvable',
     reach: async (page: Page, demo: Demo): Promise<void> => {
@@ -621,6 +719,28 @@ export async function installJourney(page: Page, demo: Demo): Promise<void> {
   await page.locator(`${sheet} button`).last().click();
   await page.waitForTimeout(800);
 }
+
+/**
+ * Journey filmed for the GIF of an iPhone's guide: the offer at the arrival, then each step of the guide of `browser` long enough for its gesture to
+ * play, through `steps` steps; Safari 26 keeps its compact bar, the default.
+ */
+export const iphoneJourney =
+  (browser: Iphone, steps: number) =>
+  async (page: Page, demo: Demo): Promise<void> => {
+    await asIphone(page, browser);
+    await page.goto(`${demo.appUrl}/g/${demo.token}`);
+    await page.getByRole('list').waitFor();
+    await page.waitForTimeout(800);
+    await page.getByRole('list').getByRole('button').first().click();
+    await page.locator(sheet).waitFor();
+    await page.waitForTimeout(2500);
+    await page.locator(`${sheet} button`).first().click();
+    for (let step = 1; step <= steps; step += 1) {
+      await page.waitForTimeout(3600);
+      await page.locator(`${sheet} button`).last().click();
+    }
+    await page.waitForTimeout(800);
+  };
 
 /**
  * Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, filter it (« Me concerne », then the sheet: who paid,
