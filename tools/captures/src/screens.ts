@@ -346,6 +346,34 @@ const openOtherAndroidGuide = async (page: Page, demo: Demo, browser: OtherAndro
   await page.locator(`${sheet} h3`).waitFor();
 };
 
+// Instagram's browser on Android: a browser built into an app, which cannot install it.
+const instagram =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP2A.240805.005; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.102 Mobile Safari/537.36 Instagram 356.0.0.41.101 Android (34/14; 420dpi)';
+
+/** Opens the group in Instagram's browser, at rest, ready once the list is there; with `copy`, the link copied from the banner. */
+const openInApp = async (page: Page, demo: Demo, copy = false): Promise<void> => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.addInitScript((userAgent) => {
+    Object.defineProperty(Navigator.prototype, 'userAgent', { get: () => userAgent });
+  }, instagram);
+  await chooseFirstMember(page, demo);
+  await page.locator(operationLink).first().waitFor();
+  if (copy) {
+    await page.locator('main aside button').first().click();
+    await page.locator('main aside input, main aside button[class*="copied"]').first().waitFor();
+  }
+};
+
+/** Makes the page an Android Chrome whose offer was already made: the entries that start the guide again, without the offer over them. */
+const asAndroidChromeOffered = async (page: Page): Promise<void> => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('la-pince:install-offered', new Date().toISOString());
+  });
+  await asAndroidChrome(page, true);
+};
+
 /** Screens of the app, in the order of the board; a PR that adds a screen adds it here. */
 export const screens: readonly Screen[] = [
   {
@@ -776,6 +804,43 @@ export const screens: readonly Screen[] = [
     name: 'installation-raccourci-ajouter',
     label: 'Raccourci quand même, 3 : « Ajouter »',
     reach: (page, demo) => openOtherAndroidGuide(page, demo, 'samsung', 3),
+  },
+  {
+    name: 'installation-profil',
+    label: "Toi : l'entrée « Installer l'app », sur un téléphone",
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await asAndroidChromeOffered(page);
+      await openMe(page, demo);
+    },
+  },
+  {
+    name: 'installation-profil-sombre',
+    label: "Toi : l'entrée « Installer l'app », thème sombre",
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await asAndroidChromeOffered(page);
+      await openMe(page, demo);
+    },
+  },
+  {
+    name: 'installation-sans-groupe',
+    label: "Coller un lien : « Installer l'app », sur un téléphone",
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await asAndroidChromeOffered(page);
+      await page.goto(`${demo.appUrl}/lien`);
+      await page.locator('form').waitFor();
+      await settle(page);
+    },
+  },
+  { name: 'installation-integre', label: "Navigateur intégré d'Instagram : le bandeau", reach: (page, demo) => openInApp(page, demo) },
+  { name: 'installation-integre-copie', label: 'Navigateur intégré : lien copié', reach: (page, demo) => openInApp(page, demo, true) },
+  {
+    name: 'installation-integre-sombre',
+    label: 'Navigateur intégré, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openInApp(page, demo);
+    },
   },
   {
     name: 'groupe-introuvable',

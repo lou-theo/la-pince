@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { captureInstallPrompt, type InstallOutcome, type InstallPlatform } from '../install/platform.ts';
 import type { PromptState } from '../model/install.ts';
-import { wasInstallOffered } from '../storage/device.ts';
+import { rememberInstallOffered, wasInstallOffered } from '../storage/device.ts';
 import { fakeServer } from '../testing/fake-server.ts';
 import { rememberMember } from '../testing/groupDb.ts';
 import { renderApp } from '../testing/render.tsx';
@@ -206,6 +206,17 @@ describe('offer to install the app', () => {
     expect(screen.getByRole('heading', { name: 'Touche « Installer » ci-dessous' })).toBeDefined();
   });
 
+  it('says where to find it again in a group, not on the screen without one', () => {
+    const hint = 'Tu le retrouveras dans ton profil.';
+    render(<InstallOffer title="Week-end" platform={browser().platform} />);
+    expect(screen.getByText(hint)).toBeDefined();
+    cleanup();
+    localStorage.clear();
+    render(<InstallOffer platform={browser().platform} />);
+    expect(screen.getByRole('dialog', { name: offerTitle })).toBeDefined();
+    expect(screen.queryByText(hint)).toBeNull();
+  });
+
   it('remembers « Plus tard »', async () => {
     const user = userEvent.setup();
     render(<InstallOffer platform={browser().platform} />);
@@ -217,7 +228,12 @@ describe('offer to install the app', () => {
   });
 
   it('offers nothing, and keeps the offer to make, where no guide fits yet or nothing is to install', () => {
-    const cases = [browser({ userAgent: inApp }), browser({ userAgent: windows }), browser({ standalone: true })];
+    const cases = [
+      browser({ userAgent: windows }),
+      browser({ standalone: true }),
+      // A browser built into an app: its banner instead, and the offer kept for the real browser.
+      browser({ userAgent: inApp }),
+    ];
     for (const { platform } of cases) {
       render(<InstallOffer platform={platform} />);
       expect(screen.queryByRole('dialog')).toBeNull();
@@ -387,7 +403,11 @@ describe('guides of the iPhone', () => {
 
   it('opens the guide from a link as often as asked, without the offer, and shows no link where no guide fits', async () => {
     const user = userEvent.setup();
-    render(<InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ userAgent: safari18, prompt: 'absent' }).platform} />);
+    render(
+      <InstallGuideLink title="Week-end" platform={browser({ userAgent: safari18, prompt: 'absent' }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
     for (let time = 0; time < 2; time += 1) {
       await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
@@ -400,20 +420,58 @@ describe('guides of the iPhone', () => {
     expect(wasInstallOffered()).toBe(false);
     cleanup();
 
-    render(<InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ userAgent: windows }).platform} />);
+    render(
+      <InstallGuideLink title="Week-end" platform={browser({ userAgent: windows }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
+    );
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('opens the guide from the entry of my page after the offer was turned down, and shows nothing where there is nothing to install', async () => {
+    const user = userEvent.setup();
+    const { platform } = browser();
+    render(<InstallOffer title="Week-end" platform={platform} />);
+    await user.click(screen.getByRole('button', { name: 'Plus tard' }));
+    cleanup();
+
+    render(
+      <InstallGuideLink title="Week-end" platform={platform}>
+        Installer l'app
+      </InstallGuideLink>,
+    );
+    await user.click(screen.getByRole('button', { name: "Installer l'app" }));
+    expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Touche « Installer » ci-dessous' })).toBeDefined();
+    cleanup();
+
+    for (const { platform: elsewhere } of [browser({ standalone: true }), browser({ userAgent: windows }), browser({ userAgent: inApp })]) {
+      render(
+        <InstallGuideLink title="Week-end" platform={elsewhere}>
+          Installer l'app
+        </InstallGuideLink>,
+      );
+      expect(screen.queryByRole('button')).toBeNull();
+      cleanup();
+    }
   });
 
   it("falls back on Chrome's menu from a link when the window cannot open", async () => {
     const user = userEvent.setup();
-    render(<InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ answer: 'unavailable' }).platform} />);
+    render(
+      <InstallGuideLink title="Week-end" platform={browser({ answer: 'unavailable' }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
+    );
     await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
     await user.click(screen.getByRole('button', { name: 'Installer' }));
     expect(await screen.findByRole('heading', { name: 'Touche ⋮ en haut à droite' })).toBeDefined();
     cleanup();
 
     render(
-      <InstallGuideLink title="Week-end" label="Voir comment faire" platform={browser({ userAgent: samsung, answer: 'unavailable' }).platform} />,
+      <InstallGuideLink title="Week-end" platform={browser({ userAgent: samsung, answer: 'unavailable' }).platform}>
+        Voir comment faire
+      </InstallGuideLink>,
     );
     await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
     await user.click(screen.getByRole('button', { name: 'Installer' }));
@@ -466,6 +524,44 @@ describe('moment of the offer', () => {
     renderApp('/', fakeServer({ token, group }).fetch);
     expect(await screen.findByRole('dialog', { name: offerTitle })).toBeDefined();
     expect(screen.getByRole('heading', { name: 'Ouvre ton groupe' })).toBeDefined();
+    vi.restoreAllMocks();
+  });
+
+  it('starts the guide again from my page and from the screen without a group, once the offer is made', async () => {
+    const user = userEvent.setup();
+    rememberInstallOffered();
+    await rememberMember(token, 'm1');
+    onAndroidChrome();
+    const location = renderApp(`/g/${token}/moi`, fakeServer({ token, group }).fetch);
+    await user.click(await screen.findByRole('button', { name: "Installer l'app" }));
+    expect(screen.getByRole('heading', { name: 'Touche « Installer » ci-dessous' })).toBeDefined();
+    // Left by the back gesture, the guide open: no dialog stays over the screen hidden.
+    act(() => {
+      location.navigate(`/g/${token}`);
+    });
+    expect(document.querySelector('dialog[open]')).toBeNull();
+    cleanup();
+
+    renderApp('/lien', fakeServer({ token, group }).fetch);
+    await user.click(screen.getByRole('button', { name: "Installer l'app" }));
+    expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
+    vi.restoreAllMocks();
+  });
+
+  it('shows the banner in a browser built into an app, the group behind, and keeps the offer for the real browser', async () => {
+    await rememberMember(token, 'm1');
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(inApp);
+    const location = renderApp(`/g/${token}`, fakeServer({ token, group }).fetch);
+    expect(await screen.findByRole('complementary', { name: "Installer l'app" })).toBeDefined();
+    expect(screen.getByText('Tu es Alice')).toBeDefined();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(wasInstallOffered()).toBe(false);
+    // Not over the forms and my page, which keep the whole screen; nothing to start on my page either.
+    act(() => {
+      location.navigate(`/g/${token}/moi`);
+    });
+    expect(screen.queryByRole('complementary', { name: "Installer l'app" })).toBeNull();
+    expect(screen.queryByRole('button', { name: "Installer l'app" })).toBeNull();
     vi.restoreAllMocks();
   });
 });

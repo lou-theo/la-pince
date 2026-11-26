@@ -3,18 +3,21 @@
 
 const lastGroupKey = 'la-pince:last-group';
 
-function read(key: string): string | undefined {
+// The storage is reached inside the `try`: merely reading `localStorage` throws where site data is blocked.
+const local = () => localStorage;
+
+function read(key: string, storage = local): string | undefined {
   try {
-    return localStorage.getItem(key) ?? undefined;
+    return storage().getItem(key) ?? undefined;
   } catch {
     return undefined;
   }
 }
 
 /** Whether the value was stored. */
-function write(key: string, value: string): boolean {
+function write(key: string, value: string, storage = local): boolean {
   try {
-    localStorage.setItem(key, value);
+    storage().setItem(key, value);
     return true;
   } catch {
     // Not remembered: asked again on the next visit.
@@ -39,4 +42,16 @@ let offeredInMemory = false;
 export const wasInstallOffered = (): boolean => offeredInMemory || read(installOfferedKey) !== undefined;
 export const rememberInstallOffered = (): void => {
   offeredInMemory ||= !write(installOfferedKey, new Date().toISOString());
+};
+
+const inAppBannerKey = 'la-pince:in-app-banner-hidden';
+let hiddenInMemory = false;
+
+/**
+ * Whether the banner of a browser built into an app was hidden: kept for the page's session, so that it does not come back at each screen, and
+ * shown again when a link opens the app anew.
+ */
+export const wasInAppBannerHidden = (): boolean => hiddenInMemory || read(inAppBannerKey, () => sessionStorage) !== undefined;
+export const hideInAppBanner = (): void => {
+  hiddenInMemory ||= !write(inAppBannerKey, '1', () => sessionStorage);
 };

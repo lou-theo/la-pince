@@ -1,4 +1,4 @@
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { groupLink } from '../model/link.ts';
@@ -61,18 +61,44 @@ export function ShareLink({ token, title }: { readonly token: string; readonly t
       <p className={`${layout.muted ?? ''} ${styles.status ?? ''}`} aria-live="polite">
         {outcome === 'copied' ? m.share_copied() : outcome === 'manual' ? m.share_manual() : null}
       </p>
-      {outcome === 'manual' ? (
-        <input
-          className={styles.input}
-          aria-label={m.share_manual()}
-          readOnly
-          value={link}
-          onFocus={(event) => {
-            // `select()` leaves nothing selected on iOS Safari.
-            event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
-          }}
-        />
-      ) : null}
+      {outcome === 'manual' ? <ManualLink className={styles.input} label={m.share_manual()} link={link} /> : null}
     </div>
+  );
+}
+
+/**
+ * A link to copy by hand where the clipboard is refused, selected whole when focused. With `focus`, it takes the focus once shown, for when it
+ * replaces the button that asked for the copy: a screen reader then reaches it.
+ */
+export function ManualLink({
+  className,
+  label,
+  link,
+  focus = false,
+}: {
+  readonly className?: string | undefined;
+  readonly label: string;
+  readonly link: string;
+  readonly focus?: boolean;
+}): ReactNode {
+  const input = useRef<HTMLInputElement>(null);
+  // Once, when shown: not at each render of the screen around, which would take the focus back from whatever has it.
+  useEffect(() => {
+    if (focus) {
+      input.current?.focus();
+    }
+  }, [focus]);
+  return (
+    <input
+      ref={input}
+      className={className}
+      aria-label={label}
+      readOnly
+      value={link}
+      onFocus={(event) => {
+        // `select()` leaves nothing selected on iOS Safari.
+        event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
+      }}
+    />
   );
 }

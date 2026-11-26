@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { tokenFromLink } from '../model/link.ts';
+import { InstallGuideLink } from './InstallOffer.tsx';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
 import styles from './PasteLink.module.css';
@@ -55,6 +56,8 @@ export function PasteLink(): ReactNode {
           {m.home_open()}
         </button>
       </form>
+      {/* Without a group, no profile: the guide starts again from here. */}
+      <InstallGuideLink title={m.app_name()}>{m.install_entry()}</InstallGuideLink>
     </Layout>
   );
 }

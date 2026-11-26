@@ -7,6 +7,8 @@ import { sheetHref } from '../model/back.ts';
 import { AddMember } from './AddMember.tsx';
 import { Avatar } from './Avatar.tsx';
 import { EditOffline } from './EditOffline.tsx';
+import installStyles from './Install.module.css';
+import { InstallGuideLink } from './InstallOffer.tsx';
 import { BackBar } from './Layout.tsx';
 import styles from './Me.module.css';
 import { MemberSheet } from './MemberBalance.tsx';
@@ -77,18 +79,7 @@ export function GroupMembers({ view }: { readonly view: GroupView }): ReactNode 
                 <Avatar member={member} view={view} />
                 <span className={styles.memberName}>{member.name}</span>
                 {member.id === view.me ? <span className={styles.youTag}>{m.you()}</span> : null}
-                <svg
-                  className={styles.chevron}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
+                <Chevron />
               </Link>
             </li>
           ))}
@@ -101,11 +92,42 @@ export function GroupMembers({ view }: { readonly view: GroupView }): ReactNode 
   );
 }
 
-/** What my page sets on this phone, below my sheet: the notifications of the group, and who I am. */
+function Chevron() {
+  return (
+    <svg
+      className={styles.chevron}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+/** The way to the guide of this browser on my page, La Pince peeking: on a phone outside of the installed app only (`InstallGuideLink`). */
+export function InstallEntry({ title }: { readonly title: string }): ReactNode {
+  return (
+    <InstallGuideLink title={title} className={`${styles.card ?? ''} ${styles.rowButton ?? ''} ${styles.installRow ?? ''}`}>
+      <img className={installStyles.peek} src="/logo.svg" alt="" />
+      <span className={`${styles.rowText ?? ''} ${styles.installText ?? ''}`}>{m.install_entry()}</span>
+      <Chevron />
+    </InstallGuideLink>
+  );
+}
+
+/** What my page sets on this phone, below my sheet: the install of the app, the notifications of the group, and who I am. */
 export function OnThisPhone({
+  install,
   notifications,
   onChangeMember,
 }: {
+  /** The way to the guide, shown on a phone outside of the installed app only. */
+  readonly install: ReactNode;
   readonly notifications: ReactNode;
   readonly onChangeMember: () => void;
 }): ReactNode {
@@ -116,6 +138,7 @@ export function OnThisPhone({
       <h2 id={title} className={styles.sectionTitle}>
         {m.me_on_this_phone()}
       </h2>
+      {install}
       <div className={`${styles.card ?? ''} ${styles.notifications ?? ''}`}>{notifications}</div>
       <button
         className={`${styles.card ?? ''} ${styles.rowButton ?? ''}`}

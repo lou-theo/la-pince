@@ -14,11 +14,12 @@ import { Balances } from './Balances.tsx';
 import { BottomNav, chromeOf } from './BottomNav.tsx';
 import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
+import { InAppBanner } from './InAppBanner.tsx';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
 import { useListFilter } from './listFilterMemory.ts';
 import { ListFilterBar } from './ListFilters.tsx';
-import { GroupMembers, OnThisPhone, You } from './Me.tsx';
+import { GroupMembers, InstallEntry, OnThisPhone, You } from './Me.tsx';
 import { MemberBalance } from './MemberBalance.tsx';
 import { Notifications } from './Notifications.tsx';
 import { OperationDetail } from './OperationDetail.tsx';
@@ -126,6 +127,8 @@ export function GroupHome({
       nav={chrome.nav ? <BottomNav section={chrome.section} /> : undefined}
       screenBar={chrome.screenBar}
     >
+      {/* On the screens of the menu only: the forms and my page keep the whole screen. */}
+      {chrome.nav ? <InAppBanner token={token} /> : null}
       {readError === 'network' ? (
         // Without network the app keeps working: the outbox leaves on its own once the server answers.
         <div className={styles.offline} role="status">
@@ -178,6 +181,8 @@ export function GroupHome({
       {/* Below my sheet on the tab “Toi”; mounted on every screen of the group, at the same place, so that each opening saves the subscription again. */}
       <div hidden={chrome.section !== 'me'}>
         <OnThisPhone
+          // Mounted on my page only: a guide left open over a screen hidden since (back gesture) would leave the page inert.
+          install={chrome.section === 'me' ? <InstallEntry title={group.title} /> : null}
           notifications={<Notifications token={token} title={group.title} member={currentMember.id} />}
           onChangeMember={() => {
             setChoosing(true);
