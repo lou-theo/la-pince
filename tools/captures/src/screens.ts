@@ -109,7 +109,54 @@ const openAddMember = async (page: Page, demo: Demo): Promise<void> => {
   await openGroupTab(page, demo);
   await page.route('**/api/groups/*/members', () => new Promise(() => undefined));
   await page.locator('main li:last-child > button').click();
-  await page.locator('dialog[open] input').fill('Zoé');
+  await page.locator('dialog[open] input[type="text"]').fill('Zoé');
+};
+
+/** The camera badge on the corner of the big avatar of a sheet. */
+const photoBadge = 'main span[aria-hidden="true"] + button:has(+ input[type="file"])';
+
+/** A picture drawn by the browser, flat quadrants (never a photo of a person), as a file to choose. */
+const drawnPicture = async (page: Page): Promise<{ name: string; mimeType: string; buffer: Buffer }> => {
+  // A page of its own, at one pixel per pixel: the phone's context would scale and zoom the drawing.
+  const browser = page.context().browser();
+  if (browser === null) {
+    throw new Error('no browser to draw the picture');
+  }
+  const painter = await browser.newPage({ viewport: { width: 1200, height: 800 }, deviceScaleFactor: 1 });
+  try {
+    await painter.setContent(
+      '<body style="margin:0;display:grid;grid-template:1fr 1fr/1fr 1fr;width:1200px;height:800px">' +
+        ['#e9a23b', '#3b82c4', '#2f6b4f', '#c2410c'].map((color) => `<div style="background:${color}"></div>`).join('') +
+        '</body>',
+    );
+    return { name: 'motif.png', mimeType: 'image/png', buffer: await painter.screenshot() };
+  } finally {
+    await painter.close();
+  }
+};
+
+/**
+ * Changes the photo of the member of the sheet open, ready once the band offering to undo it shows. The server's answer is made up from the group
+ * as it is, the photo unchanged: the shot must not change the demo group the next screens are shot on.
+ */
+const changePhoto = async (page: Page, demo: Demo): Promise<void> => {
+  await page.route('**/api/groups/*/members/*/photo', async (route) => {
+    const group = (await (await page.request.get(`${demo.appUrl}/api/groups/${demo.token}`)).json()) as { members: { id: string; photo?: string }[] };
+    const id = /members\/([^/]+)\/photo$/.exec(route.request().url())?.[1];
+    const version = group.members.find((member) => member.id === id)?.photo ?? null;
+    await route.fulfill({ json: { ...group, ...(version === null ? {} : { undo: { version, previous: null } }) } });
+  });
+  const chooser = page.waitForEvent('filechooser');
+  // Awaited below: a version without the badge fails at its click first.
+  chooser.catch(() => undefined);
+  await page.locator(photoBadge).click();
+  const menu = page.locator('dialog[open] button:not([aria-label])').first();
+  // A member with a photo: the sheet offers to choose another, first.
+  if ((await menu.count()) > 0) {
+    await menu.click();
+  }
+  await (await chooser).setFiles(await drawnPicture(page));
+  await page.locator('main [role="status"] button').waitFor();
 };
 
 // The pills under the group's title: « Me concerne », « Payé par moi », then the one that opens the sheet of the filters; the sheet, in the band
@@ -310,11 +357,38 @@ export const screens: readonly Screen[] = [
     label: 'Renommer un membre sur sa fiche',
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await openSheetFromGroup(page, demo);
-      await page.locator('main h2 + button').first().click();
+      // Visible: the sheet of a photo, closed, has a title and a button too.
+      await page.locator('main h2 + button:visible').first().click();
       await page.locator('main form input[type="text"]').waitFor();
     },
   },
+  {
+    name: 'fiche-photo-menu',
+    label: "Pastille d'un membre avec photo : choisir ou retirer",
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openSheetFromGroup(page, demo);
+      await page.locator(photoBadge).click();
+      await page.locator('dialog[open]').waitFor();
+    },
+  },
+  {
+    name: 'fiche-photo-changee',
+    label: 'Photo changée : bandeau « Annuler » de 15 s',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openSheetFromGroup(page, demo);
+      await changePhoto(page, demo);
+    },
+  },
   { name: 'ajout-membre', label: 'Nouveau membre, feuille ouverte', reach: openAddMember },
+  {
+    name: 'ajout-membre-photo',
+    label: 'Nouveau membre, photo choisie',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openAddMember(page, demo);
+      await page.locator('dialog[open] input[type="file"]').setInputFiles(await drawnPicture(page));
+      await page.locator('dialog[open] button img').waitFor();
+    },
+  },
   {
     name: 'ajout-membre-sombre',
     label: 'Nouveau membre, thème sombre',

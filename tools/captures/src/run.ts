@@ -123,7 +123,7 @@ export async function captures({ before, out: outOption, print }: Options): Prom
       try {
         await git(root, 'worktree', 'add', '--detach', checkout, sha);
         await exec('pnpm', ['install', '--frozen-lockfile', '--prefer-offline'], { cwd: checkout });
-        const stack = await startStack(checkout);
+        const stack = await startStack(checkout, browser);
         const dir = join(out, 'avant');
         if (stack === undefined) {
           print('  no app in this version: every screen absent');
@@ -143,7 +143,7 @@ export async function captures({ before, out: outOption, print }: Options): Prom
     }
 
     print(`version after: ${branch}`);
-    const stack = await startStack(root);
+    const stack = await startStack(root, browser);
     if (stack === undefined) {
       throw new Error('this checkout has no app (apps/app/vite.config.ts)');
     }

@@ -12,6 +12,10 @@ import {
   type Operation,
   operationBatchResponseSchema,
   pageFollowsQuery,
+  type PhotoChangeResponse,
+  photoChangeResponseSchema,
+  type PhotoUndo,
+  type PhotoVersion,
   pushKeyResponseSchema,
   type RevisionId,
   type RevisionResult,
@@ -42,6 +46,18 @@ export type NotificationError = LoadError | 'notifications_disabled' | 'too_many
  */
 export type GroupEditError = LoadError | 'invalid_request' | 'member_not_found' | 'too_many_members' | 'member_name_taken';
 
+/**
+ * Why a change of a member's photo failed: `photos_disabled`, the instance keeps no photos; `photo_changed`, another phone changed the photo since,
+ * which an undo never overwrites; `photos_unavailable`, the instance could not store it (daily quota, outage), to try again later;
+ * `invalid_request`, the server refused the picture; `member_not_found`, no such member in the group.
+ */
+export type PhotoError = LoadError | 'photos_disabled' | 'photo_changed' | 'photos_unavailable' | 'invalid_request' | 'member_not_found';
+
+/** Address of a version of a member's photo, whose bytes never change: browsers and the service worker keep it as long as they like. */
+export function photoUrl(token: string, member: MemberId, version: PhotoVersion): string {
+  return `/api/groups/${encodeURIComponent(token)}/members/${encodeURIComponent(member)}/photos/${version}`;
+}
+
 export interface ApiClient {
   readonly fetchGroup: (token: string) => Promise<ApiResult<GroupResponse>>;
   /** One page of the changes since the cursor, given with the revision received at it past 0, checked to answer that very query. */
@@ -64,6 +80,12 @@ export interface ApiClient {
   readonly addMember: (token: string, member: NewMember) => Promise<ApiResult<GroupResponse, GroupEditError>>;
   /** Renames a member; gives the whole group. */
   readonly renameMember: (token: string, id: MemberId, name: string) => Promise<ApiResult<GroupResponse, GroupEditError>>;
+  /** Sets a member's photo, a JPEG the phone reduced; gives the whole group and the undo of the change, absent when there is nothing to put back. */
+  readonly setPhoto: (token: string, id: MemberId, photo: Blob) => Promise<ApiResult<PhotoChangeResponse, PhotoError>>;
+  /** Takes a member's photo away, their initial showing again; gives the whole group and the undo of the removal. */
+  readonly removePhoto: (token: string, id: MemberId) => Promise<ApiResult<PhotoChangeResponse, PhotoError>>;
+  /** Undoes a change of photo by the undo its answer gave, as is: only the server knows which version the change replaced. */
+  readonly undoPhoto: (token: string, id: MemberId, undo: PhotoUndo) => Promise<ApiResult<PhotoChangeResponse, PhotoError>>;
 }
 
 // A request still pending past this is given up as a network failure: an answer that never ends would otherwise hold the outbox lock forever.
@@ -77,6 +99,8 @@ interface Schema<T> {
 const noBody: Schema<undefined> = { safeParse: () => ({ success: true, data: undefined }) };
 
 const EDIT_ERRORS = ['group_not_found', 'invalid_request', 'member_not_found', 'too_many_members', 'member_name_taken'] as const;
+
+const PHOTO_ERRORS = ['group_not_found', 'photos_disabled', 'photo_changed', 'photos_unavailable', 'invalid_request', 'member_not_found'] as const;
 
 const NOTIFICATION_ERRORS = [
   'group_not_found',
@@ -172,6 +196,19 @@ export function createApiClient(fetchFn: Fetch): ApiClient {
     },
     async renameMember(token, id, name) {
       return read(`${groupUrl(token)}/members/${encodeURIComponent(id)}`, groupResponseSchema, EDIT_ERRORS, sendJson('PATCH', { name }));
+    },
+    async setPhoto(token, id, photo) {
+      return read(`${groupUrl(token)}/members/${encodeURIComponent(id)}/photo`, photoChangeResponseSchema, PHOTO_ERRORS, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/jpeg' },
+        body: photo,
+      });
+    },
+    async removePhoto(token, id) {
+      return read(`${groupUrl(token)}/members/${encodeURIComponent(id)}/photo`, photoChangeResponseSchema, PHOTO_ERRORS, { method: 'DELETE' });
+    },
+    async undoPhoto(token, id, undo) {
+      return read(`${groupUrl(token)}/members/${encodeURIComponent(id)}/photo/undo`, photoChangeResponseSchema, PHOTO_ERRORS, sendJson('POST', undo));
     },
   };
 }

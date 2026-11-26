@@ -93,7 +93,7 @@ export function GroupMembers({ view }: { readonly view: GroupView }): ReactNode 
             </li>
           ))}
           <li>
-            <AddMember online={view.edit.online} taken={taken} onAdd={view.edit.addMember} />
+            <AddMember online={view.edit.online} taken={taken} onAdd={view.edit.addMember} photos={view.edit.photos} onPhoto={view.edit.setPhoto} />
           </li>
         </ul>
       </section>

@@ -157,6 +157,11 @@ li:first-child > .member {
   height: 1.125rem;
 }
 
+/* A member added whose photo did not go, said under the button. */
+.notice {
+  padding: 0 var(--space-3) var(--space-3);
+}
+
 /* On this phone: the notifications, then who I am. */
 .notifications {
   padding: var(--space-3) var(--space-4);
@@ -249,6 +254,53 @@ li:first-child > .member {
 .close svg {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+/* The photo, optional, beside the first name. */
+.identity {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.photoPick {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  overflow: hidden;
+  border: 2px dashed var(--color-muted);
+  border-radius: 50%;
+  background: var(--color-background);
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.photoPick svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.photoPick:has(img) {
+  border-style: solid;
+  border-color: transparent;
+}
+
+.photoPick img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoPick:disabled {
+  cursor: progress;
+}
+
+.identity .field {
+  flex: 1;
 }
 
 .field {

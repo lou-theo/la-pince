@@ -7,7 +7,7 @@ import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { liveOperations, overlay, sortedBalances, transfers } from '../model/group.ts';
 import { paidByMe } from '../model/listFilter.ts';
-import type { LoadError } from '../sync/client.ts';
+import { type LoadError, photoUrl } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
 import { Avatar } from './Avatar.tsx';
 import { Balances } from './Balances.tsx';
@@ -43,8 +43,8 @@ interface GroupHomeProps {
   readonly readError: LoadError | undefined;
   readonly onRetry: () => void;
   readonly enqueue: (operation: Operation) => Promise<QueueResult>;
-  /** Edits of the group, the network aside, which this screen tells. */
-  readonly edits: Omit<GroupEdit, 'online'>;
+  /** Edits of the group, the network and the photos aside, which this screen tells. */
+  readonly edits: Omit<GroupEdit, 'online' | 'photos'>;
 }
 
 /** Home of a group: asks “who I am” until this phone knows it, then shows the group as that member, its operations and its balances. */
@@ -103,11 +103,12 @@ export function GroupHome({
       return id === currentMember.id ? `${name} (${m.you()})` : name;
     },
     members: group.members,
+    photoOf: (member) => (group.photos === true && member.photo !== undefined ? photoUrl(token, member.id, member.photo) : undefined),
     enqueue,
     readAt,
     title: group.title,
     // Who has no network cannot edit: a read that failed for that says so, and so does the browser.
-    edit: { ...edits, online: online && readError !== 'network' },
+    edit: { ...edits, online: online && readError !== 'network', photos: group.photos === true },
   };
   return (
     <Layout

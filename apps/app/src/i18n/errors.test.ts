@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { editErrorMessage, notificationErrorMessage, queueErrorMessage } from './errors.ts';
+import { editErrorMessage, notificationErrorMessage, photoErrorMessage, queueErrorMessage } from './errors.ts';
 
 describe('queueErrorMessage', () => {
   it('tells why a revision could not be queued', () => {
@@ -28,5 +28,18 @@ describe('editErrorMessage', () => {
     expect(editErrorMessage('member_not_found')).toBe("Ce membre n'est plus dans le groupe : recharge la page.");
     expect(editErrorMessage('invalid_request')).toBe("Le serveur refuse ce texte : vérifie qu'il n'est pas vide, puis réessaie.");
     expect(editErrorMessage('network')).toBe('Le serveur ne répond pas : vérifie ta connexion, puis réessaie.');
+  });
+});
+
+describe('photoErrorMessage', () => {
+  it('tells why a change of photo failed or the picture could not become one, and the read errors as a read tells them', () => {
+    expect(photoErrorMessage('photo_changed')).toBe('La photo a été changée entre-temps.');
+    expect(photoErrorMessage('photos_unavailable')).toBe('Photo non enregistrée, réessaie plus tard.');
+    expect(photoErrorMessage('photos_disabled')).toBe('Ce serveur ne garde pas de photos.');
+    expect(photoErrorMessage('invalid_request')).toBe('Le serveur refuse cette photo : choisis-en une autre.');
+    expect(photoErrorMessage('unreadable')).toBe('Format non pris en charge, choisis une autre photo.');
+    expect(photoErrorMessage('not_encoded')).toBe("Ce navigateur n'a pas pu préparer la photo : choisis-en une autre.");
+    expect(photoErrorMessage('member_not_found')).toBe("Ce membre n'est plus dans le groupe : recharge la page.");
+    expect(photoErrorMessage('network')).toBe('Le serveur ne répond pas : vérifie ta connexion, puis réessaie.');
   });
 });
