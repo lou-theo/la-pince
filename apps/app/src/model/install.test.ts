@@ -22,6 +22,7 @@ const userAgents: readonly (readonly [name: string, userAgent: string, context: 
   ['Android WebView of an app', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36`, 'in_app'],
   ['Facebook, Android', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/489.0.0.47.103;]`, 'in_app'],
   ['Instagram, Android', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36 Instagram 356.0.0.41.101 Android (34/14; 420dpi)`, 'in_app'],
+  ['Messenger, Android', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36 [FB_IAB/MESSENGER;FBAV/480.0.0.44.109;]`, 'in_app'],
   ['Safari, iPhone', `${iosBase} Version/18.7 Mobile/15E148 Safari/604.1`, 'ios_safari'],
   [
     'Safari 18, iPhone',
@@ -73,6 +74,11 @@ const userAgents: readonly (readonly [name: string, userAgent: string, context: 
   [
     'Facebook, iPhone',
     `${iosBase} Mobile/22H20 [FBAN/FBIOS;FBAV/489.0.0.36.106;FBBV/680000000;FBDV/iPhone14,5;FBMD/iPhone;FBSN/iOS;FBSV/18.7]`,
+    'in_app',
+  ],
+  [
+    'Messenger, iPhone',
+    `${iosBase} Mobile/22H20 [FBAN/MessengerForiOS;FBAV/480.0.0.38.109;FBBV/670000000;FBDV/iPhone14,5;FBMD/iPhone;FBSN/iOS;FBSV/18.7]`,
     'in_app',
   ],
   ['Instagram, iPhone', `${iosBase} Mobile/22H20 Instagram 356.0.0.24.84 (iPhone14,5; iOS 18_7; fr_FR; fr; scale=3.00; 1170x2532)`, 'in_app'],
