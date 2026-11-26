@@ -6,6 +6,7 @@ import { detectInstallContext } from '../model/install.ts';
 import { groupLink } from '../model/link.ts';
 import { hideInAppBanner, wasInAppBannerHidden } from '../storage/device.ts';
 import styles from './Install.module.css';
+import { ManualLink } from './ShareLink.tsx';
 
 type Copy = 'copied' | 'manual';
 
@@ -47,22 +48,25 @@ export function InAppBanner({ token, platform }: InAppBannerProps): ReactNode {
           {copy === 'copied' ? m.install_in_app_paste() : copy === 'manual' ? m.install_in_app_manual() : m.install_in_app_text()}
         </p>
         {copy === 'manual' ? (
-          <input
-            className={styles.manual}
-            aria-label={m.install_in_app_manual()}
-            readOnly
-            value={link}
-            onFocus={(event) => {
-              // `select()` leaves nothing selected on iOS Safari.
-              event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
-            }}
-          />
+          <ManualLink className={styles.manual} label={m.install_in_app_manual()} link={link} />
         ) : (
           <button
             className={copy === 'copied' ? `${styles.copy ?? ''} ${styles.copied ?? ''}` : styles.copy}
             type="button"
             onClick={() => void copyLink()}
           >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="8" y="8" width="12" height="12" rx="2" />
+              <path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" />
+            </svg>
             {copy === 'copied' ? m.install_in_app_copied() : m.install_in_app_copy()}
           </button>
         )}

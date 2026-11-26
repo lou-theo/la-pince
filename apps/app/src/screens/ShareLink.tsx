@@ -61,18 +61,37 @@ export function ShareLink({ token, title }: { readonly token: string; readonly t
       <p className={`${layout.muted ?? ''} ${styles.status ?? ''}`} aria-live="polite">
         {outcome === 'copied' ? m.share_copied() : outcome === 'manual' ? m.share_manual() : null}
       </p>
-      {outcome === 'manual' ? (
-        <input
-          className={styles.input}
-          aria-label={m.share_manual()}
-          readOnly
-          value={link}
-          onFocus={(event) => {
-            // `select()` leaves nothing selected on iOS Safari.
-            event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
-          }}
-        />
-      ) : null}
+      {outcome === 'manual' ? <ManualLink className={styles.input} label={m.share_manual()} link={link} /> : null}
     </div>
+  );
+}
+
+/**
+ * A link to copy by hand where the clipboard is refused: it takes the focus as it replaces the button that asked for the copy, so that a screen
+ * reader reaches it, and is selected whole when focused.
+ */
+export function ManualLink({
+  className,
+  label,
+  link,
+}: {
+  readonly className?: string | undefined;
+  readonly label: string;
+  readonly link: string;
+}): ReactNode {
+  return (
+    <input
+      ref={(input) => {
+        input?.focus();
+      }}
+      className={className}
+      aria-label={label}
+      readOnly
+      value={link}
+      onFocus={(event) => {
+        // `select()` leaves nothing selected on iOS Safari.
+        event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
+      }}
+    />
   );
 }
