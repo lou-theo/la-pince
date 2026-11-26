@@ -22,6 +22,8 @@ export {
   memberUpdateSchema,
   type NewMember,
   newMemberSchema,
+  type PhotoChangeResponse,
+  photoChangeResponseSchema,
 } from './group.ts';
 export {
   compareIds,
@@ -65,6 +67,16 @@ export {
   seqSchema,
   unknownMembers,
 } from './operation.ts';
+export {
+  isAcceptedPhoto,
+  jpegSize,
+  MAX_PHOTO_BYTES,
+  MAX_PHOTO_SIDE,
+  type PhotoUndo,
+  photoUndoSchema,
+  type PhotoVersion,
+  photoVersionSchema,
+} from './photo.ts';
 export {
   type ApiError,
   apiErrorSchema,

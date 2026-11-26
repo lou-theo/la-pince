@@ -65,6 +65,7 @@ describe('PATCH /api/groups/:token', () => {
         { id: 'alice', name: 'ALICE' },
         { id: 'bob', name: 'BOB' },
       ],
+      photos: true,
     };
     expect(await groupOf(await renameGroup(token, { title: '  Week-end at the sea \n' }))).toStrictEqual([200, expected]);
     expect(await read(token)).toStrictEqual(expected);
@@ -97,6 +98,7 @@ describe('POST /api/groups/:token/members', () => {
         { id: 'alice', name: 'ALICE' },
         { id: 'aaron', name: 'Aaron' },
       ],
+      photos: true,
     };
     expect(await groupOf(await addMember(token, { id: 'aaron', name: ' Aaron ' }))).toStrictEqual([201, expected]);
     expect(await read(token)).toStrictEqual(expected);
@@ -200,6 +202,7 @@ describe('PATCH /api/groups/:token/members/:id', () => {
           { id: 'bob', name: 'Bobby' },
           { id: 'carol', name: 'CAROL' },
         ],
+        photos: true,
       },
     ]);
     // Operations name members by id: the same changes, so the same balances.
@@ -304,6 +307,7 @@ describe('a re-import after editing in the app', () => {
         { id: 'gus', name: 'Gus' },
         { id: 'hal', name: 'HAL' },
       ],
+      photos: true,
     });
     expect(await positions(id)).toStrictEqual({ alice: 0, bob: 1, gus: 2, hal: 3 });
   });

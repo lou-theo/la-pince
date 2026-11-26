@@ -8,11 +8,17 @@ import {
   groupIdSchema,
   type GroupResponse,
   groupUpdateSchema,
+  isAcceptedPhoto,
   MAX_BATCH_REVISIONS,
+  MAX_PHOTO_BYTES,
+  type MemberId,
   memberIdSchema,
   memberUpdateSchema,
   newMemberSchema,
   type OperationBatchResponse,
+  type PhotoChangeResponse,
+  photoUndoSchema,
+  photoVersionSchema,
   type PushKeyResponse,
   revisionIdSchema,
   subscribeRequestSchema,
@@ -20,7 +26,8 @@ import {
 } from '@la-pince/core';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { type Context, Hono } from 'hono';
+import { type Context, Hono, type MiddlewareHandler } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 
 import { addMember, readMembers, updateMember } from './members.ts';
@@ -34,12 +41,15 @@ import {
   queueTest,
   saveSubscription,
 } from './notifications.ts';
+import { type Changed, dropPhotos, type PhotoStore, readPhoto, removePhoto, setPhoto, undoPhoto } from './photos.ts';
 import { groups, members, operations, revisions } from './schema.ts';
 import { applyBatch } from './store.ts';
 
 export interface Env extends NotificationEnv {
   /** Secret of the admin route; the route refuses everything when it is not set. */
   readonly ADMIN_TOKEN?: string;
+  /** KV namespace of the members' photos; without it the instance keeps no photos (`photos_disabled`) and the group shows none. */
+  readonly PHOTOS?: KVNamespace;
 }
 
 type AppContext = Context<{ Bindings: Env }>;
@@ -58,7 +68,7 @@ async function sha256(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function apiError(context: AppContext, error: ApiError['error'], status: 400 | 401 | 404 | 409): Response {
+function apiError(context: AppContext, error: ApiError['error'], status: 400 | 401 | 404 | 409 | 503): Response {
   return context.json({ error } satisfies ApiError, status);
 }
 
@@ -68,16 +78,27 @@ async function findGroup(context: AppContext): Promise<GroupId | undefined> {
   return group === undefined ? undefined : groupIdSchema.parse(group.id);
 }
 
-async function readGroup(db: ReturnType<typeof drizzle>, groupId: GroupId): Promise<GroupResponse> {
+async function readGroup(env: Env, groupId: GroupId): Promise<GroupResponse> {
+  const db = drizzle(env.DB);
   const [group] = await db.select({ title: groups.title }).from(groups).where(eq(groups.id, groupId));
   const rows = await db
-    .select({ id: members.id, name: members.name })
+    .select({ id: members.id, name: members.name, photo: members.photo })
     .from(members)
     .where(eq(members.groupId, groupId))
     // Two members may share a position when the admin route and the app add one at the same time: the id settles the order the same way each time.
     .orderBy(asc(members.position), asc(members.id));
-  // Read back from what the server wrote, which went through the same schemas.
-  return { title: group?.title ?? '', members: rows.map((row) => ({ id: memberIdSchema.parse(row.id), name: row.name })) };
+  // Read back from what the server wrote, which went through the same schemas. An instance whose KV binding was removed shows initials again
+  // rather than photos it can no longer serve.
+  const photos = env.PHOTOS !== undefined;
+  return {
+    title: group?.title ?? '',
+    members: rows.map((row) => ({
+      id: memberIdSchema.parse(row.id),
+      name: row.name,
+      ...(photos && row.photo !== null ? { photo: photoVersionSchema.parse(row.photo) } : {}),
+    })),
+    ...(photos ? { photos: true as const } : {}),
+  };
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -87,7 +108,7 @@ app.get('/api/groups/:token', async (context) => {
   if (groupId === undefined) {
     return apiError(context, 'group_not_found', 404);
   }
-  return context.json(await readGroup(drizzle(context.env.DB), groupId));
+  return context.json(await readGroup(context.env, groupId));
 });
 
 // The routes that edit the group answer with the whole group, as `GET` does, so that the phone shows what the server holds. The last write wins
@@ -103,7 +124,7 @@ app.patch('/api/groups/:token', async (context) => {
   }
   const db = drizzle(context.env.DB);
   await db.update(groups).set({ title: update.data.title }).where(eq(groups.id, groupId));
-  return context.json(await readGroup(db, groupId));
+  return context.json(await readGroup(context.env, groupId));
 });
 
 app.post('/api/groups/:token/members', async (context) => {
@@ -119,7 +140,7 @@ app.post('/api/groups/:token/members', async (context) => {
   if (outcome === 'too_many_members' || outcome === 'member_name_taken') {
     return apiError(context, outcome, 409);
   }
-  return context.json(await readGroup(drizzle(context.env.DB), groupId), outcome === 'added' ? 201 : 200);
+  return context.json(await readGroup(context.env, groupId), outcome === 'added' ? 201 : 200);
 });
 
 app.patch('/api/groups/:token/members/:id', async (context) => {
@@ -139,7 +160,116 @@ app.patch('/api/groups/:token/members/:id', async (context) => {
   if (outcome === 'member_name_taken') {
     return apiError(context, outcome, 409);
   }
-  return context.json(await readGroup(drizzle(context.env.DB), groupId));
+  return context.json(await readGroup(context.env, groupId));
+});
+
+// Photos of the members: bytes in KV under keys that never change, versions in D1 (`photos.ts`), which holds no image. KV may show a write elsewhere
+// only up to a minute later, which a key that never changes turns into a missing photo for that while, never a stale one. Every route answers
+// `photos_disabled` on an instance without the binding, and no answer but a photo is kept by a cache: a photo missing a moment ago may be there now.
+const photoRoutes: MiddlewareHandler<{ Bindings: Env }> = (context, next) => {
+  context.header('Cache-Control', 'no-store');
+  return context.env.PHOTOS === undefined ? Promise.resolve(apiError(context, 'photos_disabled', 404)) : next();
+};
+app.use('/api/groups/:token/members/:id/photo', photoRoutes);
+app.use('/api/groups/:token/members/:id/photo/*', photoRoutes);
+app.use('/api/groups/:token/members/:id/photos/*', photoRoutes);
+
+function photosOf(env: Env): PhotoStore {
+  // Never taken: `photoRoutes` answers before any photo route on an instance without the binding.
+  if (env.PHOTOS === undefined) {
+    throw new Error('photo route reached without the PHOTOS binding');
+  }
+  return env.PHOTOS;
+}
+
+// Answers a photo change with the whole group, as the other routes that edit it do, and the undo of the change; then deletes the bytes no version
+// points to any more.
+const photoErrorStatus = { member_not_found: 404, photo_changed: 409, photos_unavailable: 503 } as const;
+type PhotoError = keyof typeof photoErrorStatus;
+
+async function answerPhotoChange(
+  context: AppContext,
+  groupId: GroupId,
+  memberId: MemberId,
+  changed: Changed<'set' | 'undone' | 'removed' | 'replayed' | PhotoError>,
+): Promise<Response> {
+  const { outcome, dropped, undo } = changed;
+  if (outcome === 'member_not_found' || outcome === 'photo_changed' || outcome === 'photos_unavailable') {
+    return apiError(context, outcome, photoErrorStatus[outcome]);
+  }
+  if (dropped.length > 0) {
+    context.executionCtx.waitUntil(dropPhotos(context.env.DB, photosOf(context.env), groupId, memberId, dropped));
+  }
+  return context.json({ ...(await readGroup(context.env, groupId)), ...(undo === undefined ? {} : { undo }) } satisfies PhotoChangeResponse);
+}
+
+// The phone sends the JPEG it reduced, as is: a body of another type, too heavy or too wide only comes from a bug or a forged client.
+app.put(
+  '/api/groups/:token/members/:id/photo',
+  bodyLimit({ maxSize: MAX_PHOTO_BYTES, onError: (context) => context.json({ error: 'invalid_request' } satisfies ApiError, 400) }),
+  async (context) => {
+    const memberId = memberIdSchema.safeParse(context.req.param('id'));
+    const type = context.req.header('Content-Type')?.split(';')[0]?.trim().toLowerCase();
+    if (!memberId.success || type !== 'image/jpeg') {
+      return apiError(context, 'invalid_request', 400);
+    }
+    const bytes = new Uint8Array(await context.req.arrayBuffer());
+    if (!isAcceptedPhoto(bytes)) {
+      return apiError(context, 'invalid_request', 400);
+    }
+    const groupId = await findGroup(context);
+    if (groupId === undefined) {
+      return apiError(context, 'group_not_found', 404);
+    }
+    return answerPhotoChange(context, groupId, memberId.data, await setPhoto(context.env.DB, photosOf(context.env), groupId, memberId.data, bytes));
+  },
+);
+
+app.post('/api/groups/:token/members/:id/photo/undo', async (context) => {
+  const memberId = memberIdSchema.safeParse(context.req.param('id'));
+  const undo = photoUndoSchema.safeParse(await context.req.json().catch(() => undefined));
+  if (!memberId.success || !undo.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  return answerPhotoChange(context, groupId, memberId.data, await undoPhoto(context.env.DB, groupId, memberId.data, undo.data));
+});
+
+app.delete('/api/groups/:token/members/:id/photo', async (context) => {
+  const memberId = memberIdSchema.safeParse(context.req.param('id'));
+  if (!memberId.success) {
+    return apiError(context, 'invalid_request', 400);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  return answerPhotoChange(context, groupId, memberId.data, await removePhoto(context.env.DB, groupId, memberId.data));
+});
+
+// The address names the version, whose bytes never change: kept a year by the browser, `private` because the link's token is in the address.
+app.get('/api/groups/:token/members/:id/photos/:version', async (context) => {
+  const memberId = memberIdSchema.safeParse(context.req.param('id'));
+  const version = photoVersionSchema.safeParse(context.req.param('version'));
+  if (!memberId.success || !version.success) {
+    return apiError(context, 'photo_not_found', 404);
+  }
+  const groupId = await findGroup(context);
+  if (groupId === undefined) {
+    return apiError(context, 'group_not_found', 404);
+  }
+  const bytes = await readPhoto(photosOf(context.env), groupId, memberId.data, version.data);
+  if (bytes === null) {
+    return apiError(context, 'photo_not_found', 404);
+  }
+  return context.body(bytes, 200, {
+    'Content-Type': 'image/jpeg',
+    'Cache-Control': 'private, max-age=31536000, immutable',
+    'X-Content-Type-Options': 'nosniff',
+  });
 });
 
 app.get('/api/groups/:token/changes', async (context) => {
@@ -303,7 +433,7 @@ app.put('/api/admin/groups/:id', async (context) => {
         .onConflictDoUpdate({ target: [members.groupId, members.id], set: { name: member.name } }),
     ),
   ]);
-  return context.json(await readGroup(db, id));
+  return context.json(await readGroup(context.env, id));
 });
 
 export default {
