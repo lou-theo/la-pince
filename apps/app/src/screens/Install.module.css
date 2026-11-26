@@ -132,6 +132,122 @@
   cursor: pointer;
 }
 
+/* Under « Plus tard », drawn up to it. */
+.profileHint {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  text-align: center;
+}
+
+/* The entry of my page: La Pince peeking, the words, a chevron, on a card of its own. */
+.entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.entryText {
+  flex: 1;
+  font-weight: 600;
+}
+
+.chevron {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--color-muted);
+}
+
+.peek {
+  flex: none;
+  width: 2.125rem;
+  height: 2.125rem;
+  transform-origin: 50% 80%;
+  animation: pince-peek 3.2s 1s ease-in-out infinite;
+}
+
+/* The banner of a browser built into an app, above the group: discreet, the group still in reach below. */
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1) var(--space-3) var(--space-3);
+  border: 1px solid var(--color-brand);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  animation: banner-in 0.4s 0.2s ease-out both;
+}
+
+.banner .peek {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-top: 0.125rem;
+}
+
+.bannerBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.bannerText {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.copy {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 0.625rem;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copied {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+/* The link to copy by hand, where the clipboard is refused. */
+.manual {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.banner .close {
+  margin-top: calc(-1 * var(--space-2));
+  background: transparent;
+  color: var(--color-muted);
+}
+
 .secondary {
   min-height: 3rem;
   border: 1.5px solid var(--color-accent);
@@ -298,6 +414,33 @@
   }
 }
 
+@keyframes pince-peek {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+
+  68% {
+    transform: translateY(-3px) rotate(-8deg);
+  }
+
+  76% {
+    transform: rotate(5deg);
+  }
+
+  84% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
 @keyframes nudge {
   0%,
   70%,
@@ -319,7 +462,9 @@
   .hop,
   .bob,
   .instructionText,
-  .nudge {
+  .nudge,
+  .peek,
+  .banner {
     animation: none;
   }
 

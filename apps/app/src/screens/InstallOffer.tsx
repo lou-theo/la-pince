@@ -151,6 +151,8 @@ export function InstallOffer({ title, platform: given }: InstallOfferProps): Rea
           <button className={styles.later} type="button" onClick={close}>
             {m.install_offer_later()}
           </button>
+          {/* Said in a group only: without one, the entry is on the screen itself, under the link to paste. */}
+          {title === undefined ? null : <p className={`${styles.muted ?? ''} ${styles.profileHint ?? ''}`}>{m.install_offer_profile()}</p>}
         </div>
       ) : null}
       {phase.name === 'guide' ? (
@@ -173,15 +175,18 @@ interface InstallGuideLinkProps {
   /** Title of the group shown on the phone drawn by the guide. */
   readonly title: string;
   readonly label: string;
+  /** A link in a text by default; `row` a line of my page, La Pince peeking at its start. */
+  readonly variant?: 'link' | 'row';
   /** The browser's APIs by default; tests hand a fake one. */
   readonly platform?: InstallPlatform;
 }
 
 /**
- * A link to the guide of this browser, for a screen that needs the app installed (the notifications on an iPhone): the guide opens at once,
- * without the offer, as often as asked. Nothing where no guide fits.
+ * A link to the guide of this browser, for a screen that needs the app installed (the notifications on an iPhone) and to start it again after the
+ * offer (my page, the screen without a group): the guide opens at once, without the offer, as often as asked, whatever came of the offer. Nothing
+ * where no guide fits: on a computer, in the installed app, in a browser built into an app (its banner says what to do).
  */
-export function InstallGuideLink({ title, label, platform: given }: InstallGuideLinkProps): ReactNode {
+export function InstallGuideLink({ title, label, variant = 'link', platform: given }: InstallGuideLinkProps): ReactNode {
   const { platform, context, guide } = useBrowserGuide(given);
   const dialog = useRef<HTMLDialogElement>(null);
   const [shown, setShown] = useState<BuiltGuide | undefined>(undefined);
@@ -197,7 +202,7 @@ export function InstallGuideLink({ title, label, platform: given }: InstallGuide
   return (
     <>
       <button
-        className={layout.link}
+        className={variant === 'row' ? styles.entry : layout.link}
         type="button"
         onClick={() => {
           if (isBuilt(guide)) {
@@ -205,7 +210,26 @@ export function InstallGuideLink({ title, label, platform: given }: InstallGuide
           }
         }}
       >
-        {label}
+        {variant === 'row' ? (
+          <>
+            <img className={styles.peek} src="/logo.svg" alt="" />
+            <span className={styles.entryText}>{label}</span>
+            <svg
+              className={styles.chevron}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </>
+        ) : (
+          label
+        )}
       </button>
       {shown === undefined ? null : (
         <dialog

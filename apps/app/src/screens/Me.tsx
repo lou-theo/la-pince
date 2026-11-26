@@ -101,11 +101,14 @@ export function GroupMembers({ view }: { readonly view: GroupView }): ReactNode 
   );
 }
 
-/** What my page sets on this phone, below my sheet: the notifications of the group, and who I am. */
+/** What my page sets on this phone, below my sheet: the install of the app, the notifications of the group, and who I am. */
 export function OnThisPhone({
+  install,
   notifications,
   onChangeMember,
 }: {
+  /** The way to the guide, shown on a phone outside of the installed app only. */
+  readonly install: ReactNode;
   readonly notifications: ReactNode;
   readonly onChangeMember: () => void;
 }): ReactNode {
@@ -116,6 +119,7 @@ export function OnThisPhone({
       <h2 id={title} className={styles.sectionTitle}>
         {m.me_on_this_phone()}
       </h2>
+      {install}
       <div className={`${styles.card ?? ''} ${styles.notifications ?? ''}`}>{notifications}</div>
       <button
         className={`${styles.card ?? ''} ${styles.rowButton ?? ''}`}

@@ -14,6 +14,8 @@ import { Balances } from './Balances.tsx';
 import { BottomNav, chromeOf } from './BottomNav.tsx';
 import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
+import { InAppBanner } from './InAppBanner.tsx';
+import { InstallGuideLink } from './InstallOffer.tsx';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
 import { useListFilter } from './listFilterMemory.ts';
@@ -126,6 +128,8 @@ export function GroupHome({
       nav={chrome.nav ? <BottomNav section={chrome.section} /> : undefined}
       screenBar={chrome.screenBar}
     >
+      {/* On the screens of the menu only: the forms and my page keep the whole screen. */}
+      {chrome.nav ? <InAppBanner token={token} /> : null}
       {readError === 'network' ? (
         // Without network the app keeps working: the outbox leaves on its own once the server answers.
         <div className={styles.offline} role="status">
@@ -178,6 +182,7 @@ export function GroupHome({
       {/* Below my sheet on the tab “Toi”; mounted on every screen of the group, at the same place, so that each opening saves the subscription again. */}
       <div hidden={chrome.section !== 'me'}>
         <OnThisPhone
+          install={<InstallGuideLink title={group.title} label={m.install_entry()} variant="row" />}
           notifications={<Notifications token={token} title={group.title} member={currentMember.id} />}
           onChangeMember={() => {
             setChoosing(true);

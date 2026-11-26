@@ -85,3 +85,50 @@ test('« Plus tard » is remembered, on the screen without a group too', async (
   await page.waitForTimeout(3500);
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+test('the guide starts again from my page after « Plus tard », and from the screen without a group', async ({ page }) => {
+  await fakeInstallWindow(page);
+  await page.goto(`${appUrl()}/g/${token}`);
+  await page.getByRole('button', { name: 'Agathe', exact: true }).click();
+  await page.getByRole('dialog', { name: "Installer l'app ?" }).getByRole('button', { name: 'Plus tard' }).click();
+
+  await page.getByRole('link', { name: /Tu es Agathe/ }).click();
+  await page.getByRole('button', { name: "Installer l'app" }).click();
+  const guide = page.getByRole('dialog', { name: "Installer l'app" });
+  await guide.getByRole('button', { name: 'Installer' }).click();
+  await expect(guide.getByRole('heading', { name: "C'est installé : touche l'icône La Pince sur ton écran d'accueil" })).toBeVisible();
+  expect(await openedWindows(page)).toBe(1);
+  await guide.getByRole('button', { name: "J'ai compris" }).click();
+
+  await page.goto(`${appUrl()}/lien`);
+  await page.getByRole('button', { name: "Installer l'app" }).click();
+  await expect(page.getByRole('dialog', { name: "Installer l'app" })).toBeVisible();
+});
+
+test.describe('in the browser built into an app', () => {
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP2A.240805.005; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.102 Mobile Safari/537.36 Instagram 356.0.0.41.101 Android (34/14; 420dpi)',
+    permissions: ['clipboard-read', 'clipboard-write'],
+  });
+
+  test('a banner hands the link to open in the browser, the group in reach, and nothing is offered', async ({ page }) => {
+    await page.goto(`${appUrl()}/g/${token}`);
+    await page.getByRole('button', { name: 'Agathe', exact: true }).click();
+    const banner = page.getByRole('complementary', { name: "Installer l'app" });
+    await expect(banner).toBeVisible();
+    await banner.getByRole('button', { name: 'Copier le lien' }).click();
+    await expect(banner.getByText('Colle le lien dans ton navigateur')).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${appUrl()}/g/${token}`);
+
+    // The group stays in reach; past the 3 s a browser is given for its window, nothing offered.
+    await page.getByRole('link', { name: 'Soldes' }).click();
+    await expect(banner).toBeVisible();
+    await page.waitForTimeout(3500);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await banner.getByRole('button', { name: 'Masquer ce message' }).click();
+    await expect(banner).toHaveCount(0);
+    await page.getByRole('link', { name: 'Dépenses' }).click();
+    await expect(page.getByRole('complementary', { name: "Installer l'app" })).toHaveCount(0);
+  });
+});
