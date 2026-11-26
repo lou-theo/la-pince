@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
 import type { InstallOutcome } from '../install/platform.ts';
+import type { InstallGuide as InstallGuideOf } from '../model/install.ts';
 import styles from './Install.module.css';
 import {
   addPoint,
@@ -28,16 +29,29 @@ import {
 import { useMounted } from './useMounted.ts';
 
 /** The guides built so far; the others offer nothing yet. */
-export type BuiltGuide = 'android_button' | 'android_menu' | 'ios_safari' | 'ios_safari_26' | 'ios_share';
+export const builtGuides = [
+  'android_button',
+  'android_menu',
+  'ios_safari',
+  'ios_safari_26',
+  'ios_share',
+] as const satisfies readonly InstallGuideOf[];
+export type BuiltGuide = (typeof builtGuides)[number];
 
 /** The bars of Safari 26 or later the guide tells apart, chosen at its first step. */
 type ChosenBar = Exclude<SafariBar, 'classic'>;
 
 type Step = {
   readonly instruction: string;
-  readonly note?: string;
+  readonly note?: string | undefined;
 } & (
-  | { readonly choice?: false; readonly tap: ScenePoint; readonly ripple?: 'light' | 'green'; readonly swipe?: boolean; readonly screen: ReactNode }
+  | {
+      readonly choice?: false;
+      readonly tap: ScenePoint;
+      readonly ripple?: 'light' | 'green' | undefined;
+      readonly swipe?: boolean | undefined;
+      readonly screen: ReactNode;
+    }
   // The choice of Safari's bar, in place of the phone drawn.
   | { readonly choice: true }
 );
@@ -77,7 +91,7 @@ function shareSteps(
     scrollNote,
     touch,
     webApp,
-  }: { readonly entry: string; readonly scroll: string; readonly scrollNote?: string; readonly touch: string; readonly webApp: boolean },
+  }: { readonly entry: string; readonly scroll: string; readonly scrollNote?: string | undefined; readonly touch: string; readonly webApp: boolean },
 ): readonly Step[] {
   const sheet = (scrolled: 'moving' | 'scrolled') => (
     <>
@@ -94,7 +108,7 @@ function shareSteps(
     />
   );
   return [
-    { instruction: scroll, ...(scrollNote === undefined ? {} : { note: scrollNote }), tap: sharePoints.swipe, swipe: true, screen: sheet('moving') },
+    { instruction: scroll, note: scrollNote, tap: sharePoints.swipe, swipe: true, screen: sheet('moving') },
     { instruction: touch, tap: sharePoints.entry, ripple: 'green', screen: sheet('scrolled') },
     { instruction: webApp ? m.install_ios_add_web_app() : m.install_ios_add(), tap: addPoint, ripple: 'green', screen: add },
     { instruction: m.install_step_open(), tap: homeIcon, ripple: 'green', screen: <IosHomeScreen title={title} /> },
