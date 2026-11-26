@@ -150,7 +150,6 @@
 .sheet {
   composes: sheet from './Me.module.css';
 
-  max-height: 100dvh;
   overflow-y: auto;
 }
 

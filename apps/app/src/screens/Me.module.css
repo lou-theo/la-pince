@@ -259,6 +259,8 @@ li:first-child > .member {
 .sheet {
   width: 100%;
   max-width: var(--column-width);
+  /* A tall sheet stops below the status bar, the installed app on an iPhone drawing under it. */
+  max-height: calc(100dvh - max(var(--space-6), env(safe-area-inset-top)));
   margin: auto auto 0;
   padding: 0;
   border: none;
