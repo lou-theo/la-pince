@@ -11,7 +11,7 @@ description: Captures des écrans de La Pince pour une PR, sur le groupe de dém
 
 - Toute PR qui change ce qu'un écran montre (composant, style, texte, nouvel écran) porte la planche avant/après dans sa section Vérification, et le GIF quand elle change un parcours.
 - Un nouvel écran s'ajoute à `screens` (et au parcours s'il en fait partie) dans la même PR, sans s'appuyer sur les textes de l'interface, pour que la version d'avant se photographie aussi.
-- Un écran propre au téléphone (proposition d'installer l'app et son guide) se force par `asAndroidChrome` de `screens.ts` (agent utilisateur et fenêtre d'installation de Chrome simulés avant le démarrage de l'app) : le format téléphone de l'outil garde l'agent utilisateur d'ordinateur de Playwright, pour que la proposition ne couvre pas les autres écrans.
+- Un écran propre au téléphone (proposition d'installer l'app et son guide) se force par `asAndroidChrome` de `screens.ts` (`asIphone` pour un iPhone, `asOtherAndroid` pour Firefox ou un navigateur qui ne sait pas installer) (agent utilisateur et fenêtre d'installation de Chrome simulés avant le démarrage de l'app) : le format téléphone de l'outil garde l'agent utilisateur d'ordinateur de Playwright, pour que la proposition ne couvre pas les autres écrans.
 
 ## Comment
 
