@@ -50,21 +50,18 @@ interface GuideOfBrowserProps {
   readonly onClose: () => void;
 }
 
-/** The guide in its dialog; the browser unable to open its install window, Chrome still installs from its menu, another browser has no guide left. */
+/** The guide in its dialog; the browser unable to open its install window, Chrome still installs from its menu, another browser is one that cannot. */
 function GuideOfBrowser({ guide, context, title, platform, onGuide, onClose }: GuideOfBrowserProps): ReactNode {
   return (
     <InstallGuide
       key={guide}
       guide={guide}
+      maybeInstalled={context === 'android_chromium'}
       title={title}
       host={location.host}
       install={platform.install}
       onUnavailable={() => {
-        if (context === 'android_chrome') {
-          onGuide('android_menu');
-        } else {
-          onClose();
-        }
+        onGuide(context === 'android_chrome' ? 'android_menu' : 'cannot');
       }}
       onClose={onClose}
     />
