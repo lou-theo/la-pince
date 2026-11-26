@@ -114,6 +114,22 @@ describe('my page', () => {
     expect(at(location)).toBe('/');
   });
 
+  it('sets the theme of this phone from “Toi”, kept for the next visit', async () => {
+    const { user } = await open('/moi');
+    const themes = within(screen.getByRole('radiogroup', { name: 'Thème' }));
+    expect(themes.getAllByRole('radio').map((radio) => [radio.parentElement?.textContent, (radio as HTMLInputElement).checked])).toStrictEqual([
+      ['Auto', true],
+      ['Clair', false],
+      ['Sombre', false],
+    ]);
+    await user.click(themes.getByRole('radio', { name: 'Sombre' }));
+    expect(themes.getByRole('radio', { name: 'Sombre' })).toHaveProperty('checked', true);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(localStorage.getItem('la-pince:theme')).toBe('dark');
+    await user.click(themes.getByRole('radio', { name: 'Auto' }));
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
   it('opens a sheet from the transfers back to them, and any other way back to the balances', async () => {
     const { user, location } = await open('/membres/m1?retour=%2Fsoldes%2Fvirements');
     await user.click(screen.getByRole('link', { name: 'Retour aux remboursements suggérés' }));

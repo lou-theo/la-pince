@@ -445,6 +445,14 @@ export const screens: readonly Screen[] = [
       await openMe(page, demo);
     },
   },
+  {
+    name: 'moi-theme-sombre-choisi',
+    label: 'Toi, thème sombre choisi sur un téléphone en clair',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openMe(page, demo);
+      await page.locator('input[type="radio"][value="dark"]').check();
+    },
+  },
   { name: 'moi-groupe', label: 'Le groupe', reach: openGroupTab },
   {
     name: 'moi-groupe-sombre',

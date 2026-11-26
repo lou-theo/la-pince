@@ -1,9 +1,10 @@
 import { MAX_GROUP_TITLE_LENGTH, type MemberId, memberNameKey } from '@la-pince/core';
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 import { Link } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { sheetHref } from '../model/back.ts';
+import type { ThemeChoice } from '../storage/device.ts';
 import { AddMember } from './AddMember.tsx';
 import { Avatar } from './Avatar.tsx';
 import { EditOffline } from './EditOffline.tsx';
@@ -13,6 +14,7 @@ import { BackBar } from './Layout.tsx';
 import styles from './Me.module.css';
 import { MemberSheet } from './MemberBalance.tsx';
 import { RenameField } from './RenameField.tsx';
+import { chooseTheme, currentTheme } from './theme.ts';
 import type { GroupView } from './view.ts';
 
 /**
@@ -120,7 +122,7 @@ export function InstallEntry({ title }: { readonly title: string }): ReactNode {
   );
 }
 
-/** What my page sets on this phone, below my sheet: the install of the app, the notifications of the group, and who I am. */
+/** What my page sets on this phone, below my sheet: the install of the app, the notifications of the group, the theme, and who I am. */
 export function OnThisPhone({
   install,
   notifications,
@@ -140,6 +142,7 @@ export function OnThisPhone({
       </h2>
       {install}
       <div className={`${styles.card ?? ''} ${styles.notifications ?? ''}`}>{notifications}</div>
+      <ThemePicker />
       <button
         className={`${styles.card ?? ''} ${styles.rowButton ?? ''}`}
         type="button"
@@ -153,5 +156,42 @@ export function OnThisPhone({
         </span>
       </button>
     </section>
+  );
+}
+
+const themes: readonly (readonly [ThemeChoice, () => string])[] = [
+  ['system', m.theme_system],
+  ['light', m.theme_light],
+  ['dark', m.theme_dark],
+];
+
+/** The theme of the app on this phone, for all its groups: the phone's, light or dark, as a segmented control. */
+function ThemePicker() {
+  const [choice, setChoice] = useState(currentTheme);
+  const title = useId();
+  const name = useId();
+  return (
+    <div className={`${styles.card ?? ''} ${styles.theme ?? ''}`}>
+      <span id={title} className={styles.rowText}>
+        {m.theme_title()}
+      </span>
+      <div className={styles.themeOptions} role="radiogroup" aria-labelledby={title}>
+        {themes.map(([value, label]) => (
+          <label key={value} className={styles.themeOption}>
+            <input
+              type="radio"
+              name={name}
+              value={value}
+              checked={choice === value}
+              onChange={() => {
+                chooseTheme(value);
+                setChoice(value);
+              }}
+            />
+            {label()}
+          </label>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -69,11 +69,9 @@
   margin: calc(-1 * var(--space-2)) 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo {
-    /* The logo's black outlines and navy sleeve vanish on the dark band: a thin sand outline brings them back. */
-    filter: drop-shadow(0 0 0.5px #f3d9a4) drop-shadow(0 0 0.5px #f3d9a4);
-  }
+/* The logo's black outlines and navy sleeve vanish on the dark band: a thin sand outline brings them back. */
+:global(:root[data-theme='dark']) .logo {
+  filter: drop-shadow(0 0 0.5px #f3d9a4) drop-shadow(0 0 0.5px #f3d9a4);
 }
 
 .page {

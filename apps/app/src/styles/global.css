@@ -61,35 +61,36 @@
   --add-button-size: 3.75rem;
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #1c1917;
-    --color-brand: #33291c;
-    --color-surface: #292524;
-    --color-text: #f5f5f4;
-    --color-muted: #a8a29e;
-    --color-border: #44403c;
-    --color-accent: #6fcf97;
-    --color-accent-text: #1c1917;
-    --color-danger: #f87171;
-    --color-positive: #60a5fa;
-    --color-claw: #f0806a;
-    --color-scrim: rgb(0 0 0 / 65%);
-    --decor-ahead-band: #3b2f12;
-    --decor-ahead-text: #fbbf24;
-    --decor-owes-band: #3a3532;
-    --decor-owes-text: #d6d3d1;
-    --decor-bag-line: #fbbf24;
-    --decor-ball: #a8a29e;
-    --decor-ball-shine: #e7e5e4;
-    --decor-chain: #a8a29e;
-    --color-mine: #3a3532;
-    --color-undo: #2f6b4f;
-    --color-paid: #1f3a2c;
-  }
+/* Set by `src/screens/theme.ts`, after the phone's theme or the one chosen on my page, and before the first paint by `index.html`. */
+:root[data-theme='dark'] {
+  --color-background: #1c1917;
+  --color-brand: #33291c;
+  --color-surface: #292524;
+  --color-text: #f5f5f4;
+  --color-muted: #a8a29e;
+  --color-border: #44403c;
+  --color-accent: #6fcf97;
+  --color-accent-text: #1c1917;
+  --color-danger: #f87171;
+  --color-positive: #60a5fa;
+  --color-claw: #f0806a;
+  --color-scrim: rgb(0 0 0 / 65%);
+  --decor-ahead-band: #3b2f12;
+  --decor-ahead-text: #fbbf24;
+  --decor-owes-band: #3a3532;
+  --decor-owes-text: #d6d3d1;
+  --decor-bag-line: #fbbf24;
+  --decor-ball: #a8a29e;
+  --decor-ball-shine: #e7e5e4;
+  --decor-chain: #a8a29e;
+  --color-mine: #3a3532;
+  --color-undo: #2f6b4f;
+  --color-paid: #1f3a2c;
+
+  color-scheme: dark;
 }
 
 *,
@@ -100,6 +101,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* iOS paints the bars of an installed app after the page's background: the root's, not only the body's. */
+  background: var(--color-background);
 }
 
 body {
