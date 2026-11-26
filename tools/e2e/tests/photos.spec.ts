@@ -134,6 +134,9 @@ test('a photo set on a member reaches another browser, shows offline, is taken a
   await page.reload();
   await expect(page.getByRole('heading', { level: 2, name: 'Basile' })).toBeVisible();
   await loaded(page);
+  // From the service worker's copy, not only from the browser's HTTP cache, which the server's `Cache-Control` also fills.
+  const src = (await sheetPhoto(page).getAttribute('src')) ?? '';
+  expect(await page.evaluate(async (address) => (await (await caches.open('la-pince-photos')).match(address)) !== undefined, src)).toBe(true);
   await expect(page.getByRole('button', { name: 'Changer la photo de Basile' })).toBeDisabled();
   await context.setOffline(false);
   await wake(page);
