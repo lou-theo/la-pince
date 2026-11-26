@@ -197,7 +197,7 @@ li:first-child > .member {
   font-weight: 600;
 }
 
-/* The theme of this phone: a segmented control like the tabs of my page, its radios hidden under their labels, the chosen one marked by a class. */
+/* The theme of this phone: a segmented control like the tabs of my page, the chosen one marked by a class. */
 .theme {
   display: flex;
   align-items: center;
@@ -226,12 +226,19 @@ li:first-child > .member {
   cursor: pointer;
 }
 
+/* Drawn as nothing over its label, so that its own focus ring frames the option, for the keyboard only. */
 .themeOption input {
   position: absolute;
   inset: 0;
   margin: 0;
-  opacity: 0;
+  border-radius: inherit;
+  appearance: none;
   cursor: pointer;
+}
+
+.themeOption input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
 .themeChosen {
@@ -241,11 +248,6 @@ li:first-child > .member {
   box-shadow:
     var(--shadow-flat),
     inset 0 0 0 1px var(--color-border);
-}
-
-.themeOption:focus-within {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
 }
 
 .rowHint {
