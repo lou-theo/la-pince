@@ -112,6 +112,46 @@ const openAddMember = async (page: Page, demo: Demo): Promise<void> => {
   await page.locator('dialog[open] input').fill('Zoé');
 };
 
+// The pills under the group's title: « Me concerne », « Payé par moi », then the one that opens the sheet of the filters; the sheet, in the band
+// too, has groups of its own.
+const filterPills = 'header > div > [role="group"] button';
+// The grid of the members, a dialog over the sheet, and its button that applies the choice.
+const memberGrid = 'dialog[open] dialog[open]';
+const applyGrid = `${memberGrid} > div > button:last-child`;
+
+/** Opens the sheet of the filters by its pill, ready once it shows. */
+const openFilterSheet = async (page: Page, demo: Demo): Promise<void> => {
+  await chooseFirstMember(page, demo);
+  await page.locator(filterPills).last().click();
+  await page.locator('dialog[open]').waitFor();
+};
+
+/** In the sheet, opens the grid of a block of members (0 who paid, 1 who is involved) and touches some, by their place in the group. */
+const pickMembers = async (page: Page, block: number, places: readonly number[]): Promise<void> => {
+  // The last badge of the block, « Ajouter »; the grid, inside the block, has buttons of its own.
+  await page.locator('dialog[open] section').nth(block).locator(':scope > ul > li:last-child > button').click();
+  for (const place of places) {
+    await page.locator(`${memberGrid} ul button`).nth(place).click();
+  }
+};
+
+/** The filters of the mock-up set in the sheet, left open: paid by the 2nd or 6th member, involving me and the 2nd, 20 € or more. */
+const fillFilterSheet = async (page: Page, demo: Demo): Promise<void> => {
+  await openFilterSheet(page, demo);
+  await pickMembers(page, 0, [1, 5]);
+  await page.locator(applyGrid).click();
+  await pickMembers(page, 1, [0, 1]);
+  await page.locator(applyGrid).click();
+  await page.locator('dialog[open] input[inputmode="decimal"]').first().fill('20');
+};
+
+/** The list under those filters, the sheet closed by its last button: the summary in the band, the heading over the list. */
+const filteredList = async (page: Page, demo: Demo): Promise<void> => {
+  await fillFilterSheet(page, demo);
+  await page.locator('dialog[open] > div > button:last-child').click();
+  await page.locator('header > div > div > button[aria-haspopup="dialog"]').waitFor();
+};
+
 /** Opens the form of a new expense, ready once its fields are there. */
 const openNewExpense = async (page: Page, demo: Demo): Promise<void> => {
   await chooseFirstMember(page, demo);
@@ -200,6 +240,41 @@ export const screens: readonly Screen[] = [
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await page.emulateMedia({ colorScheme: 'dark' });
       await chooseFirstMember(page, demo);
+    },
+  },
+  {
+    name: 'filtres-me-concerne',
+    label: 'Filtre « Me concerne » : en-tête du résultat',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(filterPills).first().click();
+      await page.locator(`${filterPills}[aria-pressed="true"]`).waitFor();
+    },
+  },
+  { name: 'filtres-feuille', label: 'Feuille des filtres', reach: fillFilterSheet },
+  {
+    name: 'filtres-feuille-sombre',
+    label: 'Feuille des filtres, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await fillFilterSheet(page, demo);
+    },
+  },
+  {
+    name: 'filtres-choix',
+    label: 'Choix des concernés',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await openFilterSheet(page, demo);
+      await pickMembers(page, 1, [0, 1]);
+    },
+  },
+  { name: 'filtres-resume', label: 'Liste filtrée : résumé et en-tête', reach: filteredList },
+  {
+    name: 'filtres-resume-sombre',
+    label: 'Liste filtrée, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await filteredList(page, demo);
     },
   },
   { name: 'moi', label: 'Toi : ta fiche et ce téléphone', reach: openMe },
@@ -474,8 +549,9 @@ export async function installJourney(page: Page, demo: Demo): Promise<void> {
 }
 
 /**
- * Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, open an expense, the balances, their transfers with one
- * paid then undone, and a sheet, then add an expense.
+ * Journey filmed for the GIF, on a phone: paste the link, say who I am, land on the group, filter it (« Me concerne », then the sheet: who paid,
+ * an amount), open an expense and come back to the list still filtered, clear the filters, open an expense, the balances, their transfers with
+ * one paid then undone, and a sheet, then add an expense.
  */
 export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.goto(`${demo.appUrl}/lien`);
@@ -488,6 +564,26 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.getByRole('list').getByRole('button').first().click();
   await settle(page);
   await page.waitForTimeout(1500);
+  await page.locator(filterPills).first().click();
+  await page.waitForTimeout(1500);
+  await page.locator(filterPills).first().click();
+  await page.locator(filterPills).last().click();
+  await page.waitForTimeout(800);
+  await pickMembers(page, 0, [1, 5]);
+  await page.waitForTimeout(800);
+  await page.locator(applyGrid).click();
+  await page.waitForTimeout(600);
+  await page.locator('dialog[open] input[inputmode="decimal"]').first().pressSequentially('20', { delay: 80 });
+  await page.waitForTimeout(800);
+  await page.locator('dialog[open] > div > button:last-child').click();
+  await page.waitForTimeout(1500);
+  await page.locator(operationLink).first().click();
+  await page.waitForTimeout(1200);
+  await page.locator('nav a').first().click();
+  await page.waitForTimeout(1500);
+  // The cross beside the summary clears every filter.
+  await page.locator('header > div > div > button[aria-haspopup="dialog"] + button').click();
+  await page.waitForTimeout(1000);
   await page.locator(operationLink).first().click();
   await page.waitForTimeout(1500);
   await page.locator(balancesTab).click();

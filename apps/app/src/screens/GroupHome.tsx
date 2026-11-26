@@ -6,6 +6,7 @@ import { loadErrorMessage } from '../i18n/errors.ts';
 import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import { liveOperations, overlay, sortedBalances, transfers } from '../model/group.ts';
+import { paidByMe } from '../model/listFilter.ts';
 import type { LoadError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
 import { Avatar } from './Avatar.tsx';
@@ -15,6 +16,8 @@ import { EditOperation, NewExpense, NewReimbursement } from './Forms.tsx';
 import styles from './GroupHome.module.css';
 import layout from './Layout.module.css';
 import { Layout } from './Layout.tsx';
+import { useListFilter } from './listFilterMemory.ts';
+import { ListFilterBar } from './ListFilters.tsx';
 import { GroupMembers, OnThisPhone, You } from './Me.tsx';
 import { MemberBalance } from './MemberBalance.tsx';
 import { Notifications } from './Notifications.tsx';
@@ -64,6 +67,8 @@ export function GroupHome({
   const [location] = useLocation();
   const chrome = chromeOf(location);
   const online = useOnline();
+  // Kept while the group's screens change, an operation opened from the list included (docs/decisions/filtres-de-la-liste.md).
+  const [filter, setFilter] = useListFilter(token);
   const computed = useMemo(() => {
     // Balances count what this phone entered and has not sent yet, computed by the same core.
     const { revisions, pending } = overlay(changes, outbox);
@@ -79,6 +84,10 @@ export function GroupHome({
         members={group.members}
         currentMember={currentMember}
         onChoose={(member) => {
+          // « Payé par moi » names whoever I am now, not the member I was when I pressed it.
+          if (remembered !== undefined && paidByMe(filter, remembered)) {
+            setFilter({ ...filter, payers: [member.id] });
+          }
           onChooseMember(member.id);
           setChoosing(false);
         }}
@@ -112,6 +121,7 @@ export function GroupHome({
           </Link>
         </>
       }
+      below={chrome.filters ? <ListFilterBar view={view} filter={filter} onChange={setFilter} /> : undefined}
       nav={chrome.nav ? <BottomNav section={chrome.section} /> : undefined}
       screenBar={chrome.screenBar}
     >
@@ -135,7 +145,7 @@ export function GroupHome({
       )}
       <Switch>
         <Route path="/">
-          <OperationList view={view} />
+          <OperationList view={view} filter={filter} />
         </Route>
         <Route path="/nouvelle-depense">
           <NewExpense view={view} />

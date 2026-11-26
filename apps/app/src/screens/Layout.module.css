@@ -15,6 +15,13 @@
   gap: 0 var(--space-2);
 }
 
+/* Same column as the header; a row that scrolls sideways reaches the edges of the screen by its own margins. */
+.below {
+  max-width: var(--column-width);
+  margin: var(--space-3) auto 0;
+  padding: 0 max(var(--space-4), env(safe-area-inset-right)) 0 max(var(--space-4), env(safe-area-inset-left));
+}
+
 /* A long title is cut on a phone, whole in its `title` and for screen readers. */
 .name {
   flex: 1;

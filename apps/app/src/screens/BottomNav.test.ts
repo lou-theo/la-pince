@@ -54,4 +54,14 @@ describe('chromeOf', () => {
       ['balances', 'menu', 'group band'],
     ]);
   });
+
+  it('puts the filters in the band of the list only', () => {
+    expect(['/', '/operations/op-1', '/soldes', '/membres', '/moi'].map((path) => chromeOf(path).filters)).toStrictEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
 });

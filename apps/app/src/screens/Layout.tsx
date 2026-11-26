@@ -11,6 +11,8 @@ interface LayoutProps {
   readonly title?: string;
   /** Buttons at the end of the band. */
   readonly actions?: ReactNode;
+  /** A row of the band under the title, in the same column (the filters of the list). */
+  readonly below?: ReactNode;
   /** Menu fixed at the bottom of the screen, which the page leaves room for. */
   readonly nav?: ReactNode;
   /** The band holds the bar of the screen below (a form, a screen under a tab), filled by `ScreenBar`, instead of the logo, the title and the actions. */
@@ -21,7 +23,7 @@ interface LayoutProps {
 const BarContext = createContext<HTMLElement | null>(null);
 
 /** Frame of every screen: a band with the logo and the title, the screen in one centered column, and the menu at the bottom if any. */
-export function Layout({ children, title, actions, nav, screenBar = false }: LayoutProps): ReactNode {
+export function Layout({ children, title, actions, below, nav, screenBar = false }: LayoutProps): ReactNode {
   const [bar, setBar] = useState<HTMLElement | null>(null);
   return (
     <BarContext value={bar}>
@@ -41,6 +43,7 @@ export function Layout({ children, title, actions, nav, screenBar = false }: Lay
             {actions}
           </div>
         )}
+        {screenBar || below === undefined ? null : <div className={styles.below}>{below}</div>}
       </header>
       <div className={nav === undefined ? styles.page : `${styles.page ?? ''} ${styles.withNav ?? ''}`}>
         <main className={styles.main}>{children}</main>
