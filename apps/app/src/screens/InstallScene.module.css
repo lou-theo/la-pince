@@ -59,6 +59,31 @@
   animation: open-app 3.4s ease-in-out infinite;
 }
 
+/* La Pince presses the list and pushes it up, tilted, the list following it. */
+.swipe {
+  animation: swipe 3.4s ease-in-out infinite;
+}
+
+.scroll {
+  animation: scroll 3.4s ease-in-out infinite;
+}
+
+/* What the tap lands on lights up. */
+.flash {
+  animation: flash 3.4s ease-out infinite;
+}
+
+.sheetIn {
+  animation: sheet-in 3.4s ease-out infinite;
+}
+
+/* A menu opening from the button at its bottom right. */
+.menuReveal {
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+  animation: reveal 3.4s ease-out infinite;
+}
+
 @keyframes tap {
   0% {
     transform: translate(-56px, 44px);
@@ -176,6 +201,86 @@
   }
 }
 
+@keyframes swipe {
+  0% {
+    transform: translate(-40px, 60px) rotate(-40deg);
+    opacity: 0;
+  }
+
+  14% {
+    transform: translate(-24px, 30px) rotate(-40deg);
+    opacity: 1;
+  }
+
+  24% {
+    transform: translate(-24px, 30px) rotate(-40deg) scale(0.88);
+  }
+
+  60% {
+    transform: translate(0, -80px) rotate(-40deg) scale(0.88);
+  }
+
+  68% {
+    transform: translate(0, -80px) rotate(-40deg);
+    opacity: 1;
+  }
+
+  84%,
+  100% {
+    transform: translate(0, -80px) rotate(-40deg);
+    opacity: 0;
+  }
+}
+
+@keyframes scroll {
+  0%,
+  24% {
+    transform: none;
+  }
+
+  60%,
+  88% {
+    transform: translateY(-110px);
+  }
+
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes flash {
+  0%,
+  42%,
+  72%,
+  100% {
+    fill: #ffffff;
+  }
+
+  46%,
+  64% {
+    fill: #cfe3d6;
+  }
+}
+
+@keyframes sheet-in {
+  0%,
+  46% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  56%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
 @keyframes open-app {
   0%,
   48% {
@@ -204,15 +309,90 @@
 @media (prefers-reduced-motion: reduce) {
   .tap,
   .press,
-  .pop {
+  .pop,
+  .swipe,
+  .scroll,
+  .flash {
     animation: none;
   }
 
   /* The moment before the tap: what it opens, and the app opening, wait. */
   .ripple,
   .reveal,
+  .menuReveal,
+  .sheetIn,
   .dim,
   .openApp {
     display: none;
   }
+}
+
+/* The choice of Safari's bar: two pictures of the bottom of the screen side by side, the one chosen outlined and checked. */
+.choice {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  max-height: 26rem;
+  padding: var(--space-4) 0.875rem;
+  border-radius: 1.125rem;
+  background: var(--color-brand);
+}
+
+.choiceLabel {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.choiceOptions {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-2);
+  border: 2.5px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option[aria-pressed='true'] {
+  border-color: var(--color-accent);
+}
+
+.option svg:first-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid #e7dcc6;
+  border-radius: 0.625rem;
+}
+
+.check {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.625rem;
+  height: 1.625rem;
+  color: var(--color-accent-text);
+}
+
+.check circle {
+  fill: var(--color-accent);
 }

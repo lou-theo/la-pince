@@ -4,26 +4,43 @@ import { m } from '../i18n/paraglide/messages.js';
 import type { InstallOutcome } from '../install/platform.ts';
 import styles from './Install.module.css';
 import {
+  addPoint,
+  AddToHomeScreen,
   AndroidBrowser,
   AndroidHomeScreen,
   AndroidInstallWindow,
   AppInstallSheet,
+  ChromeIosBrowser,
   ChromeMenu,
+  chromeShare,
   InstallScene,
+  IosHomeScreen,
+  type SafariBar,
+  SafariBarChoice,
+  SafariBrowser,
+  SafariMenu,
+  safariMenuShare,
+  safariPoints,
   type ScenePoint,
+  sharePoints,
+  ShareSheet,
 } from './InstallScene.tsx';
 import { useMounted } from './useMounted.ts';
 
 /** The guides built so far; the others offer nothing yet. */
-export type BuiltGuide = 'android_button' | 'android_menu';
+export type BuiltGuide = 'android_button' | 'android_menu' | 'ios_safari' | 'ios_safari_26' | 'ios_share';
 
-interface Step {
+/** The bars of Safari 26 or later the guide tells apart, chosen at its first step. */
+type ChosenBar = Exclude<SafariBar, 'classic'>;
+
+type Step = {
   readonly instruction: string;
   readonly note?: string;
-  readonly tap: ScenePoint;
-  readonly ripple?: 'light' | 'green';
-  readonly screen: ReactNode;
-}
+} & (
+  | { readonly choice?: false; readonly tap: ScenePoint; readonly ripple?: 'light' | 'green'; readonly swipe?: boolean; readonly screen: ReactNode }
+  // The choice of Safari's bar, in place of the phone drawn.
+  | { readonly choice: true }
+);
 
 interface Drawn {
   readonly title: string;
@@ -47,7 +64,128 @@ const installWindow = (host: string, appear = false) => (
   />
 );
 
-function stepsOf(guide: BuiltGuide, { title, host }: Drawn): readonly Step[] {
+/**
+ * The steps through the Share sheet of an iPhone, from the page in `browser` once Share is reached: scroll to its entry `entry`, touch it, add, and
+ * open the app from the home screen; under Safari 26 or later, its switch to open as a web app left on.
+ */
+function shareSteps(
+  { title, host }: Drawn,
+  browser: ReactNode,
+  {
+    entry,
+    scroll,
+    scrollNote,
+    touch,
+    webApp,
+  }: { readonly entry: string; readonly scroll: string; readonly scrollNote?: string; readonly touch: string; readonly webApp: boolean },
+): readonly Step[] {
+  const sheet = (scrolled: 'moving' | 'scrolled') => (
+    <>
+      {browser}
+      <ShareSheet host={host} copy={m.install_scene_copy()} entry={entry} scroll={scrolled} />
+    </>
+  );
+  const add = (
+    <AddToHomeScreen
+      host={host}
+      cancel={m.install_scene_cancel()}
+      add={m.install_scene_add()}
+      webApp={webApp ? m.install_scene_web_app() : undefined}
+    />
+  );
+  return [
+    { instruction: scroll, ...(scrollNote === undefined ? {} : { note: scrollNote }), tap: sharePoints.swipe, swipe: true, screen: sheet('moving') },
+    { instruction: touch, tap: sharePoints.entry, ripple: 'green', screen: sheet('scrolled') },
+    { instruction: webApp ? m.install_ios_add_web_app() : m.install_ios_add(), tap: addPoint, ripple: 'green', screen: add },
+    { instruction: m.install_step_open(), tap: homeIcon, ripple: 'green', screen: <IosHomeScreen title={title} /> },
+  ];
+}
+
+/** The steps of an iPhone's guide: Safari before 26 by Share in its bar; Safari 26 or later by the bar chosen first; Chrome and others by Share. */
+function iosStepsOf(guide: 'ios_safari' | 'ios_safari_26' | 'ios_share', drawn: Drawn, bar: ChosenBar): readonly Step[] {
+  const { title, host } = drawn;
+  const shareSheet = (appear: 'slide' | 'grow', entry: string) => (
+    <ShareSheet host={host} copy={m.install_scene_copy()} entry={entry} appear={appear} />
+  );
+  if (guide === 'ios_share') {
+    const browser = <ChromeIosBrowser host={host} title={title} />;
+    const entry = m.install_scene_add_home_screen();
+    return [
+      {
+        instruction: m.install_share_address(),
+        tap: chromeShare,
+        ripple: 'green',
+        screen: (
+          <>
+            {browser}
+            {shareSheet('grow', entry)}
+          </>
+        ),
+      },
+      ...shareSteps(drawn, browser, { entry, scroll: m.install_share_scroll(), touch: m.install_share_row(), webApp: false }),
+    ];
+  }
+  const shown: SafariBar = guide === 'ios_safari' ? 'classic' : bar;
+  const browser = <SafariBrowser host={host} title={title} bar={shown} />;
+  const entry = m.install_scene_home_screen();
+  const throughShare = shareSteps(drawn, browser, {
+    entry,
+    scroll: m.install_ios_scroll(),
+    scrollNote: m.install_ios_scroll_note(),
+    touch: m.install_ios_home_row(),
+    webApp: guide === 'ios_safari_26',
+  });
+  const toShare: readonly Step[] =
+    shown === 'compact'
+      ? [
+          {
+            instruction: m.install_ios_more(),
+            tap: safariPoints.more,
+            ripple: 'green',
+            screen: (
+              <>
+                {browser}
+                <SafariMenu share={m.install_scene_share()} />
+              </>
+            ),
+          },
+          {
+            instruction: m.install_ios_share_row(),
+            tap: safariMenuShare,
+            ripple: 'green',
+            screen: (
+              <>
+                {browser}
+                <SafariMenu share={m.install_scene_share()} flash />
+                {shareSheet('slide', entry)}
+              </>
+            ),
+          },
+        ]
+      : [
+          {
+            instruction: m.install_ios_share_bar(),
+            note: m.install_ios_share_bar_note(),
+            tap: safariPoints.share(shown),
+            ripple: 'green',
+            screen: (
+              <>
+                {browser}
+                {shareSheet('slide', entry)}
+              </>
+            ),
+          },
+        ];
+  const choice: readonly Step[] =
+    guide === 'ios_safari_26' ? [{ instruction: m.install_ios_layout(), note: m.install_ios_layout_note(), choice: true }] : [];
+  return [...choice, ...toShare, ...throughShare];
+}
+
+function stepsOf(guide: BuiltGuide, drawn: Drawn, bar: ChosenBar): readonly Step[] {
+  if (guide === 'ios_safari' || guide === 'ios_safari_26' || guide === 'ios_share') {
+    return iosStepsOf(guide, drawn, bar);
+  }
+  const { title, host } = drawn;
   const browser = <AndroidBrowser host={host} title={title} />;
   const home = <AndroidHomeScreen title={title} />;
   if (guide === 'android_button') {
@@ -99,7 +237,7 @@ function stepsOf(guide: BuiltGuide, { title, host }: Drawn): readonly Step[] {
         </>
       ),
     },
-    { instruction: m.install_menu_step_open(), tap: homeIcon, screen: home },
+    { instruction: m.install_step_open(), tap: homeIcon, screen: home },
   ];
 }
 
@@ -127,7 +265,9 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
     heading.current?.focus();
   }, []);
   const mounted = useMounted();
-  const steps = stepsOf(guide, { title, host });
+  // Safari's compact bar first, its default.
+  const [bar, setBar] = useState<ChosenBar>('compact');
+  const steps = stepsOf(guide, { title, host }, bar);
   const step = steps[index] ?? steps[0];
   if (step === undefined) {
     return null;
@@ -196,10 +336,18 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
           </svg>
         </button>
       </div>
-      {/* A new scene at each step, so that its animation starts over with the instruction. */}
-      <InstallScene key={`${guide}-${String(index)}`} tap={step.tap} ripple={step.ripple}>
-        {step.screen}
-      </InstallScene>
+      {step.choice === true ? (
+        <SafariBarChoice
+          value={bar}
+          onChange={setBar}
+          labels={{ group: m.install_ios_layout_label(), compact: m.install_ios_layout_compact(), bar: m.install_ios_layout_bar() }}
+        />
+      ) : (
+        // A new scene at each step, so that its animation starts over with the instruction.
+        <InstallScene key={`${guide}-${bar}-${String(index)}`} tap={step.tap} ripple={step.ripple} swipe={step.swipe}>
+          {step.screen}
+        </InstallScene>
+      )}
       <div className={styles.instruction} aria-live="polite">
         <h3 key={index} className={styles.instructionText}>
           {step.instruction}
