@@ -1,4 +1,5 @@
 import { type ReactNode, type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useLocation } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
 import { browserInstallPlatform, type InstallPlatform } from '../install/platform.ts';
@@ -188,6 +189,12 @@ export function InstallGuideLink({ title, className = layout.link, children, pla
   const dialog = useRef<HTMLDialogElement>(null);
   const [shown, setShown] = useState<BuiltGuide | undefined>(undefined);
   useModal(dialog, shown !== undefined);
+  // Left by the back gesture, the guide open: the screen of the link may stay mounted, hidden (the notifications of the group), and a modal left
+  // open there would leave the whole page inert. Closed at every change of address, which only the history can make while it is open.
+  const [location] = useLocation();
+  useEffect(() => {
+    dialog.current?.close();
+  }, [location]);
 
   const close = () => {
     dialog.current?.close();
