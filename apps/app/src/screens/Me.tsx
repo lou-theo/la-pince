@@ -1,5 +1,5 @@
 import { MAX_GROUP_TITLE_LENGTH, type MemberId, memberNameKey } from '@la-pince/core';
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useId, useSyncExternalStore } from 'react';
 import { Link } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
@@ -14,7 +14,7 @@ import { BackBar } from './Layout.tsx';
 import styles from './Me.module.css';
 import { MemberSheet } from './MemberBalance.tsx';
 import { RenameField } from './RenameField.tsx';
-import { chooseTheme, currentTheme } from './theme.ts';
+import { chooseTheme, currentTheme, subscribeTheme } from './theme.ts';
 import type { GroupView } from './view.ts';
 
 /**
@@ -167,7 +167,7 @@ const themes: readonly (readonly [ThemeChoice, () => string])[] = [
 
 /** The theme of the app on this phone, for all its groups: the phone's, light or dark, as a segmented control. */
 function ThemePicker() {
-  const [choice, setChoice] = useState(currentTheme);
+  const choice = useSyncExternalStore(subscribeTheme, currentTheme);
   const title = useId();
   const name = useId();
   return (
@@ -177,7 +177,7 @@ function ThemePicker() {
       </span>
       <div className={styles.themeOptions} role="radiogroup" aria-labelledby={title}>
         {themes.map(([value, label]) => (
-          <label key={value} className={styles.themeOption}>
+          <label key={value} className={`${styles.themeOption ?? ''} ${choice === value ? (styles.themeChosen ?? '') : ''}`}>
             <input
               type="radio"
               name={name}
@@ -185,7 +185,6 @@ function ThemePicker() {
               checked={choice === value}
               onChange={() => {
                 chooseTheme(value);
-                setChoice(value);
               }}
             />
             {label()}

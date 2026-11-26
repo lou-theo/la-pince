@@ -197,7 +197,7 @@ li:first-child > .member {
   font-weight: 600;
 }
 
-/* The theme of this phone: a segmented control like the tabs of my page, its radios hidden under their labels. */
+/* The theme of this phone: a segmented control like the tabs of my page, its radios hidden under their labels, the chosen one marked by a class. */
 .theme {
   display: flex;
   align-items: center;
@@ -217,7 +217,7 @@ li:first-child > .member {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   padding: 0 var(--space-3);
   border-radius: 0.5625rem;
   color: var(--color-muted);
@@ -234,7 +234,7 @@ li:first-child > .member {
   cursor: pointer;
 }
 
-.themeOption:has(:checked) {
+.themeChosen {
   background: var(--color-surface);
   color: var(--color-text);
   font-weight: 600;

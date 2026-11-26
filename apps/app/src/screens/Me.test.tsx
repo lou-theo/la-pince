@@ -8,6 +8,7 @@ import { fakeServer, json } from '../testing/fake-server.ts';
 import { testGroup } from '../testing/group.ts';
 import { rememberMember } from '../testing/groupDb.ts';
 import { renderApp } from '../testing/render.tsx';
+import { chooseTheme } from './theme.ts';
 
 const token = 'demo-token-of-the-my-page-tests-01234567';
 const at = (location: { history: readonly string[] }) => location.history.at(-1)?.replace(`/g/${token}`, '');
@@ -73,6 +74,8 @@ const memberLines = () =>
 
 afterEach(() => {
   vi.restoreAllMocks();
+  // The theme lives with the page, beyond one test.
+  chooseTheme('system');
 });
 
 describe('my page', () => {
@@ -126,8 +129,6 @@ describe('my page', () => {
     expect(themes.getByRole('radio', { name: 'Sombre' })).toHaveProperty('checked', true);
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem('la-pince:theme')).toBe('dark');
-    await user.click(themes.getByRole('radio', { name: 'Auto' }));
-    expect(document.documentElement.dataset.theme).toBe('light');
   });
 
   it('opens a sheet from the transfers back to them, and any other way back to the balances', async () => {

@@ -35,7 +35,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   document.documentElement.removeAttribute('data-theme');
-  document.documentElement.removeAttribute('style');
 });
 
 describe('theme', () => {
@@ -65,9 +64,31 @@ describe('theme', () => {
   it("gives both bars the band's color of the theme shown, whatever the phone's", async () => {
     phone(false);
     const module = await load();
-    document.documentElement.style.setProperty('--color-brand', '#33291c');
+    const style = document.createElement('style');
+    style.textContent = ":root { --color-brand: #f3d9a4; } :root[data-theme='dark'] { --color-brand: #33291c; }";
+    document.head.append(style);
     module.chooseTheme('dark');
     expect(bars()).toStrictEqual(['#33291c', '#33291c']);
+    module.chooseTheme('light');
+    expect(bars()).toStrictEqual(['#f3d9a4', '#f3d9a4']);
+  });
+
+  it('takes a choice made in another tab, and tells who listens', async () => {
+    phone(false);
+    const module = await load();
+    module.startTheme();
+    const heard = vi.fn();
+    const stop = module.subscribeTheme(heard);
+    localStorage.setItem('la-pince:theme', 'dark');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'la-pince:last-group' }));
+    expect(theme()).toBe('light');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'la-pince:theme' }));
+    expect(theme()).toBe('dark');
+    expect(module.currentTheme()).toBe('dark');
+    expect(heard).toHaveBeenCalledOnce();
+    stop();
+    module.chooseTheme('light');
+    expect(heard).toHaveBeenCalledOnce();
   });
 
   it('keeps the choice for the page when the browser refuses storage', async () => {
