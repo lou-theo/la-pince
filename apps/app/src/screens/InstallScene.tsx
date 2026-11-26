@@ -317,7 +317,7 @@ export function BrowserMenu({
     [2, 80],
     [4, 62],
   ];
-  const lines = splitLine(item, 28);
+  const lines = splitLine(item, 24);
   return (
     <g className={appear ? styles.menuRevealTop : undefined}>
       <rect x="24" y="6" width="150" height="136" rx="10" fill="#ffffff" stroke="#e3ddd5" />
@@ -336,7 +336,7 @@ export function BrowserMenu({
         )}
       </g>
       {lines.map((line, index) => (
-        <SceneText key={line} x={45} y={100 + (index - (lines.length - 1) / 2) * 9} size={lines.length > 1 ? 7.5 : 8} weight={600}>
+        <SceneText key={line} x={45} y={100 + (index - (lines.length - 1) / 2) * 9} size={lines.length > 1 ? 7 : 8} weight={600}>
           {line}
         </SceneText>
       ))}

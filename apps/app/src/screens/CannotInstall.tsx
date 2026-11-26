@@ -28,7 +28,9 @@ export function CannotInstall({ maybeInstalled, onShortcut }: { readonly maybeIn
     <div className={styles.cannot}>
       <div className={styles.hero} aria-hidden="true">
         <span className={styles.halo} />
-        <img className={styles.bob} src="/logo.svg" alt="" />
+        <span className={styles.hop}>
+          <img className={styles.bob} src="/logo.svg" alt="" />
+        </span>
       </div>
       <h3 className={styles.cannotTitle}>{m.install_cannot_title()}</h3>
       <p className={styles.offerText}>{m.install_cannot_recommend()}</p>

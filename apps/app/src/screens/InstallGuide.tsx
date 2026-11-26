@@ -70,6 +70,8 @@ const windowButton = { x: 133, y: 186 };
 const homeIcon = { x: 29, y: 199 };
 const menuDots = { x: 168, y: 16 };
 const menuItem = { x: 150, y: 100 };
+// An entry on two lines is touched at the menu's edge, its words left readable.
+const longMenuItem = { x: 170, y: 100 };
 
 // The window of Android's home screen, in the system's color rather than Chrome's blue.
 const systemAccent = '#5a3fb0';
@@ -233,7 +235,7 @@ function otherAndroidSteps(guide: 'android_firefox' | 'cannot', title: string, b
       {
         instruction: m.install_shortcut_item(),
         note: m.install_shortcut_item_note(),
-        tap: menuItem,
+        tap: longMenuItem,
         ripple: 'green',
         screen: withBrowser(<BrowserMenu item={item} flash />),
       },
@@ -257,7 +259,7 @@ function otherAndroidSteps(guide: 'android_firefox' | 'cannot', title: string, b
     },
     {
       instruction: m.install_firefox_item(),
-      tap: menuItem,
+      tap: longMenuItem,
       ripple: 'green',
       screen: withBrowser(<BrowserMenu item={m.install_scene_firefox_item()} flash />),
     },

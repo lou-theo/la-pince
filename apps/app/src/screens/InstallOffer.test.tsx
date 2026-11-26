@@ -273,8 +273,8 @@ describe('other browsers of Android', () => {
     await user.click(screen.getByRole('button', { name: 'Faire un raccourci quand même' }));
     expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Faire un raccourci' }));
     await walk(user, [
-      ['Touche ⋮ en haut à droite', "Ajouter à l'écran d'accueil"],
-      ["Touche « Ajouter à l'écran d'accueil »", "Ajouter à l'écran d'accueil"],
+      ['Touche ⋮ en haut à droite', "Ajouter à l'écran"],
+      ["Touche « Ajouter à l'écran d'accueil »", "Ajouter à l'écran"],
       ['Touche « Ajouter »', 'Ajouter'],
     ]);
     expect(screen.getByRole('button', { name: "J'ai compris" })).toBeDefined();
