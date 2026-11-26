@@ -34,7 +34,17 @@ function viewOf(answers: QueueResult[]): { view: GroupView; queued: Operation[] 
     pendingCount: 0,
     readAt: 0,
     title: 'Week-end',
-    edit: { online: true, renameGroup: unused, addMember: unused, renameMember: unused },
+    photoOf: () => undefined,
+    edit: {
+      online: true,
+      renameGroup: unused,
+      addMember: unused,
+      renameMember: unused,
+      photos: false,
+      setPhoto: unused,
+      removePhoto: unused,
+      undoPhoto: unused,
+    },
   };
   return { view, queued };
 }

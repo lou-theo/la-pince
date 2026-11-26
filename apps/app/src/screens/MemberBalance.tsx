@@ -1,5 +1,5 @@
 import { MAX_MEMBER_NAME_LENGTH, type MemberId, memberIdSchema, memberNameKey } from '@la-pince/core';
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 import { Link, useSearch } from 'wouter';
 
 import { m } from '../i18n/paraglide/messages.js';
@@ -13,6 +13,7 @@ import { EditOffline } from './EditOffline.tsx';
 import { reimbursementHref } from './Forms.tsx';
 import layout from './Layout.module.css';
 import { BackBar } from './Layout.tsx';
+import { PhotoBadge, PhotoBand, usePhotoEdit } from './MemberPhoto.tsx';
 import { RenameField } from './RenameField.tsx';
 import { PlusIcon, rowKey, TransferLine } from './Transfers.tsx';
 import { UndoBanner } from './UndoBanner.tsx';
@@ -60,13 +61,26 @@ interface MemberSheetProps {
 }
 
 /**
- * A member's sheet: their avatar, their name with a pencil to rename them, their balance, then the transfers they should make, or those they should
- * receive, each with “C'est payé”. Anyone with the link edits any member (docs/decisions/edition-du-groupe.md, point d).
+ * A member's sheet: their avatar with a camera badge to change their photo, their name with a pencil to rename them, their balance, then the
+ * transfers they should make, or those they should receive, each with “C'est payé”. Anyone with the link edits any member
+ * (docs/decisions/edition-du-groupe.md, point d).
  */
 export function MemberSheet({ view, id, here, you }: MemberSheetProps): ReactNode {
   const pays = useId();
   const receives = useId();
-  const settle = useSettle(view);
+  // The band of the last action, a payment or a change of photo: a new one replaces the other, as a new payment replaces the band of the last.
+  const [front, setFront] = useState<'settle' | 'photo'>('settle');
+  const paying = useSettle(view);
+  const settle = {
+    ...paying,
+    pay: (transfer: Parameters<typeof paying.pay>[0]) => {
+      setFront('settle');
+      paying.pay(transfer);
+    },
+  };
+  const photo = usePhotoEdit(view, id, () => {
+    setFront('photo');
+  });
   const sheet = memberSheet(id, view.balances, view.transfers, view.members);
   if (sheet === undefined) {
     return <p className={layout.muted}>{m.member_not_found()}</p>;
@@ -89,10 +103,11 @@ export function MemberSheet({ view, id, here, you }: MemberSheetProps): ReactNod
     <>
       {inGroup && !view.edit.online ? <EditOffline /> : null}
       <div className={styles.sheetHead}>
-        {/* The place of the camera badge, which photos will put on the avatar's corner without moving anything. */}
-        <span className={styles.bigAvatar}>
+        <div className={styles.bigAvatar}>
           <Avatar member={member} view={view} />
-        </span>
+          {/* A member who left the group is not in its list: the server would not find them. */}
+          {inGroup && view.edit.photos ? <PhotoBadge view={view} id={id} edit={photo} /> : null}
+        </div>
         {/* A member who left the group is not in its list: the server would not find them to rename. */}
         {inGroup ? (
           <RenameField
@@ -160,7 +175,7 @@ export function MemberSheet({ view, id, here, you }: MemberSheetProps): ReactNod
       )}
       {payRows.length === 0 && receiveRows.length === 0 ? null : <p className={layout.muted}>{m.member_suggested()}</p>}
       <p className={layout.muted}>{syncLine(view)}</p>
-      <UndoBanner view={view} settle={settle} nav={false} />
+      {front === 'photo' ? <PhotoBand edit={photo} mine={mine} /> : <UndoBanner view={view} settle={settle} nav={false} />}
     </>
   );
 }

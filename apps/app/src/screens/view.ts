@@ -1,12 +1,15 @@
-import type { Member, MemberId, NewMember, Operation, Share, SuggestedTransfer } from '@la-pince/core';
+import type { Member, MemberId, NewMember, Operation, PhotoUndo, Share, SuggestedTransfer } from '@la-pince/core';
 
 import { formatMoment } from '../i18n/moment.ts';
 import { m } from '../i18n/paraglide/messages.js';
 import type { BalanceLine, OperationView } from '../model/group.ts';
-import type { GroupEditError } from '../sync/client.ts';
+import type { GroupEditError, PhotoError } from '../sync/client.ts';
 import type { QueueResult } from '../sync/groupStore.ts';
 
 export type EditResult = { readonly ok: true } | { readonly ok: false; readonly error: GroupEditError };
+
+/** A change of photo made, with the undo the server gave for it, absent when there is nothing to put back; or why it failed. */
+export type PhotoResult = { readonly ok: true; readonly undo?: PhotoUndo } | { readonly ok: false; readonly error: PhotoError };
 
 /** Edits of the group, sent at once to the server, whose answer the screens show: they need the network (docs/decisions/edition-du-groupe.md, point h). */
 export interface GroupEdit {
@@ -16,6 +19,13 @@ export interface GroupEdit {
   /** Adds a member whose id was drawn when the sheet to add one opened, sent again with each try. */
   readonly addMember: (member: NewMember) => Promise<EditResult>;
   readonly renameMember: (id: MemberId, name: string) => Promise<EditResult>;
+  /** Whether the instance keeps photos: without it, nothing offers to change one (docs/decisions/edition-du-groupe.md, point i). */
+  readonly photos: boolean;
+  /** Sets a member's photo, a JPEG reduced on the phone. */
+  readonly setPhoto: (id: MemberId, photo: Blob) => Promise<PhotoResult>;
+  readonly removePhoto: (id: MemberId) => Promise<PhotoResult>;
+  /** Undoes a change of photo by the undo its answer gave. */
+  readonly undoPhoto: (id: MemberId, undo: PhotoUndo) => Promise<PhotoResult>;
 }
 
 /** What the group's screens read: its live operations and balances, the server's copy overlaid with the outbox, seen as “who I am”. */
@@ -27,6 +37,8 @@ export interface GroupView {
   readonly nameOf: (id: MemberId) => string;
   /** Members in the order they were added, which orders the lines of a split. */
   readonly members: readonly Member[];
+  /** Address of a member's photo, or `undefined` for one without, or on an instance that keeps none. */
+  readonly photoOf: (member: Member) => string | undefined;
   /** Queues a revision of an operation on the phone, shown at once, sent as soon as the server answers. */
   readonly enqueue: (operation: Operation) => Promise<QueueResult>;
   /** Operations whose revision waits in the outbox, counted in the balances. */

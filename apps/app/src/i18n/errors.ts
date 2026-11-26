@@ -1,4 +1,5 @@
-import type { GroupEditError, LoadError, NotificationError } from '../sync/client.ts';
+import type { ReduceError } from '../screens/reducePhoto.ts';
+import type { GroupEditError, LoadError, NotificationError, PhotoError } from '../sync/client.ts';
 import type { QueueError } from '../sync/groupStore.ts';
 import { m } from './paraglide/messages.js';
 
@@ -53,6 +54,30 @@ export function editErrorMessage(error: GroupEditError): string {
       return m.error_member_not_found();
     case 'invalid_request':
       return m.error_edit_invalid();
+    case 'group_not_found':
+    case 'network':
+    case 'unexpected':
+      return loadErrorMessage(error);
+  }
+}
+
+/** Message shown when a change of photo failed, or when the phone could not make a photo of the picture chosen. */
+export function photoErrorMessage(error: PhotoError | ReduceError): string {
+  switch (error) {
+    case 'photo_changed':
+      return m.error_photo_changed();
+    case 'photos_unavailable':
+      return m.error_photos_unavailable();
+    case 'photos_disabled':
+      return m.error_photos_disabled();
+    case 'invalid_request':
+      return m.error_photo_invalid();
+    case 'unreadable':
+      return m.error_photo_unreadable();
+    case 'not_encoded':
+      return m.error_photo_not_encoded();
+    case 'member_not_found':
+      return m.error_member_not_found();
     case 'group_not_found':
     case 'network':
     case 'unexpected':

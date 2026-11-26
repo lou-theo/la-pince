@@ -4,13 +4,18 @@ import { NavigationRoute, registerRoute } from 'workbox-routing';
 
 import { notificationOf, pathOf } from '../model/notification.ts';
 import { type NotifiedGroup, openNotificationDb } from '../storage/notificationDb.ts';
+import { isPhotoRequest, PHOTO_CACHE, servePhoto } from '../storage/photoCache.ts';
 
 declare const self: ServiceWorkerGlobalScope & { readonly __WB_MANIFEST: Parameters<typeof precacheAndRoute>[0] };
 
-// The shell only: API answers are never cached.
+// The shell, and the members' photos, whose addresses name versions that never change: no other API answer is cached.
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/api\//] }));
+registerRoute(
+  ({ request }) => isPhotoRequest(request, self.location.origin),
+  async ({ request }) => servePhoto(request, await caches.open(PHOTO_CACHE), (asked) => fetch(asked)),
+);
 
 // A new service worker takes over at once, without reloading the open pages, which keep their code until the next start.
 self.addEventListener('install', () => {

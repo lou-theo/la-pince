@@ -6,13 +6,15 @@ import {
   memberIdSchema,
   newMemberSchema,
   operationSchema,
+  photoVersionSchema,
   revisionIdSchema,
   subscribeRequestSchema,
 } from '@la-pince/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { change, fakeServer, json } from '../testing/fake-server.ts';
-import { createApiClient } from './client.ts';
+import { change, fakeServer, json, photoVersionOf } from '../testing/fake-server.ts';
+import { syntheticJpeg } from '../testing/photo.ts';
+import { createApiClient, photoUrl } from './client.ts';
 
 const token = 'demo-token-of-the-client-tests-0123456789';
 const group = groupResponseSchema.parse({
@@ -283,5 +285,54 @@ describe('editing the group', () => {
       error: 'unexpected',
     });
     expect(await answering(json({ title: 'Mer', members: [] }, 201)).addMember(token, member)).toStrictEqual({ ok: false, error: 'unexpected' });
+  });
+});
+
+describe('photos', () => {
+  const m1 = memberIdSchema.parse('m1');
+  const withPhotos = { ...group, photos: true as const };
+  const jpegOf = (seed: number) => new Blob([syntheticJpeg(seed)], { type: 'image/jpeg' });
+
+  it('sends a JPEG as is, and gives the group and the undo the server answered, then the undo of the undo', async () => {
+    const server = fakeServer({ token, group: withPhotos });
+    const client = createApiClient(server.fetch);
+    const version = await photoVersionOf(syntheticJpeg(1));
+    const set = await client.setPhoto(token, m1, jpegOf(1));
+    expect(set).toStrictEqual({
+      ok: true,
+      value: { ...withPhotos, members: [{ id: 'm1', name: 'Alice', photo: version }, group.members[1]], undo: { version, previous: null } },
+    });
+    expect(server.calls).toStrictEqual([`/api/groups/${token}/members/m1/photo`]);
+    const undone = await client.undoPhoto(token, m1, { version, previous: null });
+    expect(undone.ok && undone.value.members[0]).toStrictEqual({ id: 'm1', name: 'Alice' });
+    expect(undone.ok && undone.value.undo).toStrictEqual({ version: null, previous: version });
+  });
+
+  it('takes a photo away, the undo naming the photo removed', async () => {
+    const client = createApiClient(fakeServer({ token, group: withPhotos }).fetch);
+    await client.setPhoto(token, m1, jpegOf(1));
+    const removed = await client.removePhoto(token, m1);
+    expect(removed.ok && removed.value.undo).toStrictEqual({ version: null, previous: await photoVersionOf(syntheticJpeg(1)) });
+  });
+
+  it('passes on the errors of the photo routes', async () => {
+    const client = createApiClient(fakeServer({ token, group: withPhotos }).fetch);
+    const first = await photoVersionOf(syntheticJpeg(1));
+    await client.setPhoto(token, m1, jpegOf(1));
+    await client.setPhoto(token, m1, jpegOf(2));
+    expect(await client.undoPhoto(token, m1, { version: first, previous: null })).toStrictEqual({ ok: false, error: 'photo_changed' });
+    expect(await client.setPhoto(token, m1, new Blob(['not a picture']))).toStrictEqual({ ok: false, error: 'invalid_request' });
+    expect(await client.setPhoto(token, memberIdSchema.parse('nobody'), jpegOf(1))).toStrictEqual({ ok: false, error: 'member_not_found' });
+    expect(await createApiClient(fakeServer({ token, group }).fetch).removePhoto(token, m1)).toStrictEqual({ ok: false, error: 'photos_disabled' });
+    expect(await answering(json({ error: 'photos_unavailable' } satisfies ApiError, 503)).setPhoto(token, m1, jpegOf(1))).toStrictEqual({
+      ok: false,
+      error: 'photos_unavailable',
+    });
+  });
+
+  it('names a version of a photo under the link', () => {
+    expect(photoUrl(token, m1, photoVersionSchema.parse('AAAAAAAAAAAAAAAAAAAAAA'))).toBe(
+      `/api/groups/${token}/members/m1/photos/AAAAAAAAAAAAAAAAAAAAAA`,
+    );
   });
 });

@@ -2,6 +2,7 @@
   /* Size set by `--avatar-size`, so that a screen can show smaller ones in a grid. */
   --size: var(--avatar-size, 2.25rem);
 
+  position: relative;
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -14,6 +15,16 @@
   font-size: max(0.625rem, calc(var(--size) * 0.42));
   font-weight: 700;
   line-height: 1;
+  overflow: hidden;
+}
+
+/* Over the initial, which shows while it loads and if it fails. */
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .me {
