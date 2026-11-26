@@ -412,11 +412,18 @@ export function SafariBrowser({ host, title, bar }: { readonly host: string; rea
       ) : null}
       {bar === 'compact' ? (
         <>
-          {[8, 44, 140].map((x) => (
-            <rect key={x} x={x} y="335" width={x === 44 ? 90 : 30} height="30" rx="15" fill="rgb(0 0 0 / 8%)" />
-          ))}
-          {[8, 44, 140].map((x) => (
-            <rect key={x} x={x} y="334" width={x === 44 ? 90 : 30} height="30" rx="15" fill="#ffffff" />
+          {/* Back, the address and « … », each on its shadow. */}
+          {(
+            [
+              [8, 30],
+              [44, 90],
+              [140, 30],
+            ] as const
+          ).map(([x, width]) => (
+            <g key={x}>
+              <rect x={x} y="335" width={width} height="30" rx="15" fill="rgb(0 0 0 / 8%)" />
+              <rect x={x} y="334" width={width} height="30" rx="15" fill="#ffffff" />
+            </g>
           ))}
           <Glyph name="back" x={23} y={349} size={10} weight={3} />
           <SceneText x={89} y={349} size={8} anchor="middle">

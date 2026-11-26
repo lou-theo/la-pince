@@ -322,4 +322,10 @@
   .nudge {
     animation: none;
   }
+
+  .dot,
+  .dotDone,
+  .dotCurrent {
+    transition: none;
+  }
 }

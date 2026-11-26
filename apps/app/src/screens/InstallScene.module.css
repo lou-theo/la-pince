@@ -238,6 +238,7 @@
     transform: none;
   }
 
+  /* `sheetScroll` of InstallScene.tsx. */
   60%,
   88% {
     transform: translateY(-110px);
@@ -311,8 +312,13 @@
   .press,
   .pop,
   .swipe,
-  .scroll,
   .flash {
+    animation: none;
+  }
+
+  /* The list at rest once scrolled, its entry in sight. */
+  .scroll {
+    transform: translateY(-110px);
     animation: none;
   }
 
