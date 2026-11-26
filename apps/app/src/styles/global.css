@@ -55,8 +55,8 @@
   --space-4: 1rem;
   --space-6: 1.5rem;
   --column-width: 40rem;
-  /* Menu at the bottom of the group's screens, above the phone's home indicator. */
-  --nav-height: 3.75rem;
+  /* Menu at the bottom of the group's screens, above the phone's home indicator: the height of an iPhone's tab bar, growing with the text. */
+  --nav-height: 3.0625rem;
   /* Round button floating over a list, above that menu. */
   --add-button-size: 3.75rem;
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
