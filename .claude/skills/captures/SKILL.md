@@ -1,6 +1,6 @@
 ---
 name: captures
-description: Captures des écrans de La Pince pour une PR, sur le groupe de démo (planche avant/après en format téléphone et ordinateur, GIF d'un parcours). À utiliser pour toute PR qui touche un écran, un style ou un texte de l'app, et pour voir l'app sans la lancer à la main. Triggers : « captures », « planche », « avant/après », « GIF du parcours », « montre l'écran », PR qui modifie `apps/app`.
+description: "Captures des écrans de La Pince pour une PR, sur le groupe de démo (planche avant/après en format téléphone et ordinateur, GIF d'un parcours). À utiliser pour toute PR qui touche un écran, un style ou un texte de l'app, et pour voir l'app sans la lancer à la main. Triggers : « captures », « planche », « avant/après », « GIF du parcours », « montre l'écran », PR qui modifie `apps/app`."
 ---
 
 # Captures
