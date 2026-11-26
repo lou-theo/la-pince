@@ -70,12 +70,12 @@ test('the filters narrow the demo group to the cent, from the pills then the she
   await expect(lines(page)).toHaveCount(narrowed.lines);
   await expect(page.getByRole('button', { name: 'Modifier les filtres : Me concerne, De Basile, ≥ 20,00 €' })).toBeVisible();
 
-  // On a narrow phone, the tags beyond the room are counted in « +N », which leaves once the screen is wide enough again; bounds that keep
-  // every line, so that the list stays as it is.
+  // On a narrow phone, the tags beyond the room are counted in « +N », which leaves once the screen is wide enough again; a bound that keeps
+  // every line, so that the list stays as it is. Four tags take about 360 px with the system font of macOS, 390 with a wider one as on Linux:
+  // more than the 290 px of a phone, well within the 570 of the wide column (a fifth tag, « Depuis le », overflowed it on Linux).
   await page.setViewportSize({ width: 360, height: 740 });
   await page.getByRole('button', { name: /^Modifier les filtres :/ }).click();
   await sheet.getByRole('textbox', { name: 'Montant au plus' }).fill('99999');
-  await sheet.getByLabel('Depuis le').fill('2020-01-01');
   await sheet.getByRole('button', { name: /^Voir / }).click();
   await expect(lines(page)).toHaveCount(narrowed.lines);
   await expect(page.getByText(/^\+\d$/)).toBeVisible();
