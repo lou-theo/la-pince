@@ -30,12 +30,11 @@ interface Drawn {
   readonly host: string;
 }
 
-// Where La Pince taps, in the screen's units of `InstallScene`.
-const sheetButton = { x: 89, y: 305 };
+// Where La Pince taps, in the screen's units of `InstallScene`; on a wide button, at its end, its words left readable.
+const sheetButton = { x: 140, y: 305 };
 const windowButton = { x: 133, y: 186 };
 const homeIcon = { x: 29, y: 199 };
 const menuDots = { x: 168, y: 16 };
-// The end of the line, its words left readable.
 const menuItem = { x: 150, y: 100 };
 
 const installWindow = (host: string, appear = false) => (
