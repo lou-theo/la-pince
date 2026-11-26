@@ -10,8 +10,8 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  // `i18n/paraglide/` is compiled from the messages by Paraglide.
-  globalIgnores(['**/coverage/', '**/dist/', '**/i18n/paraglide/', '.claude/', 'docs/cadrage/essais/', 'temp/']),
+  // `i18n/paraglide/` is compiled from the messages by Paraglide; `.wrangler/` is wrangler's local output (dev bundles, local D1 state).
+  globalIgnores(['**/coverage/', '**/dist/', '**/i18n/paraglide/', '**/.wrangler/', '.claude/', 'docs/cadrage/essais/', 'temp/']),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
