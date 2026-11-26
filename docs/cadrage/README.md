@@ -82,5 +82,5 @@ Les 52 décisions numérotées d'avant cette organisation, citées par les PR #1
 - `sources/cloudflare-doc-codex-2026-11-16.md` : recherche documentaire Cloudflare de Codex.
 - `export/lire_tricount.py` : export d'un tricount par son jeton.
 - `essais/push-demo-server.mjs`, `essais/android-notification-recue.png` : essai Web Push sur Android.
-- `retours-du-groupe.md` : retours des amis, triés contre l'usage mesuré (16 et 17/11).
+- `retours-du-groupe.md` : retours des amis, triés contre l'usage mesuré (16, 17 et 26/11).
 - `essais/cloudflare/` : essai Worker Hono et D1 avec notifications ciblées, et mesure CPU ; traces non rejouables telles quelles (ni `package.json`, ni schéma de la table, ni clés VAPID ; `wrangler.jsonc` attend `src/index.ts`).
