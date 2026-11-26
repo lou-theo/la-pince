@@ -23,6 +23,11 @@ const chromeIos =
 const firefoxIos =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/132.0 Mobile/15E148 Safari/605.1.15';
 const windows = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const firefox = 'Mozilla/5.0 (Android 14; Mobile; rv:132.0) Gecko/132.0 Firefox/132.0';
+const oldAndroid =
+  'Mozilla/5.0 (Linux; U; Android 4.4.2; fr-fr; GT-I9505 Build/KOT49H) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30';
+const inApp =
+  'Mozilla/5.0 (Linux; Android 14; K; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.102 Mobile Safari/537.36 Instagram 356.0.0.41.101';
 
 /** A browser saying `userAgent`, whose install window is in `prompt` and answers `answer`; `hand` and `lose` change it as Chromium would. */
 function browser({
@@ -64,6 +69,7 @@ function browser({
 }
 
 const offerTitle = "Installer l'app ?";
+const cannotTitle = "Ce navigateur ne sait pas installer l'app";
 const step = (number: number, total: number) => screen.getByText(`Étape ${String(number)} sur ${String(total)}`);
 
 /** Goes through the guide by « Suivant », checking each instruction, its step, and what the phone drawn shows or not. */
@@ -130,7 +136,7 @@ describe('offer to install the app', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it("goes through Chrome's menu when the window cannot open, and closes elsewhere", async () => {
+  it("goes through Chrome's menu when the window cannot open, and says another browser cannot install", async () => {
     const user = userEvent.setup();
     render(<InstallOffer platform={browser({ answer: 'unavailable' }).platform} />);
     await user.click(screen.getByRole('button', { name: "C'est parti" }));
@@ -142,8 +148,7 @@ describe('offer to install the app', () => {
     render(<InstallOffer platform={browser({ userAgent: samsung, answer: 'unavailable' }).platform} />);
     await user.click(screen.getByRole('button', { name: "C'est parti" }));
     await user.click(screen.getByRole('button', { name: 'Installer' }));
-    await act(() => Promise.resolve());
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await screen.findByRole('heading', { name: cannotTitle })).toBeDefined();
   });
 
   it('walks Chrome without a window through its ⋮ menu, a step at a time, back and forth', async () => {
@@ -189,13 +194,16 @@ describe('offer to install the app', () => {
     expect(screen.getByRole('dialog', { name: offerTitle })).toBeDefined();
   });
 
-  it('never comes later over the screen once decided, when another Chromium browser hands its window late', () => {
+  it('takes another Chromium browser without a window for one that cannot install, and follows a window handed late', async () => {
+    const user = userEvent.setup();
     const late = browser({ userAgent: samsung, prompt: 'waiting' });
     render(<InstallOffer platform={late.platform} />);
-    late.set('absent');
-    late.set('available');
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(wasInstallOffered()).toBe(false);
+    late.set('absent');
+    expect(screen.getByRole('dialog', { name: offerTitle })).toBeDefined();
+    late.set('available');
+    await user.click(screen.getByRole('button', { name: "C'est parti" }));
+    expect(screen.getByRole('heading', { name: 'Touche « Installer » ci-dessous' })).toBeDefined();
   });
 
   it('remembers « Plus tard »', async () => {
@@ -209,13 +217,81 @@ describe('offer to install the app', () => {
   });
 
   it('offers nothing, and keeps the offer to make, where no guide fits yet or nothing is to install', () => {
-    const cases = [browser({ userAgent: samsung, prompt: 'absent' }), browser({ userAgent: windows }), browser({ standalone: true })];
+    const cases = [browser({ userAgent: inApp }), browser({ userAgent: windows }), browser({ standalone: true })];
     for (const { platform } of cases) {
       render(<InstallOffer platform={platform} />);
       expect(screen.queryByRole('dialog')).toBeNull();
       cleanup();
     }
     expect(wasInstallOffered()).toBe(false);
+  });
+});
+
+describe('other browsers of Android', () => {
+  /** Puts a clipboard on the page that takes the text, or refuses it with `refuse`. */
+  const clipboard = (refuse = false) => {
+    const writeText = vi.fn(() => (refuse ? Promise.reject(new DOMException('Denied', 'NotAllowedError')) : Promise.resolve()));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    return writeText;
+  };
+
+  it("walks Firefox through its ⋮ menu, « Plus » and the window of Android's home screen", async () => {
+    const user = userEvent.setup();
+    render(<InstallOffer title="Week-end" platform={browser({ userAgent: firefox, prompt: 'waiting' }).platform} />);
+    // Firefox hands no window: its guide is known at once.
+    await user.click(screen.getByRole('button', { name: "C'est parti" }));
+    await walk(user, [
+      ['Touche ⋮ en haut à droite', 'Plus'],
+      ['Touche « Plus »', 'Plus'],
+      ["Touche « Ajouter l'application à l'écran d'accueil »", "Ajouter l'application"],
+      ["Touche « Ajouter » dans la fenêtre qui s'ouvre", 'Ajouter'],
+      ["Touche l'icône La Pince sur ton écran d'accueil", 'Week-end'],
+    ]);
+    await user.click(screen.getByRole('button', { name: "J'ai compris" }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('says a browser cannot install, opens the page in Chrome or copies its link, and still walks through a shortcut', async () => {
+    const user = userEvent.setup();
+    const writeText = clipboard();
+    render(<InstallOffer title="Week-end" platform={browser({ userAgent: samsung, prompt: 'absent' }).platform} />);
+    await user.click(screen.getByRole('button', { name: "C'est parti" }));
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe(cannotTitle);
+    expect(screen.getByText('La Pince recommande Chrome.')).toBeDefined();
+    expect(screen.queryByText(/^Étape/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Ouvrir dans Chrome' }).getAttribute('href')).toMatch(
+      /^intent:\/\/.+#Intent;scheme=https?;package=com\.android\.chrome;S\.browser_fallback_url=.+;end$/,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Copier le lien' }));
+    expect(writeText).toHaveBeenCalledWith(location.href);
+    expect(await screen.findByRole('button', { name: 'Lien copié : colle-le dans Chrome' })).toBeDefined();
+
+    await user.click(screen.getByRole('button', { name: 'Faire un raccourci quand même' }));
+    expect(screen.getByRole('heading', { name: 'Faire un raccourci' })).toBeDefined();
+    await walk(user, [
+      ['Touche ⋮ en haut à droite', "Ajouter à l'écran d'accueil"],
+      ["Touche « Ajouter à l'écran d'accueil »", "Ajouter à l'écran d'accueil"],
+      ['Touche « Ajouter »', 'Ajouter'],
+    ]);
+    expect(screen.getByRole('button', { name: "J'ai compris" })).toBeDefined();
+    // Back to the first step, then to the word that it cannot install.
+    await user.click(screen.getByRole('button', { name: 'Précédent' }));
+    await user.click(screen.getByRole('button', { name: 'Précédent' }));
+    await user.click(screen.getByRole('button', { name: 'Précédent' }));
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe(cannotTitle);
+    expect(screen.getByRole('heading', { name: "Installer l'app" })).toBeDefined();
+    Reflect.deleteProperty(navigator, 'clipboard');
+  });
+
+  it('says so when the clipboard refuses the link', async () => {
+    const user = userEvent.setup();
+    clipboard(true);
+    render(<InstallOffer platform={browser({ userAgent: oldAndroid }).platform} />);
+    await user.click(screen.getByRole('button', { name: "C'est parti" }));
+    await user.click(screen.getByRole('button', { name: 'Copier le lien' }));
+    expect(await screen.findByRole('button', { name: "Copie impossible : copie l'adresse de la page depuis la barre du navigateur" })).toBeDefined();
+    Reflect.deleteProperty(navigator, 'clipboard');
   });
 });
 
@@ -336,8 +412,7 @@ describe('guides of the iPhone', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Voir comment faire' }));
     await user.click(screen.getByRole('button', { name: 'Installer' }));
-    await act(() => Promise.resolve());
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await screen.findByRole('heading', { name: cannotTitle })).toBeDefined();
   });
 });
 

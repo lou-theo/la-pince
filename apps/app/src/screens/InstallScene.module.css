@@ -84,6 +84,13 @@
   animation: reveal 3.4s ease-out infinite;
 }
 
+/* A menu opening from the button at its top right. */
+.menuRevealTop {
+  transform-box: fill-box;
+  transform-origin: 100% 0;
+  animation: reveal 3.4s ease-out infinite;
+}
+
 @keyframes tap {
   0% {
     transform: translate(-56px, 44px);
@@ -326,6 +333,7 @@
   .ripple,
   .reveal,
   .menuReveal,
+  .menuRevealTop,
   .sheetIn,
   .dim,
   .openApp {

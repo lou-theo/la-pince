@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectInstallContext, guideOf, type InstallContext, type PromptState } from './install.ts';
+import { chromeIntentUrl, detectInstallContext, guideOf, type InstallContext, type PromptState } from './install.ts';
 
 const iosBase = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)';
 const androidBase = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko)';
@@ -140,5 +140,20 @@ describe('guide of a context', () => {
   it("goes through Chrome's menu without an install window, and takes another Chromium browser for one that cannot install", () => {
     expect(guideOf('android_chrome', 'absent')).toBe('android_menu');
     expect(guideOf('android_chromium', 'absent')).toBe('cannot');
+  });
+});
+
+describe('link to open the page in Chrome', () => {
+  it("names Chrome's package and falls back on the page itself, its fragment left out", () => {
+    expect(chromeIntentUrl('https://lapince.example/g/abc?x=1#top')).toBe(
+      'intent://lapince.example/g/abc?x=1#Intent;scheme=https;package=com.android.chrome;' +
+        'S.browser_fallback_url=https%3A%2F%2Flapince.example%2Fg%2Fabc%3Fx%3D1;end',
+    );
+  });
+
+  it('keeps the scheme and the port of a local server', () => {
+    expect(chromeIntentUrl('http://localhost:5173/lien')).toBe(
+      'intent://localhost:5173/lien#Intent;scheme=http;package=com.android.chrome;S.browser_fallback_url=http%3A%2F%2Flocalhost%3A5173%2Flien;end',
+    );
   });
 });
