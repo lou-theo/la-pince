@@ -518,6 +518,17 @@ export const screens: readonly Screen[] = [
       await page.locator('article').waitFor();
     },
   },
+  {
+    name: 'depense-suppression',
+    label: 'Supprimer une dépense : la confirmation',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await chooseFirstMember(page, demo);
+      await page.locator(operationLink).first().click();
+      // The only button of the detail, next to the link to edit; « Oui, supprimer » is never touched.
+      await page.locator('article > div > button').click();
+      await page.locator('article > div > div button').first().waitFor();
+    },
+  },
   { name: 'soldes', label: 'Soldes', reach: openBalances },
   {
     name: 'soldes-sombre',
@@ -857,6 +868,14 @@ export const screens: readonly Screen[] = [
     reach: async (page: Page, demo: Demo): Promise<void> => {
       await page.goto(`${demo.appUrl}/g/court`);
       await page.locator('a[href="/lien"]').waitFor();
+    },
+  },
+  {
+    name: 'page-inexistante',
+    label: 'Adresse inconnue',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.goto(`${demo.appUrl}/adresse-inconnue`);
+      await page.locator('main p').waitFor();
     },
   },
 ];
