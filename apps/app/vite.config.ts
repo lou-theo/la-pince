@@ -25,7 +25,9 @@ export default defineConfig({
         start_url: '/',
         display: 'standalone',
         background_color: '#faefd8',
-        theme_color: '#f3d9a4',
+        // Chrome paints Android's navigation bar with it, one color fixed at install whatever the theme: the dark theme's bottom menu, which it
+        // continues, rather than a bright band under a dark page (docs/decisions/logo-et-couleurs.md).
+        theme_color: '#292524',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
