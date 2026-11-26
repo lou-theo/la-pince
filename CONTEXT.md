@@ -18,6 +18,7 @@ Chaque terme du domaine est défini une fois ici ; les docs et l'interface l'emp
 - **Concerné** (`involved`) : membre qui a une part non nulle dans une opération.
 - **Ma part** (`myShare`) : la part du membre « qui je suis » dans une opération.
 - **Solde** (`balance`) : ce qu'un membre a payé moins la somme de ses parts, sur tout le groupe ; positif, le groupe lui doit de l'argent.
+- **Filtres de la liste** (`ListFilter`) : critères qui réduisent la liste des opérations d'un groupe à l'écran (me concerne, payeurs, concernés, type, titre, montant, dates), sans effet sur les soldes ; propres à chaque groupe, oubliés à la fermeture de l'app.
 - **Remboursement suggéré** (`SuggestedTransfer`) : virement proposé entre deux membres pour ramener les soldes à zéro ; pas une opération tant qu'il n'est pas enregistré.
 - **Centimes** (`Cents`) : unité de tous les montants, en entiers ; un montant saisi en euros est converti à l'entrée et jamais arrondi.
 - **File d'envoi** (`outbox`) : opérations saisies sur le téléphone en attente d'envoi au serveur, rejouables sans doublon.
