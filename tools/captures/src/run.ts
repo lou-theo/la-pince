@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import { type Browser, type BrowserContextOptions, chromium } from 'playwright';
 
 import { boardHtml } from './board.ts';
-import { type Demo, installJourney, journey, screens } from './screens.ts';
+import { type Demo, installJourney, iphoneJourney, journey, screens } from './screens.ts';
 import { startStack } from './stack.ts';
 
 const exec = promisify(execFile);
@@ -152,6 +152,9 @@ export async function captures({ before, out: outOption, print }: Options): Prom
       versions.push({ label: `Après (${branch})`, dir, found: await shoot(browser, stack.demo, dir, print) });
       print(`GIF: ${await film(browser, stack.demo, out, 'parcours', journey)}`);
       print(`GIF: ${await film(browser, stack.demo, out, 'installation', installJourney)}`);
+      print(`GIF: ${await film(browser, stack.demo, out, 'installation-iphone-safari', iphoneJourney('safari18', 5))}`);
+      print(`GIF: ${await film(browser, stack.demo, out, 'installation-iphone-26', iphoneJourney('safari26', 7))}`);
+      print(`GIF: ${await film(browser, stack.demo, out, 'installation-iphone-chrome', iphoneJourney('chrome', 5))}`);
     } finally {
       await stack.close();
     }

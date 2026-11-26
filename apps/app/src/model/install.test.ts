@@ -24,11 +24,33 @@ const userAgents: readonly (readonly [name: string, userAgent: string, context: 
   ['Instagram, Android', `${webView} Chrome/130.0.6723.102 Mobile Safari/537.36 Instagram 356.0.0.41.101 Android (34/14; 420dpi)`, 'in_app'],
   ['Safari, iPhone', `${iosBase} Version/18.7 Mobile/15E148 Safari/604.1`, 'ios_safari'],
   [
-    'Safari, iPhone under iOS 26',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1',
+    'Safari 18, iPhone',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',
     'ios_safari',
   ],
+  [
+    'Safari 16.3, iPhone',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1',
+    'ios_safari',
+  ],
+  // Under iOS 26, Safari says `OS 18_6` still: its generation is in `Version/`.
+  [
+    'Safari 26, iPhone',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1',
+    'ios_safari_26',
+  ],
+  [
+    'Safari 27, iPhone',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.1 Mobile/15E148 Safari/604.1',
+    'ios_safari_26',
+  ],
+  ['iPhone browser saying Safari without its version', `${iosBase} Mobile/15E148 Safari/604.1`, 'ios_safari'],
   ['Chrome, iPhone', `${iosBase} CriOS/131.0.6778.73 Mobile/15E148 Safari/604.1`, 'ios_chrome'],
+  [
+    'Chrome, iPhone under iOS 26',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/140.0.7339.122 Mobile/15E148 Safari/604.1',
+    'ios_chrome',
+  ],
   ['Firefox, iPhone', `${iosBase} FxiOS/132.0 Mobile/15E148 Safari/605.1.15`, 'ios_other'],
   ['Edge, iPhone', `${iosBase} EdgiOS/131.0.2903.68 Version/18.0 Mobile/15E148 Safari/604.1`, 'ios_other'],
   [
@@ -40,6 +62,12 @@ const userAgents: readonly (readonly [name: string, userAgent: string, context: 
     'Safari, iPad asking for the desktop site',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7 Safari/605.1.15',
     'ios_safari',
+    5,
+  ],
+  [
+    'Safari 26, iPad asking for the desktop site',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15',
+    'ios_safari_26',
     5,
   ],
   [
@@ -89,6 +117,7 @@ describe('guide of a context', () => {
     const fixed: readonly (readonly [InstallContext, string])[] = [
       ['in_app', 'in_app'],
       ['ios_safari', 'ios_safari'],
+      ['ios_safari_26', 'ios_safari_26'],
       ['ios_chrome', 'ios_share'],
       ['ios_other', 'ios_share'],
       ['android_firefox', 'android_firefox'],

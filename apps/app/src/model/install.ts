@@ -1,12 +1,14 @@
 /**
  * Where the app is opened, as far as installing it goes: already `installed` (opened from the home screen), on a `desktop` (nothing offered), in the
- * browser `in_app` of a messaging or social app, or in a phone's browser, by system and family. Tablets count as phones.
+ * browser `in_app` of a messaging or social app, or in a phone's browser, by system and family. Tablets count as phones. Safari from its version 26
+ * (`ios_safari_26`) moved Share out of the bar most iPhones show.
  */
 export type InstallContext =
   | 'installed'
   | 'desktop'
   | 'in_app'
   | 'ios_safari'
+  | 'ios_safari_26'
   | 'ios_chrome'
   | 'ios_other'
   | 'android_chrome'
@@ -31,10 +33,11 @@ export type PromptState = 'waiting' | 'available' | 'absent';
 
 /**
  * The guide that fits a context: `android_button` opens the browser's install window from the app's own button; `android_menu` walks through
- * Chrome's ⋮ menu; `android_firefox` through Firefox's; `cannot` says the browser does not install apps and recommends Chrome; `ios_safari` and
- * `ios_share` go through the Share sheet of Safari or of another iPhone browser; `in_app` asks to open the link in a real browser.
+ * Chrome's ⋮ menu; `android_firefox` through Firefox's; `cannot` says the browser does not install apps and recommends Chrome; `ios_safari` goes
+ * through Share in the bottom bar of Safari before its version 26, `ios_safari_26` asks first which bar Safari shows, its Share being in the « … »
+ * menu or in the bar; `ios_share` through Share beside the address of another iPhone browser; `in_app` asks to open the link in a real browser.
  */
-export type InstallGuide = 'android_button' | 'android_menu' | 'android_firefox' | 'cannot' | 'ios_safari' | 'ios_share' | 'in_app';
+export type InstallGuide = 'android_button' | 'android_menu' | 'android_firefox' | 'cannot' | 'ios_safari' | 'ios_safari_26' | 'ios_share' | 'in_app';
 
 // Marks of the browsers built into apps: Facebook and Messenger, Instagram, LINE, WeChat, Snapchat, LinkedIn, TikTok, the Google app on iOS, and
 // any Android WebView (`; wv)`).
@@ -55,7 +58,12 @@ function iosContext(userAgent: string): InstallContext {
     return 'ios_other';
   }
   // Every iPhone browser carries `Safari/`; a web view built into an app does not.
-  return userAgent.includes('Safari/') ? 'ios_safari' : 'in_app';
+  if (!userAgent.includes('Safari/')) {
+    return 'in_app';
+  }
+  // Safari's generation is read on `Version/`: under iOS 26 its `OS 18_6` stays put.
+  const version = /\bVersion\/(\d+)/.exec(userAgent)?.[1];
+  return version !== undefined && Number(version) >= 26 ? 'ios_safari_26' : 'ios_safari';
 }
 
 function androidContext(userAgent: string): InstallContext {
@@ -94,7 +102,8 @@ export function guideOf(context: InstallContext, prompt: PromptState): InstallGu
     case 'in_app':
       return 'in_app';
     case 'ios_safari':
-      return 'ios_safari';
+    case 'ios_safari_26':
+      return context;
     case 'ios_chrome':
     case 'ios_other':
       return 'ios_share';
