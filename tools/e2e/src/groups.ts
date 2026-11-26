@@ -29,7 +29,8 @@ export const groups: readonly GroupSpec[] = [
   budgetGroup,
   // Notifications are tested on Chromium only (playwright.config.ts).
   { token: tokenFor('chromium', 'notifications') },
-  // The offer to install: Android's guides on Chromium (`tests/install.spec.ts`), the iPhone's on WebKit (`tests/install-iphone.spec.ts`).
+  // The offer to install: Android's guides on Chromium (`tests/install.spec.ts`, `tests/install-android.spec.ts`), the iPhone's on WebKit
+  // (`tests/install-iphone.spec.ts`).
   { token: tokenFor('chromium', 'install') },
   { token: tokenFor('webkit', 'install') },
 ];

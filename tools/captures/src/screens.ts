@@ -297,6 +297,55 @@ const openIphoneGuide = async (page: Page, demo: Demo, browser: Iphone, step: nu
   await page.locator(`${sheet} h3`).waitFor();
 };
 
+// What Android browsers other than Chrome say of themselves: Firefox installs from its own menu, Samsung Internet cannot install.
+const otherAndroids = {
+  firefox: 'Mozilla/5.0 (Android 14; Mobile; rv:132.0) Gecko/132.0 Firefox/132.0',
+  samsung:
+    'Mozilla/5.0 (Linux; Android 14; SAMSUNG SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Mobile Safari/537.36',
+} as const;
+type OtherAndroid = keyof typeof otherAndroids;
+
+/** Makes the page an Android browser other than Chrome, before the app starts: no install window reaches the app, and a clipboard takes the link. */
+const asOtherAndroid = async (page: Page, browser: OtherAndroid): Promise<void> => {
+  await page.addInitScript((userAgent) => {
+    Object.defineProperty(Navigator.prototype, 'userAgent', { get: () => userAgent });
+    addEventListener(
+      'beforeinstallprompt',
+      (event) => {
+        event.stopImmediatePropagation();
+      },
+      { capture: true },
+    );
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.resolve() } });
+  }, otherAndroids[browser]);
+};
+
+/**
+ * Opens the guide of an Android browser other than Chrome from the offer, at rest: Firefox at its step `step` (1 first); a browser that cannot
+ * install at its word with `step` 0, at the step `step` of its shortcut otherwise; with `copy`, its link copied.
+ */
+const openOtherAndroidGuide = async (page: Page, demo: Demo, browser: OtherAndroid, step: number, copy = false): Promise<void> => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await asOtherAndroid(page, browser);
+  await chooseFirstMember(page, demo);
+  // Samsung Internet is given 3 s to hand its install window.
+  await page.locator(sheet).waitFor({ timeout: 6000 });
+  await page.locator(`${sheet} button`).first().click();
+  if (browser === 'samsung') {
+    await page.locator(`${sheet} a[href^="intent:"]`).waitFor();
+    if (copy) {
+      await page.locator(`${sheet} a + div button`).click();
+    }
+    if (step > 0) {
+      await page.locator(`${sheet} button`).last().click();
+    }
+  }
+  for (let at = 1; at < step; at += 1) {
+    await page.locator(`${sheet} button`).last().click();
+  }
+  await page.locator(`${sheet} h3`).waitFor();
+};
+
 /** Screens of the app, in the order of the board; a PR that adds a screen adds it here. */
 export const screens: readonly Screen[] = [
   {
@@ -681,6 +730,54 @@ export const screens: readonly Screen[] = [
     reach: (page, demo) => openIphoneGuide(page, demo, 'chrome', 3),
   },
   {
+    name: 'installation-firefox',
+    label: 'Guide de Firefox sur Android, 1 : le menu ⋮',
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'firefox', 1),
+  },
+  {
+    name: 'installation-firefox-plus',
+    label: 'Guide de Firefox sur Android, 2 : « Plus »',
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'firefox', 2),
+  },
+  {
+    name: 'installation-firefox-entree',
+    label: "Guide de Firefox sur Android, 3 : « Ajouter l'application à l'écran d'accueil »",
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'firefox', 3),
+  },
+  {
+    name: 'installation-firefox-ajouter',
+    label: "Guide de Firefox sur Android, 4 : la fenêtre de l'écran d'accueil",
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'firefox', 4),
+  },
+  {
+    name: 'installation-incapable',
+    label: 'Navigateur qui ne sait pas installer : Chrome recommandé',
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'samsung', 0),
+  },
+  {
+    name: 'installation-incapable-copie',
+    label: 'Navigateur qui ne sait pas installer : lien copié',
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'samsung', 0, true),
+  },
+  {
+    name: 'installation-incapable-sombre',
+    label: 'Navigateur qui ne sait pas installer, thème sombre',
+    reach: async (page: Page, demo: Demo): Promise<void> => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await openOtherAndroidGuide(page, demo, 'samsung', 0);
+    },
+  },
+  {
+    name: 'installation-raccourci',
+    label: 'Raccourci quand même, 1 : le menu',
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'samsung', 1),
+  },
+  {
+    name: 'installation-raccourci-ajouter',
+    label: 'Raccourci quand même, 3 : « Ajouter »',
+    reach: (page, demo) => openOtherAndroidGuide(page, demo, 'samsung', 3),
+  },
+  {
     name: 'groupe-introuvable',
     label: 'Groupe introuvable',
     reach: async (page: Page, demo: Demo): Promise<void> => {
@@ -735,6 +832,34 @@ export const iphoneJourney =
     await page.locator(sheet).waitFor();
     await page.waitForTimeout(2500);
     await page.locator(`${sheet} button`).first().click();
+    for (let step = 1; step <= steps; step += 1) {
+      await page.waitForTimeout(3600);
+      await page.locator(`${sheet} button`).last().click();
+    }
+    await page.waitForTimeout(800);
+  };
+
+/**
+ * Journey filmed for the GIF of an Android browser other than Chrome: the offer at the arrival, then Firefox's guide through its `steps` steps; or
+ * the word of a browser that cannot install, its link copied, and the `steps` steps of its shortcut.
+ */
+export const otherAndroidJourney =
+  (browser: OtherAndroid, steps: number) =>
+  async (page: Page, demo: Demo): Promise<void> => {
+    await asOtherAndroid(page, browser);
+    await page.goto(`${demo.appUrl}/g/${demo.token}`);
+    await page.getByRole('list').waitFor();
+    await page.waitForTimeout(800);
+    await page.getByRole('list').getByRole('button').first().click();
+    await page.locator(sheet).waitFor({ timeout: 6000 });
+    await page.waitForTimeout(2500);
+    await page.locator(`${sheet} button`).first().click();
+    if (browser === 'samsung') {
+      await page.waitForTimeout(2500);
+      await page.locator(`${sheet} a + div button`).click();
+      await page.waitForTimeout(2000);
+      await page.locator(`${sheet} button`).last().click();
+    }
     for (let step = 1; step <= steps; step += 1) {
       await page.waitForTimeout(3600);
       await page.locator(`${sheet} button`).last().click();
