@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { m } from '../i18n/paraglide/messages.js';
 import type { InstallOutcome } from '../install/platform.ts';
@@ -120,6 +120,13 @@ interface InstallGuideProps extends Drawn {
  */
 export function InstallGuide({ guide, title, host, install, onUnavailable, onClose }: InstallGuideProps): ReactNode {
   const [index, setIndex] = useState(0);
+  // Once installed, the steps before lead nowhere: the window opens once.
+  const [installed, setInstalled] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  // The button that opened the guide is gone: the focus goes to its title, for a screen reader to start there.
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
   const mounted = useMounted();
   const steps = stepsOf(guide, { title, host });
   const step = steps[index] ?? steps[0];
@@ -135,6 +142,7 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
       return;
     }
     if (outcome === 'accepted') {
+      setInstalled(true);
       setIndex(2);
     } else if (outcome === 'dismissed') {
       onClose();
@@ -178,7 +186,9 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
       <span className={styles.handle} aria-hidden="true" />
       <div className={styles.guideHead}>
         <div className={styles.guideTitles}>
-          <h2 className={styles.guideTitle}>{m.install_guide_title()}</h2>
+          <h2 ref={heading} className={styles.guideTitle} tabIndex={-1}>
+            {m.install_guide_title()}
+          </h2>
           <span className={styles.muted}>{m.install_guide_step({ step: index + 1, total: steps.length })}</span>
         </div>
         <button className={styles.close} type="button" aria-label={m.install_guide_close()} onClick={onClose}>
@@ -206,7 +216,7 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
         <button
           className={styles.secondary}
           type="button"
-          disabled={index === 0}
+          disabled={index === 0 || installed}
           onClick={() => {
             setIndex(index - 1);
           }}

@@ -70,6 +70,7 @@ describe('offer to install the app', () => {
 
     await user.click(screen.getByRole('button', { name: "C'est parti" }));
     expect(screen.getByRole('dialog', { name: "Installer l'app" })).toBeDefined();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: "Installer l'app" }));
     expect(step(1, 3)).toBeDefined();
     expect(screen.getByRole('heading', { name: 'Touche « Installer » ci-dessous' })).toBeDefined();
     // The phone drawn shows the group and the address of the app.
@@ -80,6 +81,8 @@ describe('offer to install the app', () => {
     expect(state.installs).toBe(1);
     expect(await screen.findByRole('heading', { name: "C'est installé : touche l'icône La Pince sur ton écran d'accueil" })).toBeDefined();
     expect(step(3, 3)).toBeDefined();
+    // Installed: no way back to a window that opens once.
+    expect(screen.getByRole('button', { name: 'Précédent' })).toHaveProperty('disabled', true);
 
     await user.click(screen.getByRole('button', { name: "J'ai compris" }));
     expect(screen.queryByRole('dialog')).toBeNull();
