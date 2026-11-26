@@ -58,7 +58,7 @@ test('the filters narrow the demo group to the cent, from the pills then the she
   await grid.getByRole('button', { name: 'Valider · 1 personne' }).click();
   await sheet.getByRole('textbox', { name: 'Montant au moins' }).fill('20');
   const narrowed = expected({ paidBy: 'Basile', atLeast: 2_000 });
-  await sheet.getByRole('button', { name: new RegExp(`^Voir ${String(narrowed.lines)} dépenses?$`) }).click();
+  await sheet.getByRole('button', { name: new RegExp(`^Voir ${String(narrowed.lines)} (dépenses?|remboursements?|résultats)$`) }).click();
   await expect(sheet).toBeHidden();
   await expect(lines(page)).toHaveCount(narrowed.lines);
   expect(await heading(page)).toStrictEqual({ expenses: narrowed.expenses, total: narrowed.total, myShare: narrowed.myShare });
@@ -69,6 +69,18 @@ test('the filters narrow the demo group to the cent, from the pills then the she
   await page.getByRole('link', { name: 'Dépenses', exact: true }).click();
   await expect(lines(page)).toHaveCount(narrowed.lines);
   await expect(page.getByRole('button', { name: 'Modifier les filtres : Me concerne, De Basile, ≥ 20,00 €' })).toBeVisible();
+
+  // On a narrow phone, the tags beyond the room are counted in « +N », which leaves once the screen is wide enough again; bounds that keep
+  // every line, so that the list stays as it is.
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.getByRole('button', { name: /^Modifier les filtres :/ }).click();
+  await sheet.getByRole('textbox', { name: 'Montant au plus' }).fill('99999');
+  await sheet.getByLabel('Depuis le').fill('2020-01-01');
+  await sheet.getByRole('button', { name: /^Voir / }).click();
+  await expect(lines(page)).toHaveCount(narrowed.lines);
+  await expect(page.getByText(/^\+\d$/)).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.getByText(/^\+\d$/)).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Retirer les filtres' }).click();
   await expect(page.getByText(/ au total · ta part /)).toHaveCount(0);

@@ -112,8 +112,9 @@ const openAddMember = async (page: Page, demo: Demo): Promise<void> => {
   await page.locator('dialog[open] input').fill('Zoé');
 };
 
-// The pills under the group's title: « Me concerne », « Payé par moi », then the one that opens the sheet of the filters.
-const filterPills = 'header [role="group"] button';
+// The pills under the group's title: « Me concerne », « Payé par moi », then the one that opens the sheet of the filters; the sheet, in the band
+// too, has groups of its own.
+const filterPills = 'header > div > [role="group"] button';
 // The grid of the members, a dialog over the sheet, and its button that applies the choice.
 const memberGrid = 'dialog[open] dialog[open]';
 const applyGrid = `${memberGrid} > div > button:last-child`;
@@ -127,7 +128,8 @@ const openFilterSheet = async (page: Page, demo: Demo): Promise<void> => {
 
 /** In the sheet, opens the grid of a block of members (0 who paid, 1 who is involved) and touches some, by their place in the group. */
 const pickMembers = async (page: Page, block: number, places: readonly number[]): Promise<void> => {
-  await page.locator('dialog[open] section').nth(block).locator('li:last-child button').click();
+  // The last badge of the block, « Ajouter »; the grid, inside the block, has buttons of its own.
+  await page.locator('dialog[open] section').nth(block).locator(':scope > ul > li:last-child > button').click();
   for (const place of places) {
     await page.locator(`${memberGrid} ul button`).nth(place).click();
   }
@@ -147,7 +149,7 @@ const fillFilterSheet = async (page: Page, demo: Demo): Promise<void> => {
 const filteredList = async (page: Page, demo: Demo): Promise<void> => {
   await fillFilterSheet(page, demo);
   await page.locator('dialog[open] > div > button:last-child').click();
-  await page.locator('header button[aria-haspopup="dialog"]').waitFor();
+  await page.locator('header > div > div > button[aria-haspopup="dialog"]').waitFor();
 };
 
 /** Opens the form of a new expense, ready once its fields are there. */
@@ -461,7 +463,7 @@ export async function journey(page: Page, demo: Demo): Promise<void> {
   await page.locator('nav a').first().click();
   await page.waitForTimeout(1500);
   // The cross beside the summary clears every filter.
-  await page.locator('header button[aria-haspopup="dialog"] + button').click();
+  await page.locator('header > div > div > button[aria-haspopup="dialog"] + button').click();
   await page.waitForTimeout(1000);
   await page.locator(operationLink).first().click();
   await page.waitForTimeout(1500);
