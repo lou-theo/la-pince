@@ -160,6 +160,15 @@ describe('offer to install the app', () => {
     expect(screen.getByRole('dialog', { name: offerTitle })).toBeDefined();
   });
 
+  it('never comes later over the screen once decided, when another Chromium browser hands its window late', () => {
+    const late = browser({ userAgent: samsung, prompt: 'waiting' });
+    render(<InstallOffer platform={late.platform} />);
+    late.set('absent');
+    late.set('available');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(wasInstallOffered()).toBe(false);
+  });
+
   it('remembers « Plus tard »', async () => {
     const user = userEvent.setup();
     render(<InstallOffer platform={browser().platform} />);

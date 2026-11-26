@@ -19,7 +19,7 @@ let browser: InstallPlatform | undefined;
 
 const isBuilt = (guide: Guide | 'none' | 'waiting'): guide is BuiltGuide => guide === 'android_button' || guide === 'android_menu';
 
-// `waiting` for a guide to offer, `done` once the sheet closed: never offered again by this screen.
+// `waiting` for the guide to be known, `done` once nothing is to offer or the sheet closed: never offered again by this screen.
 type Phase = { readonly name: 'waiting' | 'offer' | 'done' } | { readonly name: 'guide'; readonly guide: BuiltGuide };
 
 /**
@@ -33,9 +33,10 @@ export function InstallOffer({ title, platform: given }: InstallOfferProps): Rea
   const guide = guideOf(context, prompt);
   const dialog = useRef<HTMLDialogElement>(null);
   const [phase, setPhase] = useState<Phase>({ name: 'waiting' });
-  // Chrome may hand its window a few seconds after the screen shows: the offer opens then.
-  if (phase.name === 'waiting' && isBuilt(guide) && !wasInstallOffered()) {
-    setPhase({ name: 'offer' });
+  // Chrome may hand its window a few seconds after the start: the offer opens then. Once the guide is known, it is decided for this screen, so
+  // that a window coming later never covers what the person is doing.
+  if (phase.name === 'waiting' && guide !== 'waiting') {
+    setPhase({ name: isBuilt(guide) && !wasInstallOffered() ? 'offer' : 'done' });
   }
   const open = phase.name === 'offer' || phase.name === 'guide';
 
