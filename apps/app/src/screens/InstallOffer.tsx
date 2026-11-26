@@ -56,6 +56,7 @@ function GuideOfBrowser({ guide, context, title, platform, onGuide, onClose }: G
     <InstallGuide
       key={guide}
       guide={guide}
+      maybeInstalled={context === 'android_chromium'}
       title={title}
       host={location.host}
       install={platform.install}

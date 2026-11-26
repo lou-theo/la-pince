@@ -178,6 +178,7 @@
   "install_cannot_shortcut_note": "Moins bien : il s'ouvre dans le navigateur, comme un onglet.",
   "install_shortcut_title": "Faire un raccourci",
   "install_shortcut_menu_note": "Selon le navigateur, c'est ⋮ ou ≡, en haut ou en bas.",
+  "install_shortcut_item": "Touche « Ajouter à l'écran d'accueil »",
   "install_shortcut_item_note": "Son nom peut changer d'un navigateur à l'autre.",
   "install_shortcut_add": "Touche « Ajouter »",
   "install_ios_layout": "Qu'est-ce que tu vois en bas de ton écran ?",

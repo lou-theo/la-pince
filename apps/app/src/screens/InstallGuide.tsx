@@ -231,7 +231,7 @@ function otherAndroidSteps(guide: 'android_firefox' | 'cannot', title: string, b
         screen: withBrowser(<BrowserMenu item={item} appear />),
       },
       {
-        instruction: m.install_share_row(),
+        instruction: m.install_shortcut_item(),
         note: m.install_shortcut_item_note(),
         tap: menuItem,
         ripple: 'green',
@@ -331,6 +331,8 @@ function stepsOf(guide: BuiltGuide, drawn: Drawn, bar: ChosenBar): readonly Step
 
 interface InstallGuideProps extends Drawn {
   readonly guide: BuiltGuide;
+  /** With `cannot`, whether the browser may have installed the app already, as a Chromium browser that hands no install window. */
+  readonly maybeInstalled?: boolean;
   /** Opens the browser's install window, for `android_button`. */
   readonly install: () => Promise<InstallOutcome>;
   /** The browser could not open its window: another guide, or none. */
@@ -343,21 +345,22 @@ interface InstallGuideProps extends Drawn {
  * With `android_button`, the app's « Installer » opens the browser's window at once: accepted, the guide ends on the icon to touch; dismissed, it
  * closes, the person having said no.
  */
-export function InstallGuide({ guide, title, host, install, onUnavailable, onClose }: InstallGuideProps): ReactNode {
+export function InstallGuide({ guide, maybeInstalled = false, title, host, install, onUnavailable, onClose }: InstallGuideProps): ReactNode {
   const [index, setIndex] = useState(0);
   // Once installed, the steps before lead nowhere: the window opens once.
   const [installed, setInstalled] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
-  // The button that opened the guide is gone: the focus goes to its title, for a screen reader to start there.
-  useEffect(() => {
-    heading.current?.focus();
-  }, []);
   const mounted = useMounted();
   // Safari's compact bar first, its default.
   const [bar, setBar] = useState<ChosenBar>('compact');
   // A browser that cannot install says so first; the steps of a shortcut come once asked.
   const [shortcut, setShortcut] = useState(false);
   const intro = guide === 'cannot' && !shortcut;
+  // The button that opened the guide is gone: the focus goes to its title, for a screen reader to start there; again between the word that the
+  // browser cannot install and the shortcut's steps.
+  useEffect(() => {
+    heading.current?.focus();
+  }, [shortcut]);
   const steps = stepsOf(guide, { title, host }, bar);
   const step = steps[index] ?? steps[0];
   if (step === undefined) {
@@ -429,6 +432,7 @@ export function InstallGuide({ guide, title, host, install, onUnavailable, onClo
       </div>
       {intro ? (
         <CannotInstall
+          maybeInstalled={maybeInstalled}
           onShortcut={() => {
             setShortcut(true);
           }}

@@ -1,7 +1,7 @@
 import { groupResponseSchema } from '@la-pince/core';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { captureInstallPrompt, type InstallOutcome, type InstallPlatform } from '../install/platform.ts';
 import type { PromptState } from '../model/install.ts';
@@ -234,6 +234,9 @@ describe('other browsers of Android', () => {
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     return writeText;
   };
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'clipboard');
+  });
 
   it("walks Firefox through its ⋮ menu, « Plus » and the window of Android's home screen", async () => {
     const user = userEvent.setup();
@@ -268,7 +271,7 @@ describe('other browsers of Android', () => {
     expect(await screen.findByRole('button', { name: 'Lien copié : colle-le dans Chrome' })).toBeDefined();
 
     await user.click(screen.getByRole('button', { name: 'Faire un raccourci quand même' }));
-    expect(screen.getByRole('heading', { name: 'Faire un raccourci' })).toBeDefined();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Faire un raccourci' }));
     await walk(user, [
       ['Touche ⋮ en haut à droite', "Ajouter à l'écran d'accueil"],
       ["Touche « Ajouter à l'écran d'accueil »", "Ajouter à l'écran d'accueil"],
@@ -280,8 +283,9 @@ describe('other browsers of Android', () => {
     await user.click(screen.getByRole('button', { name: 'Précédent' }));
     await user.click(screen.getByRole('button', { name: 'Précédent' }));
     expect(screen.getByRole('heading', { level: 3 }).textContent).toBe(cannotTitle);
-    expect(screen.getByRole('heading', { name: "Installer l'app" })).toBeDefined();
-    Reflect.deleteProperty(navigator, 'clipboard');
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: "Installer l'app" }));
+    // Samsung Internet may have installed the app by its menu: where to find it is said.
+    expect(screen.getByText("Déjà installée ? Ouvre La Pince depuis ton écran d'accueil.")).toBeDefined();
   });
 
   it('says so when the clipboard refuses the link', async () => {
@@ -291,7 +295,8 @@ describe('other browsers of Android', () => {
     await user.click(screen.getByRole('button', { name: "C'est parti" }));
     await user.click(screen.getByRole('button', { name: 'Copier le lien' }));
     expect(await screen.findByRole('button', { name: "Copie impossible : copie l'adresse de la page depuis la barre du navigateur" })).toBeDefined();
-    Reflect.deleteProperty(navigator, 'clipboard');
+    // A browser that is not Chromium installed nothing.
+    expect(screen.queryByText("Déjà installée ? Ouvre La Pince depuis ton écran d'accueil.")).toBeNull();
   });
 });
 
