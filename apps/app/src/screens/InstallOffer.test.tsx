@@ -7,6 +7,7 @@ import { captureInstallPrompt, type InstallOutcome, type InstallPlatform } from 
 import type { PromptState } from '../model/install.ts';
 import { wasInstallOffered } from '../storage/device.ts';
 import { fakeServer } from '../testing/fake-server.ts';
+import { rememberMember } from '../testing/groupDb.ts';
 import { renderApp } from '../testing/render.tsx';
 import { InstallOffer } from './InstallOffer.tsx';
 
@@ -207,6 +208,18 @@ describe('moment of the offer', () => {
     await user.click(screen.getByRole('button', { name: 'Alice' }));
     expect(await screen.findByRole('dialog', { name: offerTitle })).toBeDefined();
     expect(screen.getByText('Tu es Alice')).toBeDefined();
+    vi.restoreAllMocks();
+  });
+
+  it('waits for who I am to be asked again when the member remembered left the group', async () => {
+    const user = userEvent.setup();
+    await rememberMember(token, 'm9');
+    onAndroidChrome();
+    renderApp(`/g/${token}`, fakeServer({ token, group }).fetch);
+    await screen.findByRole('heading', { name: 'Qui es-tu ?' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    expect(await screen.findByRole('dialog', { name: offerTitle })).toBeDefined();
     vi.restoreAllMocks();
   });
 

@@ -103,8 +103,8 @@ function GroupLoader({ token }: { readonly token: string }) {
             enqueue={store.enqueue}
             edits={edits}
           />
-          {/* Offered once who I am is told, the group behind. */}
-          {state.currentMember === undefined ? null : <InstallOffer title={state.group.title} />}
+          {/* Offered once who I am is told, the group behind: a member remembered but gone from the group is asked again first. */}
+          {state.group.members.some((member) => member.id === state.currentMember) ? <InstallOffer title={state.group.title} /> : null}
         </>
       );
   }
